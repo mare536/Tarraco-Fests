@@ -1,0 +1,102 @@
+events (eventos)
+
+id (docId)
+
+title (string)
+
+description (string)
+
+startAt (timestamp)
+
+endAt (timestamp, opcional)
+
+categoryId (string, referencia lógica a categories)
+
+locationName (string) (nombre del sitio)
+
+address (string)
+
+city (string) (ej. “Tarragona”)
+
+lat (number, opcional)
+
+lng (number, opcional)
+
+extraInfo (string, opcional) (web/telefono/etc)
+
+imageUrl (string, opcional)
+
+isActive (boolean) (para ocultar sin borrar)
+
+createdAt (timestamp)
+
+updatedAt (timestamp)
+
+createdBy (string uid, opcional)
+
+keywords (array<string>) (para búsqueda simple)
+
+2) categories (categorías)
+
+id (docId: “music”, “sport”, “culture”…)
+
+name (string) (“Música”, “Esport”…)
+
+icon (string, opcional) (nombre de icono)
+
+color (string, opcional)
+
+order (number, opcional)
+
+isActive (boolean)
+
+3) users (usuarios)
+
+id (docId = uid Auth)
+
+displayName (string)
+
+email (string)
+
+role (string: “user” | “admin”)
+
+createdAt (timestamp)
+
+isBlocked (boolean, opcional)
+
+4) users/{uid}/favorites (favoritos por usuario) — subcolección
+
+Cada docId puede ser el eventId.
+
+eventId (string) (si no usas docId como id)
+
+createdAt (timestamp)
+
+
+5) reports (opcional, si usuarios reportan errores)
+
+id
+
+eventId (string)
+
+userId (string uid)
+
+reason (string)
+
+createdAt (timestamp)
+
+status (string: “open” | “reviewed”)
+
+6) notifications (opcional, si montas recordatorios desde backend)
+
+id
+
+userId
+
+eventId
+
+scheduledAt (timestamp)
+
+type (string: “reminder”)
+
+sent (boolean)
