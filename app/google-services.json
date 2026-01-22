@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "827027694023",
+    "project_id": "projecte-events-tgn-8defa",
+    "storage_bucket": "projecte-events-tgn-8defa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:827027694023:android:7a6d042f78a27a0d5eb9e2",
+        "android_client_info": {
+          "package_name": "com.example.tarraco_fest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "827027694023-5jiutom74p92mq1tnhjca9kgarsjf6i0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tarraco_fest",
+            "certificate_hash": "b167d4047e73aee2d30d71cb21aa75ce23032d4f"
+          }
+        },
+        {
+          "client_id": "827027694023-75huqkbifg9o29t2mrklfaesii904igi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYHTS0sKbfCmqeJMwlBC50Xn2DdSANXk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "827027694023-75huqkbifg9o29t2mrklfaesii904igi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

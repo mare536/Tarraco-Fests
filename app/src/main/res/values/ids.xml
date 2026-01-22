@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="etEmail" />
+    <item type="id" name="etPassword" />
+    <item type="id" name="btnLogin" />
+    <item type="id" name="btnRegister" />
+    <item type="id" name="btnGoogle" />
+    <item type="id" name="tvEstado" />
+</resources>
