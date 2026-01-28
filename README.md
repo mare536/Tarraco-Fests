@@ -59,12 +59,5 @@ El desenvolupament seguirà un enfocament **iteratiu i incremental**, dividit en
 4.  Proves (unitàries/funcionals) i validació.
 5.  Documentació i presentació.
 
-## 📂 Estructura del Repositori
-
-* `/src`: Codi font de l'aplicació.
-* `/docs`: Documentació del projecte (requisits, diagrames UML, manual d'usuari).
-* `/assets`: Recursos gràfics i multimèdia.
-* `/tests`: Bateria de proves.
-
 ---
 *Projecte desenvolupat com a part del cicle formatiu de DAM (Desenvolupament d'Aplicacions Multiplataforma).*
