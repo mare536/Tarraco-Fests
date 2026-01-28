@@ -16,8 +16,22 @@
         android:paddingBottom="16dp"/>
 
     <Button
+        android:id="@+id/btnEventos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ver eventos" />
+
+
+    <Button
         android:id="@+id/btnLogout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Cerrar sesión"/>
+
+    <Button
+        android:id="@+id/btnPerfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Perfil" />
+
 </LinearLayout>

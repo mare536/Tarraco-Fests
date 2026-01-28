@@ -13,7 +13,7 @@
         android:theme="@style/Theme.Tarraco_Fest">
         <activity
 
-            android:name=".HomeActivity"
+            android:name=".Activity.HomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,15 +22,17 @@
             </intent-filter>
         </activity>
         <activity
-
-            android:name=".AuthActivity"
+            android:name=".Activity.AuthActivity"
             android:exported="true">
-            <intent-filter>
-
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
+
+        <activity android:name=".Activity.EventosActivity"
+            android:exported="true">
+        </activity>
+        <activity android:name=".Activity.PerfilActivity" />
+
+
+
 
     </application>
 

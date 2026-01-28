@@ -1,4 +1,4 @@
-package com.example.tarraco_fest;
+package com.example.tarraco_fest.Activity;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -16,6 +16,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;

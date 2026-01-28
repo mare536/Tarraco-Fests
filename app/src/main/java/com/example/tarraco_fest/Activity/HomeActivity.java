@@ -1,4 +1,4 @@
-package com.example.tarraco_fest;
+package com.example.tarraco_fest.Activity;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.R;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -29,6 +30,15 @@ public class HomeActivity extends AppCompatActivity {
 
         tvHome = findViewById(R.id.tvHome);
         btnLogout = findViewById(R.id.btnLogout);
+        Button btnEventos = findViewById(R.id.btnEventos);
+        btnEventos.setOnClickListener(v -> {
+            startActivity(new Intent(HomeActivity.this, EventosActivity.class));
+        });
+
+        Button btnPerfil = findViewById(R.id.btnPerfil);
+        btnPerfil.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, PerfilActivity.class))
+        );
 
         btnLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
