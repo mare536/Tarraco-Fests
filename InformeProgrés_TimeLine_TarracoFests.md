@@ -1,45 +1,41 @@
-Informe de Progrés i Línia Temporal del Projecte
-14/01/2026 – Inici del projecte i definició d'estructures
-Detalls tècnics: Sessió de llançament on es van establir les bases metodològiques del projecte. Es van definir els rols de l'equip i es va configurar l'entorn de treball col·laboratiu per garantir una traçabilitat correcta des del primer dia.
+# Informe de Seguiment i Línia Temporal del Projecte: Tarraco Fests
 
-Autoria: Jordan Roig.
+Aquest document detalla l'evolució tècnica i cronològica del projecte, identificant les fites assolides i els responsables de cada tasca.
 
-14/01/2026 – Disseny conceptual i primers mockups de l'App
-Detalls tècnics: Elaboració dels esquemes visuals inicials (wireframes) per definir l'arquitectura d'informació i l'experiència d'usuari (UX). L'objectiu va ser validar el flux de navegació principal abans d'entrar en la fase de desenvolupament.
+---
 
-Autoria: Raúl Silva.
+## 14/01/2026 - Inici del projecte i definició d'estructures
+* **Detalls tècnics:** Sessió de llançament operativa. S'han establert les bases metodològiques del projecte, la jerarquia de rols de l'equip i la configuració inicial de l'entorn de treball col·laboratiu per garantir una traçabilitat correcta del codi i les tasques.
+* **Autoria:** Jordan Roig
 
-14/01/2026 – Identitat visual: Pluja d'idees i disseny de logotip
-Detalls tècnics: Fase d'exploració creativa centrada en el branding. Es van realitzar diverses iteracions de logotips cercant una identitat que transmetés els valors del projecte, prioritzant la llegibilitat i l'escalabilitat en entorns digitals.
+## 14/01/2026 - Disseny conceptual i primers mockups
+* **Detalls tècnics:** Elaboració dels esquemes visuals inicials (*wireframes*) per definir l'arquitectura d'informació i l'experiència d'usuari (UX). L'objectiu ha estat validar el flux de navegació principal abans d'iniciar el desenvolupament de frontend.
+* **Autoria:** Raúl Silva
 
-Autoria: Eric Alessi, Mateo Reyes i Jordan Roig.
+## 14/01/2026 - Identitat visual: Branding i Logotip
+* **Detalls tècnics:** Fase d'exploració creativa i pluja d'idees centrada en la identitat de marca. S'han realitzat diverses iteracions de logotips buscant una estètica moderna i escalable per a diferents resolucions de pantalla.
+* **Autoria:** Eric Alessi, Mateo Reyes i Jordan Roig
 
-21/01/2026 a 22/01/2026 – Refinament d'interfície i detalls del mockup
-Detalls tècnics: Pulit de les pantalles del mockup d'alta fidelitat. Es van ajustar marges, tipografies i components visuals per assegurar la coherència estètica (UI) en totes les seccions de l'aplicació.
+## 21/01/2026 – 22/01/2026 - Refinament d'interfície (UI)
+* **Detalls tècnics:** Pulit d'alta fidelitat de les pantalles del mockup. S'han definit els estils visuals finals, components reutilitzables i la guia d'estils que servirà de base per a la implementació del codi.
+* **Autoria:** Raúl Silva
 
-Autoria: Raúl Silva.
+## 21/01/2026 – 22/01/2026 - Setup del repositori i Auth Social
+* **Detalls tècnics:** Inicialització del projecte de codi (boilerplate) i configuració del repositori. Implementació inicial del SDK de Firebase i configuració de l'autenticació mitjançant Google (OAuth 2.0).
+* **Autoria:** Eric Alessi
 
-21/01/2026 a 22/01/2026 – Establiment del repositori i autenticació social (Google)
-Detalls tècnics: Inicialització del repositori de codi font i configuració de l'estructura base del projecte. S'ha implementat el mòdul d'autenticació inicial mitjançant l'SDK de Firebase per permetre el login social amb Google.
+## 22/01/2026 – 23/01/2026 - Flux d'Autenticació complet i Firestore
+* **Detalls tècnics:** Implementació del flux de *Auth* complet. S'ha integrat el login híbrid (Google + Email/Password) i s'ha configurat la persistència de dades a Cloud Firestore, creant automàticament un document d'usuari a `usuarios/{uid}` en el moment del registre.
+* **Autoria:** Eric Alessi
 
-Autoria: Eric Alessi.
+## 28/01/2026 – 29/01/2026 - Redisseny visual: Glassmorphism
+* **Detalls tècnics:** Actualització del disseny del diàleg de registre cap a una estètica *glass/festival*. S'han implementat variants de disseny per a l'adaptació nativa de la interfície entre els modes clar i fosc (*Light/Dark mode*).
+* **Autoria:** Eric Alessi
 
-22/01/2026 a 23/01/2026 – Flux d'autenticació complet i persistència en Firestore
-Detalls tècnics: Implementació del flux de Auth híbrid (Google i Email/Contrasenya). S'ha configurat la lògica de persistència de dades a Cloud Firestore, creant un document d'usuari a la ruta usuarios/{uid} per emmagatzemar el perfil i les preferències en el moment del registre.
+## 29/01/2026 – 30/01/2026 - Validació i Feedback visual
+* **Detalls tècnics:** Implementació de la lògica de verificació d'email obligatòria. S'han afegit elements de UX per millorar el feedback: efectes de vibració (*shake*) en errors, mètodes `setError` en camps de text i banners informatius d'estat.
+* **Autoria:** Eric Alessi
 
-Autoria: Eric Alessi.
-
-28/01/2026 a 29/01/2026 – Redisseny d'interfície: Estètica "Glassmorphism" i mode fosc
-Detalls tècnics: Actualització visual dels diàlegs de registre aplicant un estil "glass" (efecte de vidre esmerilat) inspirat en estètica de festivals. S'ha implementat la lògica de fulls d'estil adaptatius per donar suport natiu tant al mode clar com al mode fosc (Light/Dark mode).
-
-Autoria: Eric Alessi.
-
-29/01/2026 a 30/01/2026 – Validació de seguretat i feedback d'usuari
-Detalls tècnics: Implementació de la verificació obligatòria de correu electrònic per activar el compte. S'han afegit microinteraccions de feedback visual: animacions de sacsejada (shake) en errors, mètodes setError en els formularis i banners informatius per millorar la comunicació de l'estat del sistema.
-
-Autoria: Eric Alessi.
-
-04/02/2026 a 05/02/2026 – Unificació de comptes i "Account Linking"
-Detalls tècnics: Evolució del sistema d'accés per permetre la vinculació de comptes (Account Linking). Els usuaris que van entrar inicialment amb Google ara poden afegir credencials de correu i contrasenya al mateix perfil, evitant la duplicitat de comptes i millorant la flexibilitat d'accés.
-
-Autoria: Eric Alessi.
+## 04/02/2026 – 05/02/2026 - Implementació de Linking de comptes
+* **Detalls tècnics:** Evolució del flux de "Google-only" cap a un sistema multi-accés. S'ha desenvolupat la funcionalitat d'*Account Linking*, permetent als usuaris vincular credencials de correu/contrasenya a un perfil ja existent creat via Google.
+* **Autoria:** Eric Alessi
