@@ -19,50 +19,67 @@ import com.example.tarraco_fest.R;
 
 public class LandingActivity extends AppCompatActivity {
 
+    private static final long DELAY_ANTES_BLUR = 900;   // tiempo para ver el fondo limpio
+    private static final long DURACION_BLUR    = 1100;  // duración del blur
+    private static final long DELAY_UI_EXTRA   = 120;   // extra para que el blur “asiente”
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Carga la vista de la pantalla "landing"
         setContentView(R.layout.activity_landing);
 
-        // Referencias a vistas para animación (fondo normal + blur, overlay, logo y botones)
         ImageView bgNormal = findViewById(R.id.imgBgNormal);
         ImageView bgBlur   = findViewById(R.id.imgBgBlur);
         View overlay       = findViewById(R.id.overlay);
         ImageView logo     = findViewById(R.id.imgLogo);
+
+        View card          = findViewById(R.id.cardLanding);   // <-- nuevo
         LinearLayout btns  = findViewById(R.id.btnContainer);
 
-        // Botones del landing (solo login por Google o Email)
         Button btnGoogle = findViewById(R.id.btnGoogleLanding);
         Button btnEmail  = findViewById(R.id.btnEmailLanding);
 
-        // Email -> abre AuthActivity (allí se hace login/registro)
         btnEmail.setOnClickListener(v ->
                 startActivity(new Intent(this, AuthActivity.class))
         );
 
-        // Google -> abre AuthActivity y le indica que lance Google automáticamente
         btnGoogle.setOnClickListener(v -> {
             Intent i = new Intent(this, AuthActivity.class);
             i.putExtra("AUTO_GOOGLE", true);
             startActivity(i);
         });
 
+        // ===== ESTADO INICIAL (para que NO tape la imagen) =====
+        bgBlur.setAlpha(0f);
+        overlay.setAlpha(0f);
 
+        logo.setAlpha(0f);
+        logo.setTranslationY(18f);
 
-        // Animación de entrada:
-        // - primero se ve el fondo normal
-        // - luego aparece el blur + overlay + contenido (logo y botones)
+        // Oculta la CARD entera (no solo los botones)
+        card.setAlpha(0f);
+        card.setTranslationY(26f);
+
+        // (opcional) ocultar el contenido interno para un fade más fino
+        btns.setAlpha(0f);
+        btns.setTranslationY(10f);
+
+        // ===== SECUENCIA =====
+        // 1) ver fondo limpio
+        // 2) blur
+        // 3) aparece UI (card+logo+botones)
         bgNormal.postDelayed(() -> {
-            animarBlur(bgNormal, bgBlur);
-            animarUI(overlay, logo, btns);
-        }, 180);
+
+            animarBlur(bgNormal, bgBlur, DURACION_BLUR);
+
+            bgNormal.postDelayed(() -> {
+                animarUI(overlay, logo, card, btns);
+            }, DURACION_BLUR + DELAY_UI_EXTRA);
+
+        }, DELAY_ANTES_BLUR);
     }
 
-    /**
-     * Anima la aparición del overlay, logo y contenedor de botones.
-     */
-    private void animarUI(View overlay, View logo, View btns) {
+    private void animarUI(View overlay, View logo, View card, View btns) {
         overlay.animate()
                 .alpha(1f)
                 .setDuration(450)
@@ -70,35 +87,37 @@ public class LandingActivity extends AppCompatActivity {
                 .start();
 
         logo.animate()
-                .alpha(1f).translationY(0f)
+                .alpha(1f)
+                .translationY(0f)
                 .setDuration(550)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        card.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(520)
                 .setInterpolator(new DecelerateInterpolator())
                 .start();
 
         btns.animate()
-                .alpha(1f).translationY(0f)
-                .setStartDelay(80)
-                .setDuration(550)
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(120)
+                .setDuration(450)
                 .setInterpolator(new DecelerateInterpolator())
                 .start();
     }
 
-    /**
-     * Efecto de blur:
-     * - Siempre hace crossfade a una imagen ya borrosa (imgBgBlur).
-     * - Si Android 12+ (API 31), además aplica blur real animado a imgBgNormal.
-     */
-    private void animarBlur(ImageView bgNormal, ImageView bgBlur) {
-        // Fallback universal: crossfade a la imagen borrosa
+    private void animarBlur(ImageView bgNormal, ImageView bgBlur, long duracion) {
         ObjectAnimator fadeBlur = ObjectAnimator.ofFloat(bgBlur, "alpha", 0f, 1f);
-        fadeBlur.setDuration(650);
+        fadeBlur.setDuration(duracion);
         fadeBlur.setInterpolator(new DecelerateInterpolator());
         fadeBlur.start();
 
-        // Blur real solo disponible desde Android 12 (S)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ValueAnimator va = ValueAnimator.ofFloat(0f, 24f);
-            va.setDuration(650);
+            va.setDuration(duracion);
             va.setInterpolator(new DecelerateInterpolator());
             va.addUpdateListener(anim -> {
                 float r = (float) anim.getAnimatedValue();

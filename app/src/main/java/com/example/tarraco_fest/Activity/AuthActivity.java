@@ -12,12 +12,14 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.tarraco_fest.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -25,7 +27,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthCredential;
@@ -45,6 +46,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * AuthActivity:
+ * - Login email/contraseña (con verificación obligatoria del email)
+ * - Registro email/contraseña (dialog_registro.xml + envío verificación)
+ * - Login Google
+ * - Caso especial: si el email pertenece a una cuenta Google sin contraseña,
+ *   permite "añadir contraseña" (sin tocar la contraseña de Google) mediante linking.
+ */
 public class AuthActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
@@ -59,15 +68,16 @@ public class AuthActivity extends AppCompatActivity {
     private static final int ESTADO_OK = 1;
     private static final int ESTADO_ERROR = 2;
 
-    // Flujo "crear contraseña para cuenta Google"
+    // Flujo "añadir contraseña" a una cuenta Google
     private boolean pendingLinkPassword = false;
     private String pendingLinkEmail = null;
 
+    // ============ GOOGLE RESULT ============
     private final ActivityResultLauncher<Intent> googleLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 try {
                     if (result.getData() == null) {
-                        setEstado("Google: cancelado", ESTADO_INFO, false);
+                        setEstado("Acción cancelada.", ESTADO_INFO);
                         return;
                     }
 
@@ -76,7 +86,7 @@ public class AuthActivity extends AppCompatActivity {
                             .getResult(ApiException.class);
 
                     if (account == null) {
-                        setEstado("Google: cancelado", ESTADO_INFO, false);
+                        setEstado("Acción cancelada.", ESTADO_INFO);
                         return;
                     }
 
@@ -84,22 +94,28 @@ public class AuthActivity extends AppCompatActivity {
 
                     auth.signInWithCredential(cred)
                             .addOnSuccessListener(r -> onLoginOkGoogle())
-                            .addOnFailureListener(e -> setEstado("Google error: " + e.getMessage(), ESTADO_ERROR, true));
+                            .addOnFailureListener(e -> {
+                                logError("Google signInWithCredential", e);
+                                setEstado("No se pudo verificar con Google. Inténtalo de nuevo.", ESTADO_ERROR);
+                            });
 
                 } catch (ApiException e) {
-                    setEstado("Google error (status): " + e.getStatusCode(), ESTADO_ERROR, true);
+                    logError("Google ApiException status=" + e.getStatusCode(), e);
+                    setEstado("No se pudo abrir Google. Inténtalo de nuevo.", ESTADO_ERROR);
                 }
             });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Si NO quieres forzar logout siempre, comenta esta línea
-        // FirebaseAuth.getInstance().signOut();
-
         setContentView(R.layout.activity_auth);
 
+        View root = findViewById(R.id.rootAuth);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(sys.left, sys.top, sys.right, sys.bottom);
+            return insets;
+        });
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
@@ -111,11 +127,11 @@ public class AuthActivity extends AppCompatActivity {
         Button btnRegister = findViewById(R.id.btnRegister);
         Button btnGoogle = findViewById(R.id.btnGoogle);
 
-        // Animación UI (tuya)
+        // Animación UI (la tuya)
         ImageView bgNormal = findViewById(R.id.imgBgNormal);
-        ImageView bgBlur = findViewById(R.id.imgBgBlur);
-        View overlay = findViewById(R.id.overlay);
-        View content = findViewById(R.id.authContent);
+        ImageView bgBlur   = findViewById(R.id.imgBgBlur);
+        View overlay       = findViewById(R.id.overlay);
+        View content       = findViewById(R.id.authContent);
 
         bgBlur.setAlpha(0f);
         overlay.setAlpha(0f);
@@ -135,21 +151,14 @@ public class AuthActivity extends AppCompatActivity {
         googleClient = GoogleSignIn.getClient(this, gso);
 
         btnLogin.setOnClickListener(v -> loginEmail());
-        btnRegister.setOnClickListener(v -> mostrarDialogRegistroEmail(null));
+        btnRegister.setOnClickListener(v -> mostrarDialogRegistroEmail());
         btnGoogle.setOnClickListener(v -> loginGoogle());
 
-        // Limpia feedback al escribir
-        etEmail.addTextChangedListener(new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            public void onTextChanged(CharSequence s, int start, int before, int count) { limpiarFeedbackLogin(); }
-            public void afterTextChanged(Editable s) {}
-        });
-        etPassword.addTextChangedListener(new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            public void onTextChanged(CharSequence s, int start, int before, int count) { limpiarFeedbackLogin(); }
-            public void afterTextChanged(Editable s) {}
-        });
+        // Limpieza de feedback al escribir
+        etEmail.addTextChangedListener(simpleWatcher());
+        etPassword.addTextChangedListener(simpleWatcher());
 
+        // Si venimos desde Landing para login con Google automático
         boolean autoGoogle = getIntent().getBooleanExtra("AUTO_GOOGLE", false);
         if (autoGoogle) loginGoogle();
     }
@@ -164,9 +173,9 @@ public class AuthActivity extends AppCompatActivity {
         FirebaseUser u = auth.getCurrentUser();
         if (u == null) return;
 
-        // Si entra por email/password y no verificado -> no entrar
+        // Si es login por email/contraseña y no está verificado -> no entrar
         if (esProveedorPassword(u) && !u.isEmailVerified()) {
-            setEstado("Cuenta no verificada. Revisa tu correo.", ESTADO_ERROR, false);
+            setEstado("Verifica tu correo para continuar.", ESTADO_ERROR);
             auth.signOut();
             return;
         }
@@ -174,172 +183,113 @@ public class AuthActivity extends AppCompatActivity {
         goHome();
     }
 
-    // ===================== LOGIN EMAIL =====================
+    // ====================== LOGIN EMAIL ======================
 
     private void loginEmail() {
         limpiarFeedbackLogin();
 
         String email = etEmail.getText().toString().trim();
-        String pass = etPassword.getText().toString().trim();
+        String pass  = etPassword.getText().toString().trim();
 
         if (email.isEmpty() || pass.isEmpty()) {
             if (email.isEmpty()) { etEmail.setError("Introduce el email"); shake(etEmail); }
-            if (pass.isEmpty()) { etPassword.setError("Introduce la contraseña"); shake(etPassword); }
-            setEstado("Rellena email y contraseña", ESTADO_ERROR, false);
+            if (pass.isEmpty())  { etPassword.setError("Introduce la contraseña"); shake(etPassword); }
+            setEstado("Rellena email y contraseña.", ESTADO_ERROR);
             return;
         }
 
-        setEstado("Iniciando sesión…", ESTADO_INFO, false);
+        setEstado("Iniciando sesión…", ESTADO_INFO);
 
         auth.signInWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(r -> {
                     FirebaseUser u = auth.getCurrentUser();
                     if (u == null) {
-                        setEstado("Login error: user null", ESTADO_ERROR, true);
+                        setEstado("Error al iniciar sesión. Inténtalo de nuevo.", ESTADO_ERROR);
                         return;
                     }
 
                     u.reload().addOnSuccessListener(v -> {
                         if (esProveedorPassword(u) && !u.isEmailVerified()) {
-                            setEstado("Cuenta no verificada. Revisa tu correo (puedes reenviarlo).", ESTADO_ERROR, false);
                             auth.signOut();
+                            setEstado("Cuenta no verificada. Revisa tu correo.", ESTADO_ERROR);
                             mostrarDialogoNoVerificado(email, pass);
                             return;
                         }
-                        upsertUsuario(false, true, "email");
-                    }).addOnFailureListener(e -> {
-                        if (esProveedorPassword(u) && !u.isEmailVerified()) {
-                            setEstado("Cuenta no verificada. Revisa tu correo (puedes reenviarlo).", ESTADO_ERROR, false);
-                            auth.signOut();
-                            mostrarDialogoNoVerificado(email, pass);
-                            return;
-                        }
+
                         upsertUsuario(false, true, "email");
                     });
                 })
-                .addOnFailureListener(e -> manejarErrorLoginEmail(e, email));
+                .addOnFailureListener(e -> manejarErrorLoginEmail(e, email, pass));
     }
 
-    private void manejarErrorLoginEmail(Exception e, String email) {
-        String code = null;
-        if (e instanceof FirebaseAuthException) code = ((FirebaseAuthException) e).getErrorCode();
+    private void manejarErrorLoginEmail(Exception e, String email, String pass) {
+        String code = (e instanceof FirebaseAuthException) ? ((FirebaseAuthException) e).getErrorCode() : null;
 
+        // Email inválido
         if ("ERROR_INVALID_EMAIL".equals(code)) {
             etEmail.setError("Email no válido");
-            etEmail.requestFocus();
             shake(etEmail);
-            setEstado("Email no válido", ESTADO_ERROR, false);
+            setEstado("Email no válido.", ESTADO_ERROR);
             return;
         }
 
-        // En password provider, Google-only suele llegar como USER_NOT_FOUND (o credenciales inválidas)
-        if (e instanceof FirebaseAuthInvalidUserException || "ERROR_USER_NOT_FOUND".equals(code)
-                || e instanceof FirebaseAuthInvalidCredentialsException
+        // Contraseña incorrecta
+        if (e instanceof FirebaseAuthInvalidCredentialsException
                 || "ERROR_WRONG_PASSWORD".equals(code)
                 || "ERROR_INVALID_CREDENTIAL".equals(code)
                 || "ERROR_INVALID_LOGIN_CREDENTIALS".equals(code)) {
 
-            // Aquí decidimos: ¿tiene password? -> "contraseña incorrecta"
-            // ¿es Google-only? -> ofrecer crear contraseña (verificando con Google)
-            // ¿no se puede saber? -> mostrar opciones sin afirmar "no existe"
-            resolverCasoPasswordGoogleONoSePuedeSaber(email);
-            return;
-        }
+            // Si el proyecto permite obtener métodos, podemos afinar un poco:
+            auth.fetchSignInMethodsForEmail(email)
+                    .addOnSuccessListener(res -> {
+                        List<String> m = res.getSignInMethods();
+                        boolean tienePassword = m != null && m.contains("password");
+                        boolean tieneGoogle   = m != null && m.contains("google.com");
 
-        setEstado("Login error: " + e.getMessage(), ESTADO_ERROR, true);
-    }
+                        if (tienePassword) {
+                            etPassword.setError("Contraseña incorrecta");
+                            shake(etPassword);
+                            setEstado("Contraseña incorrecta.", ESTADO_ERROR);
+                            return;
+                        }
 
-    private void resolverCasoPasswordGoogleONoSePuedeSaber(String email) {
-        auth.fetchSignInMethodsForEmail(email)
-                .addOnSuccessListener(res -> {
-                    List<String> m = res.getSignInMethods();
-                    boolean tieneGoogle = m != null && m.contains("google.com");
-                    boolean tienePassword = m != null && m.contains("password");
+                        // Si parece Google-only (o es ambiguo), guiamos a verificación Google para añadir contraseña
+                        if (tieneGoogle && !tienePassword) {
+                            iniciarFlujoCrearPassword(email);
+                            return;
+                        }
 
-                    if (tienePassword) {
-                        marcarContrasenaIncorrecta();
-                        return;
-                    }
-
-                    if (tieneGoogle && !tienePassword) {
-                        // Existe como Google-only
+                        // Ambiguo -> no afirmamos "no existe": damos opción de verificar con Google
                         iniciarFlujoCrearPassword(email);
-                        return;
-                    }
+                    })
+                    .addOnFailureListener(x -> iniciarFlujoCrearPassword(email));
 
-                    // Vacío o no concluyente (en algunos proyectos puede ser ambiguo)
-                    iniciarFlujoCrearPassword(email);
-                })
-                .addOnFailureListener(x -> {
-                    // Si no podemos consultar: no afirmamos "no existe"
-                    iniciarFlujoCrearPassword(email);
-                });
-    }
-
-    private void marcarContrasenaIncorrecta() {
-        etPassword.setError("Contraseña incorrecta");
-        etPassword.requestFocus();
-        shake(etPassword);
-        setEstado("Contraseña incorrecta", ESTADO_ERROR, false);
-    }
-
-    // ===================== DIALOGO BONITO (layout propio) =====================
-
-    private void iniciarFlujoCrearPassword(String email) {
-        // feedback visual
-        etEmail.setError("Ese correo está asociado a Google");
-        etEmail.requestFocus();
-        shake(etEmail);
-        setEstado("Para crear contraseña primero hay que verificar con Google (no cambia tu contraseña de Google).", ESTADO_ERROR, false);
-
-        pendingLinkEmail = email;
-        pendingLinkPassword = true;
-
-        FirebaseUser u = auth.getCurrentUser();
-
-        // Si ya está logueado con ESA cuenta, abrimos directamente el XML de contraseña
-        if (u != null && u.getEmail() != null && u.getEmail().equalsIgnoreCase(email) && esProveedorGoogle(u)) {
-            mostrarDialogCrearPasswordParaCuentaGoogle(email); // <-- usa dialog_crear_password.xml
             return;
         }
 
-        // Si no hay sesión, hay que pasar por Google una vez (verificación)
-        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle("Crear contraseña")
-                .setMessage("Necesitamos que entres con Google una vez para verificar que eres el dueño del correo.\n\n"
-                        + "Esto NO cambia tu contraseña de Google, solo añade una contraseña en Firebase.")
-                .setPositiveButton("Continuar con Google", (d, w) -> loginGoogle())
-                .setNegativeButton("Cancelar", (d, w) -> {
-                    pendingLinkEmail = null;
-                    pendingLinkPassword = false;
-                })
-                .show();
-    }
-
-    private boolean esProveedorGoogle(FirebaseUser u) {
-        if (u == null) return false;
-        for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
-            if ("google.com".equals(info.getProviderId())) return true;
+        // Usuario no encontrado (con email+pass puede ocurrir incluso si existe como Google-only)
+        if (e instanceof FirebaseAuthInvalidUserException || "ERROR_USER_NOT_FOUND".equals(code)) {
+            // No afirmamos "no existe": guiamos a verificación Google para añadir contraseña
+            iniciarFlujoCrearPassword(email);
+            return;
         }
-        return false;
+
+        logError("loginEmail failure code=" + code, e);
+        setEstado("No se pudo iniciar sesión. Inténtalo de nuevo.", ESTADO_ERROR);
     }
 
+    // ====================== REGISTRO EMAIL (DIALOG) ======================
 
-    // ===================== REGISTRO EMAIL =====================
-
-    private void mostrarDialogRegistroEmail(String emailPrefill) {
+    private void mostrarDialogRegistroEmail() {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_registro, null);
 
         EditText etEmailReg = view.findViewById(R.id.etEmailReg);
-        EditText etP1 = view.findViewById(R.id.etPassReg);
-        EditText etP2 = view.findViewById(R.id.etPassReg2);
-        CheckBox cb = view.findViewById(R.id.cbTerminos);
-        TextView tvError = view.findViewById(R.id.tvErrorRegistro);
-
-        if (emailPrefill != null && !emailPrefill.isEmpty()) etEmailReg.setText(emailPrefill);
+        EditText etP1       = view.findViewById(R.id.etPassReg);
+        EditText etP2       = view.findViewById(R.id.etPassReg2);
+        CheckBox cb         = view.findViewById(R.id.cbTerminos);
+        TextView tvError    = view.findViewById(R.id.tvErrorRegistro);
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setMessage("Al crear la cuenta te enviaremos un correo para verificar tu email.")
                 .setView(view)
                 .setNegativeButton("Cancelar", (d, w) -> d.dismiss())
                 .setPositiveButton("Crear cuenta", null)
@@ -357,48 +307,53 @@ public class AuthActivity extends AppCompatActivity {
             if (email.isEmpty() || p1.isEmpty() || p2.isEmpty()) {
                 tvError.setText("Rellena email y contraseña");
                 tvError.setVisibility(View.VISIBLE);
-                setEstado("Faltan campos en el registro", ESTADO_ERROR, false);
                 return;
             }
             if (p1.length() < 6) {
                 tvError.setText("Contraseña mínimo 6");
                 tvError.setVisibility(View.VISIBLE);
-                setEstado("Contraseña demasiado corta", ESTADO_ERROR, false);
                 return;
             }
             if (!p1.equals(p2)) {
                 tvError.setText("Las contraseñas no coinciden");
                 tvError.setVisibility(View.VISIBLE);
-                setEstado("Las contraseñas no coinciden", ESTADO_ERROR, false);
                 return;
             }
             if (!cb.isChecked()) {
                 tvError.setText("Debes aceptar los términos");
                 tvError.setVisibility(View.VISIBLE);
-                setEstado("Debes aceptar los términos", ESTADO_ERROR, false);
                 return;
             }
 
-            setEstado("Creando cuenta…", ESTADO_INFO, false);
+            setEstado("Creando cuenta…", ESTADO_INFO);
 
             auth.createUserWithEmailAndPassword(email, p1)
                     .addOnSuccessListener(r -> {
                         FirebaseUser user = r.getUser();
                         if (user == null) {
-                            setEstado("Registro error: user null", ESTADO_ERROR, true);
+                            setEstado("Error al crear la cuenta.", ESTADO_ERROR);
                             return;
                         }
 
+                        // Guardar perfil (no entrar aún)
                         upsertUsuario(true, false, "email");
 
+                        // Enviar verificación
                         user.sendEmailVerification()
                                 .addOnSuccessListener(vv -> {
-                                    prepararLoginTrasRegistro(email);
+                                    // Preparar login y evitar confusión visual
+                                    etEmail.setText(email);
+                                    etPassword.setText("");
+                                    limpiarFeedbackLogin();
+                                    setEstado("Cuenta creada. Revisa tu correo y verifica la cuenta.", ESTADO_OK);
+
+                                    // Forzar que verifique antes de entrar
                                     auth.signOut();
                                     dialog.dismiss();
                                 })
                                 .addOnFailureListener(ex -> {
-                                    setEstado("No se pudo enviar verificación: " + ex.getMessage(), ESTADO_ERROR, true);
+                                    logError("sendEmailVerification", ex);
+                                    setEstado("No se pudo enviar el correo de verificación.", ESTADO_ERROR);
                                     auth.signOut();
                                     dialog.dismiss();
                                 });
@@ -407,55 +362,56 @@ public class AuthActivity extends AppCompatActivity {
                         if (ex instanceof FirebaseAuthUserCollisionException) {
                             tvError.setText("Ese email ya está registrado");
                             tvError.setVisibility(View.VISIBLE);
-                            setEstado("Ese email ya está registrado. Inicia sesión.", ESTADO_ERROR, false);
                             return;
                         }
-                        setEstado("Registro error: " + ex.getMessage(), ESTADO_ERROR, true);
+                        logError("createUserWithEmailAndPassword", ex);
+                        tvError.setText("No se pudo crear la cuenta");
+                        tvError.setVisibility(View.VISIBLE);
                     });
         });
     }
 
-    private void prepararLoginTrasRegistro(String email) {
-        etEmail.setText(email);
-        etPassword.setText("");
-        limpiarFeedbackLogin();
-        setEstado("Cuenta creada. Verifica el email y luego inicia sesión.", ESTADO_OK, false);
-    }
-
-    // ===================== NO VERIFICADO =====================
+    // ====================== NO VERIFICADO ======================
 
     private void mostrarDialogoNoVerificado(String email, String pass) {
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
                 .setTitle("Cuenta no verificada")
-                .setMessage("Tienes que verificar tu correo para entrar.\n\n¿Quieres reenviar el correo de verificación?")
+                .setMessage("Para continuar, abre tu correo y verifica la cuenta.\n\n¿Quieres reenviar el correo de verificación?")
                 .setPositiveButton("Reenviar", (d, w) -> reenviarVerificacion(email, pass))
                 .setNegativeButton("Cerrar", null)
                 .show();
     }
 
     private void reenviarVerificacion(String email, String pass) {
-        setEstado("Reenviando verificación…", ESTADO_INFO, false);
+        setEstado("Reenviando correo…", ESTADO_INFO);
 
         auth.signInWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(r -> {
                     FirebaseUser user = r.getUser();
                     if (user == null) {
-                        setEstado("Error reenviando: user null", ESTADO_ERROR, true);
+                        setEstado("No se pudo reenviar el correo.", ESTADO_ERROR);
                         return;
                     }
 
                     user.sendEmailVerification()
-                            .addOnSuccessListener(v -> setEstado("Correo reenviado. Revisa Bandeja/Spam.", ESTADO_OK, false))
-                            .addOnFailureListener(ex -> setEstado("Error reenviando: " + ex.getMessage(), ESTADO_ERROR, true));
+                            .addOnSuccessListener(v -> setEstado("Correo reenviado. Revisa bandeja y spam.", ESTADO_OK))
+                            .addOnFailureListener(e -> {
+                                logError("reenviar verificación", e);
+                                setEstado("No se pudo reenviar el correo.", ESTADO_ERROR);
+                            });
 
                     auth.signOut();
                 })
-                .addOnFailureListener(ex -> setEstado("No se pudo reenviar: " + ex.getMessage(), ESTADO_ERROR, true));
+                .addOnFailureListener(e -> {
+                    logError("signIn para reenviar verificación", e);
+                    setEstado("No se pudo reenviar el correo.", ESTADO_ERROR);
+                });
     }
 
-    // ===================== GOOGLE LOGIN =====================
+    // ====================== GOOGLE LOGIN ======================
 
     private void loginGoogle() {
+        // Para forzar selector siempre (si no quieres, elimina este signOut)
         googleClient.signOut().addOnCompleteListener(t -> {
             Intent intent = googleClient.getSignInIntent();
             googleLauncher.launch(intent);
@@ -465,30 +421,62 @@ public class AuthActivity extends AppCompatActivity {
     private void onLoginOkGoogle() {
         FirebaseUser u = auth.getCurrentUser();
 
-        // Si estamos en flujo "crear contraseña"
+        // Si venimos del flujo "añadir contraseña"
         if (pendingLinkPassword && pendingLinkEmail != null) {
-
-            // Seguridad UX: si eligió otra cuenta Google distinta, cancelamos
+            // Seguridad: si eligió otra cuenta distinta, cancelamos
             if (u == null || u.getEmail() == null || !u.getEmail().equalsIgnoreCase(pendingLinkEmail)) {
-                setEstado("Has elegido otra cuenta Google. Vuelve a intentarlo.", ESTADO_ERROR, false);
+                setEstado("Has elegido otra cuenta. Vuelve a intentarlo.", ESTADO_ERROR);
                 pendingLinkEmail = null;
                 pendingLinkPassword = false;
                 auth.signOut();
                 return;
             }
 
-            // Misma cuenta -> abrimos el XML de crear contraseña
-            mostrarDialogCrearPasswordParaCuentaGoogle(pendingLinkEmail);
+            // Abrimos directamente el XML de crear contraseña
+            mostrarDialogCrearPassword(pendingLinkEmail);
             return;
         }
 
-        setEstado("Login Google OK", ESTADO_OK, false);
+        setEstado("Acceso correcto.", ESTADO_OK);
         upsertUsuario(false, true, "google");
     }
 
-    // ===================== CREAR PASSWORD (Firebase) =====================
+    // ====================== AÑADIR CONTRASEÑA (SIN MENCIONAR TECNOLOGÍA) ======================
 
-    private void mostrarDialogCrearPasswordParaCuentaGoogle(String email) {
+    /**
+     * Flujo "Añadir contraseña":
+     * - Si ya estás logueado con esa cuenta de Google: abre directamente el diálogo de contraseña.
+     * - Si no: pide "verificación con Google" (solo para confirmar la cuenta) y luego abre el diálogo.
+     */
+    private void iniciarFlujoCrearPassword(String email) {
+        // Feedback visual
+        etEmail.setError("No se puede iniciar con contraseña con este correo");
+        shake(etEmail);
+
+        pendingLinkEmail = email;
+        pendingLinkPassword = true;
+
+        FirebaseUser u = auth.getCurrentUser();
+        if (u != null && u.getEmail() != null
+                && u.getEmail().equalsIgnoreCase(email)
+                && esProveedorGoogle(u)) {
+            // Ya está confirmado con Google -> abre directamente el diálogo de contraseña
+            mostrarDialogCrearPassword(email);
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle("Confirmación necesaria")
+                .setMessage("Para crear una nueva contraseña necesitamos que confirmes tu cuenta de Google.")
+                .setPositiveButton("Confirmar con Google", (d, w) -> loginGoogle())
+                .setNegativeButton("Cancelar", (d, w) -> {
+                    pendingLinkEmail = null;
+                    pendingLinkPassword = false;
+                })
+                .show();
+    }
+
+    private void mostrarDialogCrearPassword(String email) {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_crear_password, null);
 
         EditText etP1 = view.findViewById(R.id.etPass1);
@@ -497,22 +485,18 @@ public class AuthActivity extends AppCompatActivity {
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
                 .setTitle("Crear contraseña")
-                .setMessage("Esto NO cambia tu contraseña de Google.\nSolo añade una contraseña en Firebase para entrar también con email + contraseña.")
+                .setMessage("Crea una contraseña para poder iniciar sesión con email y contraseña.")
                 .setView(view)
                 .setNegativeButton("Cancelar", (d, w) -> {
                     pendingLinkEmail = null;
                     pendingLinkPassword = false;
                     d.dismiss();
-                    upsertUsuario(false, true, "google");
+                    if (auth.getCurrentUser() != null) upsertUsuario(false, true, "google");
                 })
                 .setPositiveButton("Guardar", null)
                 .create();
 
         dialog.show();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_dialog_glass);
-        }
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String p1 = etP1.getText().toString().trim();
@@ -531,14 +515,14 @@ public class AuthActivity extends AppCompatActivity {
                 return;
             }
 
-            linkPasswordAlUsuarioActual(email, p1, dialog);
+            linkPasswordAlUsuarioActual(email, p1, dialog, tvError);
         });
     }
 
-    private void linkPasswordAlUsuarioActual(String email, String password, AlertDialog dialog) {
+    private void linkPasswordAlUsuarioActual(String email, String password, AlertDialog dialog, TextView tvError) {
         FirebaseUser u = auth.getCurrentUser();
         if (u == null) {
-            setEstado("Error: no hay sesión", ESTADO_ERROR, true);
+            setEstado("No se pudo completar la acción. Inténtalo de nuevo.", ESTADO_ERROR);
             return;
         }
 
@@ -549,23 +533,31 @@ public class AuthActivity extends AppCompatActivity {
                     pendingLinkEmail = null;
                     pendingLinkPassword = false;
 
-                    setEstado("Contraseña creada. Ya puedes entrar con email.", ESTADO_OK, false);
+                    setEstado("Contraseña creada. Ya puedes entrar con email.", ESTADO_OK);
                     dialog.dismiss();
 
-                    // Sigues logueado con Google, pero ahora ya tiene provider password vinculado
+                    // Sigues logueado con Google, pero ahora también tienes email+contraseña
                     upsertUsuario(false, true, "google");
                 })
                 .addOnFailureListener(e -> {
-                    setEstado("No se pudo crear contraseña: " + e.getMessage(), ESTADO_ERROR, true);
+                    // Si ya tenía contraseña vinculada, damos mensaje claro
+                    if (e instanceof FirebaseAuthUserCollisionException) {
+                        tvError.setText("Ya existe una cuenta con ese correo.");
+                        tvError.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                    logError("linkWithCredential", e);
+                    tvError.setText("No se pudo guardar la contraseña");
+                    tvError.setVisibility(View.VISIBLE);
                 });
     }
 
-    // ===================== FIRESTORE USUARIOS =====================
+    // ====================== FIRESTORE (usuarios/{uid}) ======================
 
     private void upsertUsuario(boolean aceptaTerminosEnEstePaso, boolean irHome, String metodoLogin) {
         FirebaseUser u = auth.getCurrentUser();
         if (u == null) {
-            setEstado("Error: usuario null", ESTADO_ERROR, true);
+            setEstado("Error de sesión. Vuelve a intentarlo.", ESTADO_ERROR);
             return;
         }
 
@@ -575,13 +567,13 @@ public class AuthActivity extends AppCompatActivity {
             if ("password".equals(info.getProviderId())) hasPassword = true;
         }
 
-        List<String> metodos = new ArrayList<>();
-        if (hasGoogle) metodos.add("google");
-        if (hasPassword) metodos.add("email");
+        List<String> metodosVinculados = new ArrayList<>();
+        if (hasGoogle) metodosVinculados.add("google");
+        if (hasPassword) metodosVinculados.add("email");
 
         Map<String, Object> data = new HashMap<>();
-        data.put("metodoAuth", metodoLogin);       // método de ESTA sesión: "google" / "email"
-        data.put("metodosVinculados", metodos);    // métodos asociados reales
+        data.put("metodoAuth", metodoLogin);            // método de ESTA sesión
+        data.put("metodosVinculados", metodosVinculados);
         data.put("nombreMostrado", u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
         data.put("email", u.getEmail() != null ? u.getEmail() : "");
         data.put("rol", "usuario");
@@ -601,19 +593,20 @@ public class AuthActivity extends AppCompatActivity {
                     db.collection("usuarios").document(uid)
                             .set(data, SetOptions.merge())
                             .addOnSuccessListener(v -> {
-                                if (irHome) {
-                                    setEstado("Acceso correcto", ESTADO_OK, false);
-                                    goHome();
-                                } else {
-                                    setEstado("Cuenta creada. Falta verificar el email.", ESTADO_INFO, false);
-                                }
+                                if (irHome) goHome();
                             })
-                            .addOnFailureListener(e -> setEstado("Firestore usuarios error: " + e.getMessage(), ESTADO_ERROR, true));
+                            .addOnFailureListener(e -> {
+                                logError("Firestore set usuarios/{uid}", e);
+                                setEstado("No se pudo guardar el perfil.", ESTADO_ERROR);
+                            });
                 })
-                .addOnFailureListener(e -> setEstado("Error leyendo usuarios: " + e.getMessage(), ESTADO_ERROR, true));
+                .addOnFailureListener(e -> {
+                    logError("Firestore get usuarios/{uid}", e);
+                    setEstado("No se pudo guardar el perfil.", ESTADO_ERROR);
+                });
     }
 
-    // ===================== UTIL =====================
+    // ====================== UTIL ======================
 
     private void goHome() {
         startActivity(new Intent(this, HomeActivity.class));
@@ -626,6 +619,14 @@ public class AuthActivity extends AppCompatActivity {
         if (etPassword != null) etPassword.setError(null);
     }
 
+    private TextWatcher simpleWatcher() {
+        return new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) { limpiarFeedbackLogin(); }
+            public void afterTextChanged(Editable s) {}
+        };
+    }
+
     private boolean esProveedorPassword(FirebaseUser u) {
         if (u == null) return false;
         for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
@@ -634,8 +635,17 @@ public class AuthActivity extends AppCompatActivity {
         return false;
     }
 
-    private void setEstado(String msg, int tipo, boolean showToast) {
-        Log.e("AUTH_UI", msg);
+    private boolean esProveedorGoogle(FirebaseUser u) {
+        if (u == null) return false;
+        for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
+            if ("google.com".equals(info.getProviderId())) return true;
+        }
+        return false;
+    }
+
+    private void setEstado(String msg, int tipo) {
+        Log.d("AUTH_UI", msg);
+
         if (tvEstado == null) return;
 
         tvEstado.setVisibility(View.VISIBLE);
@@ -643,7 +653,6 @@ public class AuthActivity extends AppCompatActivity {
         if (tipo == ESTADO_ERROR) {
             tvEstado.setBackgroundResource(R.drawable.bg_estado_error);
             tvEstado.setText("⚠️ " + msg);
-            if (showToast) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         } else if (tipo == ESTADO_OK) {
             tvEstado.setBackgroundResource(R.drawable.bg_estado_ok);
             tvEstado.setText("✅ " + msg);
@@ -668,5 +677,9 @@ public class AuthActivity extends AppCompatActivity {
                         )
                 )
         );
+    }
+
+    private void logError(String tag, Exception e) {
+        Log.e("AUTH_DEBUG", tag + " -> " + (e != null ? e.getMessage() : "null"), e);
     }
 }

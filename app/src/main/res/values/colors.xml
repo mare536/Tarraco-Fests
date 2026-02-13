@@ -23,5 +23,7 @@
     <color name="dialog_divider">#22FFFFFF</color>
     <color name="dialog_text">#1A1A1A</color>
     <color name="dialog_hint">#66000000</color>
+    <color name="tf_orange">#FF8A2B</color>
+    <color name="landing_card_surface">#CCFFFFFF</color>
 
 </resources>
