@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -55,9 +56,9 @@ public class PerfilActivity extends AppCompatActivity {
         if (user.getDisplayName() != null) etNombre.setText(user.getDisplayName());
 
         // (Opcional) cargar nombre desde Firestore si lo tienes
-        FirebaseFirestore.getInstance().collection("usuarios").document(user.getUid()).get()
+        FirebaseFirestore.getInstance().collection(FirestoreSchema.Collections.USUARIOS).document(user.getUid()).get()
                 .addOnSuccessListener(doc -> {
-                    String nombre = doc.getString("nombreMostrado");
+                    String nombre = doc.getString(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO);
                     if (nombre != null && !nombre.trim().isEmpty()) etNombre.setText(nombre);
                 });
 
@@ -92,11 +93,11 @@ public class PerfilActivity extends AppCompatActivity {
                 .addOnSuccessListener(v -> {
                     // 2) Guardar en Firestore
                     Map<String, Object> up = new HashMap<>();
-                    up.put("nombreMostrado", nombre);
-                    up.put("updatedAt", Timestamp.now());
+                    up.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO, nombre);
+                    up.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
 
                     FirebaseFirestore.getInstance()
-                            .collection("usuarios").document(user.getUid())
+                            .collection(FirestoreSchema.Collections.USUARIOS).document(user.getUid())
                             .set(up, SetOptions.merge())
                             .addOnSuccessListener(x -> Toast.makeText(this, "Nombre actualizado", Toast.LENGTH_SHORT).show())
                             .addOnFailureListener(e -> Toast.makeText(this, "Firestore error: " + e.getMessage(), Toast.LENGTH_LONG).show());
@@ -143,11 +144,11 @@ public class PerfilActivity extends AppCompatActivity {
                 .addOnSuccessListener(r -> {
                     // Reflejar en Firestore
                     Map<String, Object> up = new HashMap<>();
-                    up.put("tienePassword", true);
-                    up.put("passwordVinculadaEn", Timestamp.now());
+                    up.put(FirestoreSchema.UsuarioFields.TIENE_PASSWORD, true);
+                    up.put(FirestoreSchema.UsuarioFields.PASSWORD_VINCULADA_EN, Timestamp.now());
 
                     FirebaseFirestore.getInstance()
-                            .collection("usuarios").document(user.getUid())
+                            .collection(FirestoreSchema.Collections.USUARIOS).document(user.getUid())
                             .set(up, SetOptions.merge())
                             .addOnSuccessListener(v -> {
                                 Toast.makeText(this, "Contraseña añadida", Toast.LENGTH_LONG).show();

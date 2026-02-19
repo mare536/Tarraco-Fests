@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tarraco_fest.Modelo.Evento;
@@ -32,9 +33,38 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.VH> {
     }
 
     public void setData(List<Evento> nuevos) {
+        List<Evento> oldData = new ArrayList<>(data);
+        DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return oldData.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return nuevos.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Evento oldItem = oldData.get(oldItemPosition);
+                Evento newItem = nuevos.get(newItemPosition);
+                return oldItem.id != null && oldItem.id.equals(newItem.id);
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                Evento oldItem = oldData.get(oldItemPosition);
+                Evento newItem = nuevos.get(newItemPosition);
+                return safeEq(oldItem.titulo, newItem.titulo)
+                        && safeEq(oldItem.lugar, newItem.lugar)
+                        && safeEq(oldItem.inicio, newItem.inicio);
+            }
+        });
+
         data.clear();
         data.addAll(nuevos);
-        notifyDataSetChanged();
+        diff.dispatchUpdatesTo(this);
     }
 
     @NonNull
@@ -65,6 +95,10 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.VH> {
     @Override
     public int getItemCount() {
         return data.size();
+    }
+
+    private boolean safeEq(Object a, Object b) {
+        return a == b || (a != null && a.equals(b));
     }
 
     static class VH extends RecyclerView.ViewHolder {

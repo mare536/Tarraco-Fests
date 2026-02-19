@@ -1,106 +1,54 @@
-# 🏛️ Tarraco Fests — Base de datos (Firebase Firestore)
+# Tarraco Fests - Diseno de base de datos (Firestore)
 
-Convención general:
-- **Colecciones** en plural (`events`, `categories`, `users`).
-- Cada registro es un **documento** identificado por un **docId**.
-- Las “relaciones” se hacen guardando IDs (no hay joins).
+Este documento refleja el esquema que usa el codigo actual del proyecto.
 
----
+## 1) Coleccion `usuarios`
 
-## 1) 🎉 `events` — Eventos
-**Ruta:** `events/{eventId}`  
-**Documento:** `{eventId}` (**docId**)
+Ruta: `usuarios/{uid}`  
+`uid` = id de Firebase Auth.
 
-**Campos**
-- **id** *(docId)*
-- **title** *(string)*
-- **description** *(string)*
-- **startAt** *(timestamp)*
-- **endAt** *(timestamp, opcional)*
-- **categoryId** *(string, referencia lógica a `categories/{categoryId}`)*
-- **locationName** *(string, nombre del sitio)*
-- **address** *(string)*
-- **city** *(string, ej. “Tarragona”)*
-- **lat** *(number, opcional)*
-- **lng** *(number, opcional)*
-- **extraInfo** *(string, opcional: web/teléfono/etc.)*
-- **imageUrl** *(string, opcional)*
-- **isActive** *(boolean, para ocultar sin borrar)*
-- **createdAt** *(timestamp)*
-- **updatedAt** *(timestamp)*
-- **createdBy** *(string uid, opcional)*
-- **keywords** *(array<string>, búsqueda simple)*
+Campos usados por la app:
 
----
+- `metodoAuth` (string): metodo de la sesion actual (`email` o `google`).
+- `metodosVinculados` (array<string>): metodos vinculados a la cuenta.
+- `nombreMostrado` (string): nombre visible del usuario.
+- `email` (string): email principal de la cuenta.
+- `rol` (string): por defecto `usuario`.
+- `bloqueado` (boolean): por defecto `false`.
+- `creadoEn` (timestamp): solo en alta inicial.
+- `updatedAt` (timestamp): cuando se actualiza nombre desde perfil.
+- `aceptaTerminos` (boolean): control de terminos y condiciones.
+- `aceptaTerminosEn` (timestamp): fecha de aceptacion.
+- `tienePassword` (boolean): marca para cuentas que anaden password.
+- `passwordVinculadaEn` (timestamp): fecha de vinculacion de password.
 
-## 2) 🏷️ `categories` — Categorías
-**Ruta:** `categories/{categoryId}`  
-**Documento:** `{categoryId}` (**docId**: `music`, `sport`, `culture`…)
+Subcoleccion:
 
-**Campos**
-- **id** *(docId)*
-- **name** *(string, ej. “Música”, “Esport”…)*  
-- **icon** *(string, opcional: nombre de icono)*
-- **color** *(string, opcional)*
-- **order** *(number, opcional: orden en la UI)*
-- **isActive** *(boolean)*
+- `usuarios/{uid}/recordatorios/{eventId}`
+  - `eventId` (string)
+  - `createdAt` (timestamp)
 
----
+## 2) Coleccion `eventos`
 
-## 3) 👤 `users` — Usuarios
-**Ruta:** `users/{uid}`  
-**Documento:** `{uid}` (**docId = uid de Firebase Auth**)
+Ruta: `eventos/{eventId}`
 
-**Campos**
-- **id** *(docId)*
-- **displayName** *(string)*
-- **email** *(string)*
-- **role** *(string: “user” | “admin”)*
-- **createdAt** *(timestamp)*
-- **isBlocked** *(boolean, opcional)*
+Campos leidos por la app:
 
----
+- `titulo` (string)
+- `inicio` (timestamp)
+- `lugarNombre` (string)
+- `activo` (boolean)
 
-## 4) ⭐ `users/{uid}/favorites` — Favoritos (subcolección)
-**Ruta:** `users/{uid}/favorites/{eventId}`  
-**Documento:** `{eventId}` (**docId puede ser el `eventId`**)
+Notas:
 
-**Campos**
-- **eventId** *(string, solo si NO usas el docId como id)*
-- **createdAt** *(timestamp)*
+- El listado actual ordena por `inicio`.
+- El listado actual filtra en cliente por `activo != false`.
+- El `eventId` se toma del `docId`.
 
----
+## 3) Convenciones de codigo
 
-## 5) 📝 `reports` — Reportes (opcional)
-**Ruta:** `reports/{reportId}`  
-**Documento:** `{reportId}` (**docId**)
+Para evitar desalineaciones, el proyecto centraliza nombres de colecciones y campos en:
 
-**Campos**
-- **id** *(docId)*
-- **eventId** *(string)*
-- **userId** *(string uid)*
-- **reason** *(string)*
-- **createdAt** *(timestamp)*
-- **status** *(string: “open” | “reviewed”)*
+- `app/src/main/java/com/example/tarraco_fest/Data/FirestoreSchema.java`
 
----
-
-## 6) ⏰ `notifications` — Notificaciones (opcional)
-**Ruta:** `notifications/{notificationId}`  
-**Documento:** `{notificationId}` (**docId**)
-
-**Campos**
-- **id** *(docId)*
-- **userId** *(string uid)*
-- **eventId** *(string)*
-- **scheduledAt** *(timestamp)*
-- **type** *(string: “reminder”)*
-- **sent** *(boolean)*
-
----
-
-## 🔗 Relaciones (lógicas)
-- `events.categoryId` → `categories/{categoryId}`
-- `users/{uid}/favorites/{eventId}` → `events/{eventId}`
-- `reports.eventId` → `events/{eventId}`
-- `notifications.eventId` → `events/{eventId}`
+Si se cambia un nombre en Firestore, hay que actualizar esa clase y luego ajustar/migrar datos.

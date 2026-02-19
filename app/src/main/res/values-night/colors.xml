@@ -17,6 +17,23 @@
     <color name="dialog_hint">#99FFFFFF</color>
     <color name="tf_orange">#FF9A45</color>
     <color name="landing_card_surface">#B31A1A1A</color>
+    <color name="auth_btn_primary_bg">#FF9A45</color>
+    <color name="auth_btn_primary_bg_pressed">#FF8A32</color>
+    <color name="auth_btn_primary_bg_disabled">#7F4A23</color>
+    <color name="auth_btn_primary_text">#FFFFFF</color>
+    <color name="auth_btn_secondary_bg">#22FFFFFF</color>
+    <color name="auth_btn_secondary_bg_pressed">#30FFFFFF</color>
+    <color name="auth_btn_secondary_bg_disabled">#14FFFFFF</color>
+    <color name="auth_btn_secondary_stroke">#FFB072</color>
+    <color name="auth_btn_secondary_stroke_disabled">#66FFB072</color>
+    <color name="auth_btn_secondary_text">#FFD1A8</color>
+    <color name="auth_btn_secondary_text_disabled">#80FFD1A8</color>
+    <color name="google_btn_bg">#1F1F1F</color>
+    <color name="google_btn_bg_pressed">#2A2A2A</color>
+    <color name="google_btn_bg_disabled">#262626</color>
+    <color name="google_btn_stroke">#5F6368</color>
+    <color name="google_btn_stroke_disabled">#3C4043</color>
+    <color name="google_btn_text">#FFFFFF</color>
 
 
 </resources>

@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -62,9 +63,9 @@ public class HomeActivity extends AppCompatActivity {
         String uid = u.getUid();
 
         FirebaseFirestore.getInstance()
-                .collection("usuarios").document(uid).get()
+                .collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
                 .addOnSuccessListener(doc -> {
-                    String nombre = doc.getString("nombreMostrado");
+                    String nombre = doc.getString(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO);
 
                     if (nombre == null || nombre.trim().isEmpty()) {
                         nombre = u.getDisplayName();
@@ -89,9 +90,9 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseFirestore.getInstance().collection("usuarios").document(u.getUid()).get()
+        FirebaseFirestore.getInstance().collection(FirestoreSchema.Collections.USUARIOS).document(u.getUid()).get()
                 .addOnSuccessListener(doc -> {
-                    Boolean acepta = doc.getBoolean("aceptaTerminos");
+                    Boolean acepta = doc.getBoolean(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS);
                     boolean ok = acepta != null && acepta;
                     if (!ok) mostrarDialogTerminos(u.getUid());
                 })
@@ -109,11 +110,11 @@ public class HomeActivity extends AppCompatActivity {
                 })
                 .setPositiveButton("Aceptar", (d, w) -> {
                     Map<String, Object> up = new HashMap<>();
-                    up.put("aceptaTerminos", true);
-                    up.put("aceptaTerminosEn", Timestamp.now());
+                    up.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS, true);
+                    up.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS_EN, Timestamp.now());
 
                     FirebaseFirestore.getInstance()
-                            .collection("usuarios").document(uid)
+                            .collection(FirestoreSchema.Collections.USUARIOS).document(uid)
                             .set(up, SetOptions.merge());
                 })
                 .show();

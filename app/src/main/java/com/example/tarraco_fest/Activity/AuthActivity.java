@@ -5,8 +5,11 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -21,6 +24,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -44,6 +48,7 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -61,6 +66,11 @@ public class AuthActivity extends AppCompatActivity {
 
     private EditText etEmail, etPassword;
     private TextView tvEstado;
+    private TextView tvForgotPassword;
+    private Button btnLogin;
+    private Button btnRegister;
+    private Button btnGoogle;
+    private View loadingAuth;
 
     private GoogleSignInClient googleClient;
 
@@ -78,6 +88,7 @@ public class AuthActivity extends AppCompatActivity {
                 try {
                     if (result.getData() == null) {
                         setEstado("Acción cancelada.", ESTADO_INFO);
+                        setAuthUiEnabled(true);
                         return;
                     }
 
@@ -87,21 +98,27 @@ public class AuthActivity extends AppCompatActivity {
 
                     if (account == null) {
                         setEstado("Acción cancelada.", ESTADO_INFO);
+                        setAuthUiEnabled(true);
                         return;
                     }
 
                     AuthCredential cred = GoogleAuthProvider.getCredential(account.getIdToken(), null);
 
                     auth.signInWithCredential(cred)
-                            .addOnSuccessListener(r -> onLoginOkGoogle())
+                            .addOnSuccessListener(r -> {
+                                setAuthUiEnabled(true);
+                                onLoginOkGoogle();
+                            })
                             .addOnFailureListener(e -> {
                                 logError("Google signInWithCredential", e);
                                 setEstado("No se pudo verificar con Google. Inténtalo de nuevo.", ESTADO_ERROR);
+                                setAuthUiEnabled(true);
                             });
 
                 } catch (ApiException e) {
                     logError("Google ApiException status=" + e.getStatusCode(), e);
                     setEstado("No se pudo abrir Google. Inténtalo de nuevo.", ESTADO_ERROR);
+                    setAuthUiEnabled(true);
                 }
             });
 
@@ -117,29 +134,36 @@ public class AuthActivity extends AppCompatActivity {
             return insets;
         });
         auth = FirebaseAuth.getInstance();
+        auth.setLanguageCode("es");
         db = FirebaseFirestore.getInstance();
 
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         tvEstado = findViewById(R.id.tvEstado);
+        tvForgotPassword = findViewById(R.id.tvForgotPassword);
+        loadingAuth = findViewById(R.id.loadingAuth);
 
-        Button btnLogin = findViewById(R.id.btnLogin);
-        Button btnRegister = findViewById(R.id.btnRegister);
-        Button btnGoogle = findViewById(R.id.btnGoogle);
+        btnLogin = findViewById(R.id.btnLogin);
+        btnRegister = findViewById(R.id.btnRegister);
+        btnGoogle = findViewById(R.id.btnGoogle);
 
         // Animación UI (la tuya)
         ImageView bgNormal = findViewById(R.id.imgBgNormal);
         ImageView bgBlur   = findViewById(R.id.imgBgBlur);
         View overlay       = findViewById(R.id.overlay);
+        ImageView logo     = findViewById(R.id.imgLogo);
         View content       = findViewById(R.id.authContent);
 
         bgBlur.setAlpha(0f);
         overlay.setAlpha(0f);
+        logo.setAlpha(0f);
+        logo.setTranslationY(16f);
         content.setAlpha(0f);
         content.setTranslationY(22f);
         bgNormal.postDelayed(() -> {
             bgBlur.animate().alpha(1f).setDuration(650).start();
             overlay.animate().alpha(1f).setDuration(450).start();
+            logo.animate().alpha(1f).translationY(0f).setDuration(520).start();
             content.animate().alpha(1f).translationY(0f).setDuration(550).start();
         }, 180);
 
@@ -153,6 +177,24 @@ public class AuthActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> loginEmail());
         btnRegister.setOnClickListener(v -> mostrarDialogRegistroEmail());
         btnGoogle.setOnClickListener(v -> loginGoogle());
+        tvForgotPassword.setOnClickListener(v -> recuperarPassword());
+
+        etEmail.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                String email = normalizarEmail(etEmail.getText().toString());
+                if (!email.isEmpty() && !esEmailValido(email)) {
+                    etEmail.setError("Email no válido");
+                }
+            }
+        });
+
+        etPassword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                loginEmail();
+                return true;
+            }
+            return false;
+        });
 
         // Limpieza de feedback al escribir
         etEmail.addTextChangedListener(simpleWatcher());
@@ -188,8 +230,8 @@ public class AuthActivity extends AppCompatActivity {
     private void loginEmail() {
         limpiarFeedbackLogin();
 
-        String email = etEmail.getText().toString().trim();
-        String pass  = etPassword.getText().toString().trim();
+        String email = normalizarEmail(etEmail.getText().toString());
+        String pass  = etPassword.getText().toString();
 
         if (email.isEmpty() || pass.isEmpty()) {
             if (email.isEmpty()) { etEmail.setError("Introduce el email"); shake(etEmail); }
@@ -198,6 +240,15 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
+        if (!esEmailValido(email)) {
+            etEmail.setError("Email no válido");
+            shake(etEmail);
+            setEstado("Email no válido.", ESTADO_ERROR);
+            return;
+        }
+
+        ocultarTeclado(etPassword);
+        setAuthUiEnabled(false);
         setEstado("Iniciando sesión…", ESTADO_INFO);
 
         auth.signInWithEmailAndPassword(email, pass)
@@ -205,6 +256,7 @@ public class AuthActivity extends AppCompatActivity {
                     FirebaseUser u = auth.getCurrentUser();
                     if (u == null) {
                         setEstado("Error al iniciar sesión. Inténtalo de nuevo.", ESTADO_ERROR);
+                        setAuthUiEnabled(true);
                         return;
                     }
 
@@ -213,16 +265,23 @@ public class AuthActivity extends AppCompatActivity {
                             auth.signOut();
                             setEstado("Cuenta no verificada. Revisa tu correo.", ESTADO_ERROR);
                             mostrarDialogoNoVerificado(email, pass);
+                            setAuthUiEnabled(true);
                             return;
                         }
 
                         upsertUsuario(false, true, "email");
+                    }).addOnFailureListener(e -> {
+                        logError("reload user", e);
+                        setEstado("No se pudo validar la cuenta. Inténtalo de nuevo.", ESTADO_ERROR);
+                        setAuthUiEnabled(true);
                     });
                 })
-                .addOnFailureListener(e -> manejarErrorLoginEmail(e, email, pass));
+                .addOnFailureListener(e -> manejarErrorLoginEmail(e, email));
     }
 
-    private void manejarErrorLoginEmail(Exception e, String email, String pass) {
+    @SuppressWarnings("deprecation")
+    private void manejarErrorLoginEmail(Exception e, String email) {
+        setAuthUiEnabled(true);
         String code = (e instanceof FirebaseAuthException) ? ((FirebaseAuthException) e).getErrorCode() : null;
 
         // Email inválido
@@ -233,44 +292,14 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        // Contraseña incorrecta
+        // Credenciales inválidas o usuario no encontrado: comprobamos proveedores reales del email
         if (e instanceof FirebaseAuthInvalidCredentialsException
                 || "ERROR_WRONG_PASSWORD".equals(code)
                 || "ERROR_INVALID_CREDENTIAL".equals(code)
-                || "ERROR_INVALID_LOGIN_CREDENTIALS".equals(code)) {
-
-            // Si el proyecto permite obtener métodos, podemos afinar un poco:
-            auth.fetchSignInMethodsForEmail(email)
-                    .addOnSuccessListener(res -> {
-                        List<String> m = res.getSignInMethods();
-                        boolean tienePassword = m != null && m.contains("password");
-                        boolean tieneGoogle   = m != null && m.contains("google.com");
-
-                        if (tienePassword) {
-                            etPassword.setError("Contraseña incorrecta");
-                            shake(etPassword);
-                            setEstado("Contraseña incorrecta.", ESTADO_ERROR);
-                            return;
-                        }
-
-                        // Si parece Google-only (o es ambiguo), guiamos a verificación Google para añadir contraseña
-                        if (tieneGoogle && !tienePassword) {
-                            iniciarFlujoCrearPassword(email);
-                            return;
-                        }
-
-                        // Ambiguo -> no afirmamos "no existe": damos opción de verificar con Google
-                        iniciarFlujoCrearPassword(email);
-                    })
-                    .addOnFailureListener(x -> iniciarFlujoCrearPassword(email));
-
-            return;
-        }
-
-        // Usuario no encontrado (con email+pass puede ocurrir incluso si existe como Google-only)
-        if (e instanceof FirebaseAuthInvalidUserException || "ERROR_USER_NOT_FOUND".equals(code)) {
-            // No afirmamos "no existe": guiamos a verificación Google para añadir contraseña
-            iniciarFlujoCrearPassword(email);
+                || "ERROR_INVALID_LOGIN_CREDENTIALS".equals(code)
+                || e instanceof FirebaseAuthInvalidUserException
+                || "ERROR_USER_NOT_FOUND".equals(code)) {
+            resolverMetodoAccesoParaEmail(email);
             return;
         }
 
@@ -278,9 +307,61 @@ public class AuthActivity extends AppCompatActivity {
         setEstado("No se pudo iniciar sesión. Inténtalo de nuevo.", ESTADO_ERROR);
     }
 
+    @SuppressWarnings("deprecation")
+    private void resolverMetodoAccesoParaEmail(String email) {
+        auth.fetchSignInMethodsForEmail(email)
+                .addOnSuccessListener(res -> manejarMetodosParaEmailEnLogin(email, res.getSignInMethods()))
+                .addOnFailureListener(ex -> {
+                    logError("fetchSignInMethodsForEmail", ex);
+                    setEstado("No se pudo comprobar la cuenta. Inténtalo de nuevo.", ESTADO_ERROR);
+                });
+    }
+
+    private void manejarMetodosParaEmailEnLogin(String email, List<String> metodos) {
+        List<String> m = (metodos == null) ? new ArrayList<>() : metodos;
+        boolean tienePassword = m.contains("password");
+        boolean tieneGoogle = m.contains("google.com");
+
+        if (tienePassword) {
+            etPassword.setError("Contraseña incorrecta");
+            shake(etPassword);
+            setEstado("Contraseña incorrecta.", ESTADO_ERROR);
+            return;
+        }
+
+        if (tieneGoogle) {
+            iniciarFlujoCrearPassword(email);
+            return;
+        }
+
+        if (m.isEmpty()) {
+            mostrarDialogoCuentaNoExiste(email);
+            return;
+        }
+
+        setEstado("Ese correo usa otro método de acceso. Prueba con su método original.", ESTADO_ERROR);
+    }
+
+    private void mostrarDialogoCuentaNoExiste(String email) {
+        etEmail.setError("No hay cuenta con este correo");
+        shake(etEmail);
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle("Cuenta no encontrada")
+                .setMessage("No existe una cuenta con ese correo.\n\n¿Quieres crearla ahora?")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Crear cuenta", (d, w) -> mostrarDialogRegistroEmail(email))
+                .show();
+    }
+
     // ====================== REGISTRO EMAIL (DIALOG) ======================
 
     private void mostrarDialogRegistroEmail() {
+        String prefill = normalizarEmail(etEmail != null ? etEmail.getText().toString() : "");
+        mostrarDialogRegistroEmail(prefill);
+    }
+
+    private void mostrarDialogRegistroEmail(String emailPrefill) {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_registro, null);
 
         EditText etEmailReg = view.findViewById(R.id.etEmailReg);
@@ -295,17 +376,27 @@ public class AuthActivity extends AppCompatActivity {
                 .setPositiveButton("Crear cuenta", null)
                 .create();
 
+        if (emailPrefill != null && !emailPrefill.isEmpty()) {
+            etEmailReg.setText(emailPrefill);
+            etEmailReg.setSelection(emailPrefill.length());
+        }
+
         dialog.show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String email = etEmailReg.getText().toString().trim();
-            String p1 = etP1.getText().toString().trim();
-            String p2 = etP2.getText().toString().trim();
+            String email = normalizarEmail(etEmailReg.getText().toString());
+            String p1 = etP1.getText().toString();
+            String p2 = etP2.getText().toString();
 
             tvError.setVisibility(View.GONE);
 
             if (email.isEmpty() || p1.isEmpty() || p2.isEmpty()) {
                 tvError.setText("Rellena email y contraseña");
+                tvError.setVisibility(View.VISIBLE);
+                return;
+            }
+            if (!esEmailValido(email)) {
+                tvError.setText("Email no válido");
                 tvError.setVisibility(View.VISIBLE);
                 return;
             }
@@ -408,10 +499,46 @@ public class AuthActivity extends AppCompatActivity {
                 });
     }
 
+    private void recuperarPassword() {
+        limpiarFeedbackLogin();
+
+        String email = normalizarEmail(etEmail.getText().toString());
+        if (email.isEmpty()) {
+            etEmail.setError("Introduce tu email para recuperar la contraseña");
+            etEmail.requestFocus();
+            shake(etEmail);
+            setEstado("Necesitamos tu email para enviar el enlace.", ESTADO_ERROR);
+            return;
+        }
+
+        if (!esEmailValido(email)) {
+            etEmail.setError("Email no válido");
+            etEmail.requestFocus();
+            shake(etEmail);
+            setEstado("Revisa el formato del email.", ESTADO_ERROR);
+            return;
+        }
+
+        ocultarTeclado(etEmail);
+        setAuthUiEnabled(false);
+        setEstado("Enviando enlace de recuperación…", ESTADO_INFO);
+
+        auth.sendPasswordResetEmail(email)
+                .addOnSuccessListener(v ->
+                        setEstado("Te hemos enviado un enlace para restablecer la contraseña.", ESTADO_OK)
+                )
+                .addOnFailureListener(e -> {
+                    logError("sendPasswordResetEmail", e);
+                    setEstado("No se pudo enviar el enlace. Inténtalo de nuevo.", ESTADO_ERROR);
+                })
+                .addOnCompleteListener(t -> setAuthUiEnabled(true));
+    }
+
     // ====================== GOOGLE LOGIN ======================
 
     private void loginGoogle() {
         // Para forzar selector siempre (si no quieres, elimina este signOut)
+        setAuthUiEnabled(false);
         googleClient.signOut().addOnCompleteListener(t -> {
             Intent intent = googleClient.getSignInIntent();
             googleLauncher.launch(intent);
@@ -558,6 +685,7 @@ public class AuthActivity extends AppCompatActivity {
         FirebaseUser u = auth.getCurrentUser();
         if (u == null) {
             setEstado("Error de sesión. Vuelve a intentarlo.", ESTADO_ERROR);
+            setAuthUiEnabled(true);
             return;
         }
 
@@ -572,37 +700,43 @@ public class AuthActivity extends AppCompatActivity {
         if (hasPassword) metodosVinculados.add("email");
 
         Map<String, Object> data = new HashMap<>();
-        data.put("metodoAuth", metodoLogin);            // método de ESTA sesión
-        data.put("metodosVinculados", metodosVinculados);
-        data.put("nombreMostrado", u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
-        data.put("email", u.getEmail() != null ? u.getEmail() : "");
-        data.put("rol", "usuario");
-        data.put("bloqueado", false);
+        data.put(FirestoreSchema.UsuarioFields.METODO_AUTH, metodoLogin);
+        data.put(FirestoreSchema.UsuarioFields.METODOS_VINCULADOS, metodosVinculados);
+        data.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO, u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
+        data.put(FirestoreSchema.UsuarioFields.EMAIL, u.getEmail() != null ? u.getEmail() : "");
+        data.put(FirestoreSchema.UsuarioFields.ROL, "usuario");
+        data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
 
         if (aceptaTerminosEnEstePaso) {
-            data.put("aceptaTerminos", true);
-            data.put("aceptaTerminosEn", Timestamp.now());
+            data.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS, true);
+            data.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS_EN, Timestamp.now());
         }
 
         String uid = u.getUid();
 
-        db.collection("usuarios").document(uid).get()
+        db.collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
                 .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) data.put("creadoEn", Timestamp.now());
+                    if (!doc.exists()) data.put(FirestoreSchema.UsuarioFields.CREADO_EN, Timestamp.now());
 
-                    db.collection("usuarios").document(uid)
+                    db.collection(FirestoreSchema.Collections.USUARIOS).document(uid)
                             .set(data, SetOptions.merge())
                             .addOnSuccessListener(v -> {
-                                if (irHome) goHome();
+                                if (irHome) {
+                                    goHome();
+                                } else {
+                                    setAuthUiEnabled(true);
+                                }
                             })
                             .addOnFailureListener(e -> {
                                 logError("Firestore set usuarios/{uid}", e);
                                 setEstado("No se pudo guardar el perfil.", ESTADO_ERROR);
+                                setAuthUiEnabled(true);
                             });
                 })
                 .addOnFailureListener(e -> {
                     logError("Firestore get usuarios/{uid}", e);
                     setEstado("No se pudo guardar el perfil.", ESTADO_ERROR);
+                    setAuthUiEnabled(true);
                 });
     }
 
@@ -625,6 +759,37 @@ public class AuthActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) { limpiarFeedbackLogin(); }
             public void afterTextChanged(Editable s) {}
         };
+    }
+
+    private void setAuthUiEnabled(boolean enabled) {
+        if (btnLogin != null) btnLogin.setEnabled(enabled);
+        if (btnRegister != null) btnRegister.setEnabled(enabled);
+        if (btnGoogle != null) btnGoogle.setEnabled(enabled);
+        if (tvForgotPassword != null) tvForgotPassword.setEnabled(enabled);
+        if (etEmail != null) etEmail.setEnabled(enabled);
+        if (etPassword != null) etPassword.setEnabled(enabled);
+        if (loadingAuth != null) loadingAuth.setVisibility(enabled ? View.GONE : View.VISIBLE);
+
+        float alpha = enabled ? 1f : 0.62f;
+        if (btnLogin != null) btnLogin.setAlpha(alpha);
+        if (btnRegister != null) btnRegister.setAlpha(alpha);
+        if (btnGoogle != null) btnGoogle.setAlpha(alpha);
+    }
+
+    private void ocultarTeclado(View anchor) {
+        if (anchor == null) return;
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(anchor.getWindowToken(), 0);
+        }
+    }
+
+    private String normalizarEmail(String raw) {
+        return raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean esEmailValido(String email) {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
     private boolean esProveedorPassword(FirebaseUser u) {
@@ -652,13 +817,13 @@ public class AuthActivity extends AppCompatActivity {
 
         if (tipo == ESTADO_ERROR) {
             tvEstado.setBackgroundResource(R.drawable.bg_estado_error);
-            tvEstado.setText("⚠️ " + msg);
+            tvEstado.setText(getString(R.string.estado_error_fmt, msg));
         } else if (tipo == ESTADO_OK) {
             tvEstado.setBackgroundResource(R.drawable.bg_estado_ok);
-            tvEstado.setText("✅ " + msg);
+            tvEstado.setText(getString(R.string.estado_ok_fmt, msg));
         } else {
             tvEstado.setBackgroundResource(R.drawable.bg_estado_info);
-            tvEstado.setText("ℹ️ " + msg);
+            tvEstado.setText(msg);
         }
 
         tvEstado.setAlpha(0f);

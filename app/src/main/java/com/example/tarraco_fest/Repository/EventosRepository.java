@@ -1,5 +1,6 @@
 package com.example.tarraco_fest.Repository;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.Evento;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -16,8 +17,8 @@ public class EventosRepository {
 
     public void cargarEventos(Callback cb) {
         FirebaseFirestore.getInstance()
-                .collection("eventos")
-                .orderBy("inicio")   // <-- tu campo real
+                .collection(FirestoreSchema.Collections.EVENTOS)
+                .orderBy(FirestoreSchema.EventoFields.INICIO)
                 .limit(50)
                 .get()
                 .addOnSuccessListener(qs -> {
@@ -25,15 +26,14 @@ public class EventosRepository {
 
                     for (QueryDocumentSnapshot d : qs) {
 
-                        // Si quieres mostrar solo activos sin crear índices, filtramos aquí:
-                        Boolean activo = d.getBoolean("activo");
+                        Boolean activo = d.getBoolean(FirestoreSchema.EventoFields.ACTIVO);
                         if (activo != null && !activo) continue;
 
                         Evento e = new Evento();
                         e.id = d.getId();
-                        e.titulo = d.getString("titulo");           // <-- tu campo real
-                        e.inicio = d.getTimestamp("inicio");        // <-- tu campo real
-                        e.lugar = d.getString("lugarNombre");       // <-- tu campo real
+                        e.titulo = d.getString(FirestoreSchema.EventoFields.TITULO);
+                        e.inicio = d.getTimestamp(FirestoreSchema.EventoFields.INICIO);
+                        e.lugar = d.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE);
 
                         list.add(e);
                     }

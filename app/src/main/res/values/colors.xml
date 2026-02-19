@@ -17,13 +17,30 @@
     <color name="festival_orange_dark">#E86E00</color>
 
     <!-- Fondo tipo glass (semi-transparente) -->
-    <color name="dialog_glass_bg">#CCFFFFFF</color>
-    <color name="dialog_glass_stroke">#33FFFFFF</color>
-    <color name="dialog_input_bg">#33FFFFFF</color>
-    <color name="dialog_divider">#22FFFFFF</color>
+    <color name="dialog_glass_bg">#E6FFFFFF</color>
+    <color name="dialog_glass_stroke">#66FFFFFF</color>
+    <color name="dialog_input_bg">#80FFFFFF</color>
+    <color name="dialog_divider">#33FFFFFF</color>
     <color name="dialog_text">#1A1A1A</color>
-    <color name="dialog_hint">#66000000</color>
+    <color name="dialog_hint">#73000000</color>
     <color name="tf_orange">#FF8A2B</color>
-    <color name="landing_card_surface">#CCFFFFFF</color>
+    <color name="landing_card_surface">#E6FFFFFF</color>
+    <color name="auth_btn_primary_bg">#FF8A2B</color>
+    <color name="auth_btn_primary_bg_pressed">#F07C1D</color>
+    <color name="auth_btn_primary_bg_disabled">#E7B98E</color>
+    <color name="auth_btn_primary_text">#FFFFFF</color>
+    <color name="auth_btn_secondary_bg">#26FFFFFF</color>
+    <color name="auth_btn_secondary_bg_pressed">#40FFFFFF</color>
+    <color name="auth_btn_secondary_bg_disabled">#14FFFFFF</color>
+    <color name="auth_btn_secondary_stroke">#FF8A2B</color>
+    <color name="auth_btn_secondary_stroke_disabled">#80FF8A2B</color>
+    <color name="auth_btn_secondary_text">#C96412</color>
+    <color name="auth_btn_secondary_text_disabled">#80C96412</color>
+    <color name="google_btn_bg">#FFFFFF</color>
+    <color name="google_btn_bg_pressed">#F5F5F5</color>
+    <color name="google_btn_bg_disabled">#E8EAED</color>
+    <color name="google_btn_stroke">#DADCE0</color>
+    <color name="google_btn_stroke_disabled">#DADCE0</color>
+    <color name="google_btn_text">#3C4043</color>
 
 </resources>

@@ -5,7 +5,6 @@ import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -115,17 +114,15 @@ public class LandingActivity extends AppCompatActivity {
         fadeBlur.setInterpolator(new DecelerateInterpolator());
         fadeBlur.start();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ValueAnimator va = ValueAnimator.ofFloat(0f, 24f);
-            va.setDuration(duracion);
-            va.setInterpolator(new DecelerateInterpolator());
-            va.addUpdateListener(anim -> {
-                float r = (float) anim.getAnimatedValue();
-                bgNormal.setRenderEffect(
-                        RenderEffect.createBlurEffect(r, r, Shader.TileMode.CLAMP)
-                );
-            });
-            va.start();
-        }
+        ValueAnimator va = ValueAnimator.ofFloat(0f, 24f);
+        va.setDuration(duracion);
+        va.setInterpolator(new DecelerateInterpolator());
+        va.addUpdateListener(anim -> {
+            float r = (float) anim.getAnimatedValue();
+            bgNormal.setRenderEffect(
+                    RenderEffect.createBlurEffect(r, r, Shader.TileMode.CLAMP)
+            );
+        });
+        va.start();
     }
 }

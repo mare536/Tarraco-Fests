@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Tarraco_Fest</string>
     <string name="eventos">Eventos</string>
+    <string name="estado_error_fmt">Error: %1$s</string>
+    <string name="estado_ok_fmt">OK: %1$s</string>
+    <string name="auth_forgot_password">He olvidado mi contrasena</string>
+    <string name="auth_loading">Procesando...</string>
 </resources>
