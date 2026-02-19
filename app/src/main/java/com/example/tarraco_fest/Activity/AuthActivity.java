@@ -269,7 +269,7 @@ public class AuthActivity extends AppCompatActivity {
                             return;
                         }
 
-                        upsertUsuario(false, true, "email");
+                        upsertUsuario(false, true, FirestoreSchema.AuthMethods.EMAIL);
                     }).addOnFailureListener(e -> {
                         logError("reload user", e);
                         setEstado("No se pudo validar la cuenta. Inténtalo de nuevo.", ESTADO_ERROR);
@@ -427,7 +427,7 @@ public class AuthActivity extends AppCompatActivity {
                         }
 
                         // Guardar perfil (no entrar aún)
-                        upsertUsuario(true, false, "email");
+                        upsertUsuario(true, false, FirestoreSchema.AuthMethods.EMAIL);
 
                         // Enviar verificación
                         user.sendEmailVerification()
@@ -565,7 +565,7 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         setEstado("Acceso correcto.", ESTADO_OK);
-        upsertUsuario(false, true, "google");
+        upsertUsuario(false, true, FirestoreSchema.AuthMethods.GOOGLE);
     }
 
     // ====================== AÑADIR CONTRASEÑA (SIN MENCIONAR TECNOLOGÍA) ======================
@@ -618,7 +618,7 @@ public class AuthActivity extends AppCompatActivity {
                     pendingLinkEmail = null;
                     pendingLinkPassword = false;
                     d.dismiss();
-                    if (auth.getCurrentUser() != null) upsertUsuario(false, true, "google");
+                    if (auth.getCurrentUser() != null) upsertUsuario(false, true, FirestoreSchema.AuthMethods.GOOGLE);
                 })
                 .setPositiveButton("Guardar", null)
                 .create();
@@ -664,7 +664,7 @@ public class AuthActivity extends AppCompatActivity {
                     dialog.dismiss();
 
                     // Sigues logueado con Google, pero ahora también tienes email+contraseña
-                    upsertUsuario(false, true, "google");
+                    upsertUsuario(false, true, FirestoreSchema.AuthMethods.GOOGLE);
                 })
                 .addOnFailureListener(e -> {
                     // Si ya tenía contraseña vinculada, damos mensaje claro
@@ -696,16 +696,16 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         List<String> metodosVinculados = new ArrayList<>();
-        if (hasGoogle) metodosVinculados.add("google");
-        if (hasPassword) metodosVinculados.add("email");
+        if (hasGoogle) metodosVinculados.add(FirestoreSchema.AuthMethods.GOOGLE);
+        if (hasPassword) metodosVinculados.add(FirestoreSchema.AuthMethods.EMAIL);
 
         Map<String, Object> data = new HashMap<>();
         data.put(FirestoreSchema.UsuarioFields.METODO_AUTH, metodoLogin);
         data.put(FirestoreSchema.UsuarioFields.METODOS_VINCULADOS, metodosVinculados);
         data.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO, u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
         data.put(FirestoreSchema.UsuarioFields.EMAIL, u.getEmail() != null ? u.getEmail() : "");
-        data.put(FirestoreSchema.UsuarioFields.ROL, "usuario");
-        data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
+        data.put(FirestoreSchema.UsuarioFields.TIENE_PASSWORD, hasPassword);
+        data.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
 
         if (aceptaTerminosEnEstePaso) {
             data.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS, true);
@@ -716,7 +716,11 @@ public class AuthActivity extends AppCompatActivity {
 
         db.collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
                 .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) data.put(FirestoreSchema.UsuarioFields.CREADO_EN, Timestamp.now());
+                    if (!doc.exists()) {
+                        data.put(FirestoreSchema.UsuarioFields.CREADO_EN, Timestamp.now());
+                        data.put(FirestoreSchema.UsuarioFields.ROL, FirestoreSchema.UserRoles.USUARIO);
+                        data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
+                    }
 
                     db.collection(FirestoreSchema.Collections.USUARIOS).document(uid)
                             .set(data, SetOptions.merge())

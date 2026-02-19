@@ -31,6 +31,9 @@ public final class FirestoreSchema {
         public static final String METODOS_VINCULADOS = "metodosVinculados";
         public static final String NOMBRE_MOSTRADO = "nombreMostrado";
         public static final String EMAIL = "email";
+        public static final String TELEFONO = "telefono";
+        public static final String CIUDAD = "ciudad";
+        public static final String BIOGRAFIA = "biografia";
         public static final String ROL = "rol";
         public static final String BLOQUEADO = "bloqueado";
         public static final String CREADO_EN = "creadoEn";
@@ -41,6 +44,20 @@ public final class FirestoreSchema {
         public static final String PASSWORD_VINCULADA_EN = "passwordVinculadaEn";
 
         private UsuarioFields() {}
+    }
+
+    public static final class UserRoles {
+        public static final String ADMIN = "admin";
+        public static final String USUARIO = "usuario";
+
+        private UserRoles() {}
+    }
+
+    public static final class AuthMethods {
+        public static final String EMAIL = "email";
+        public static final String GOOGLE = "google";
+
+        private AuthMethods() {}
     }
 
     public static final class RecordatorioFields {

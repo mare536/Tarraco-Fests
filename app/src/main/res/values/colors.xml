@@ -42,5 +42,11 @@
     <color name="google_btn_stroke">#DADCE0</color>
     <color name="google_btn_stroke_disabled">#DADCE0</color>
     <color name="google_btn_text">#3C4043</color>
+    <color name="role_user_bg">#26FF8A2B</color>
+    <color name="role_user_stroke">#99FF8A2B</color>
+    <color name="role_user_text">#A74F0A</color>
+    <color name="role_admin_bg">#1A0A84FF</color>
+    <color name="role_admin_stroke">#660A84FF</color>
+    <color name="role_admin_text">#0A4FA8</color>
 
 </resources>
