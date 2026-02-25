@@ -61,3 +61,8 @@ El desenvolupament seguirà un enfocament **iteratiu i incremental**, dividit en
 
 ---
 *Projecte desenvolupat com a part del cicle formatiu de DAM (Desenvolupament d'Aplicacions Multiplataforma).*
+
+## Documentacion tecnica reciente
+
+- Perfil de usuario (arquitectura, flujos, extensibilidad): `DOCUMENTACION_PERFIL.md`
+- Esquema Firestore actualizado: `Diseño de la base de datos.md`

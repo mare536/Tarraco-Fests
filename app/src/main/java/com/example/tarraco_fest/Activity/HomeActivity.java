@@ -3,6 +3,7 @@ package com.example.tarraco_fest.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -10,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
+import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -23,6 +25,8 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView tvHome;
     private Button btnLogout;
+    private Button btnAdmin;
+    private final AdminAccessRepository adminAccessRepository = new AdminAccessRepository();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,14 +35,20 @@ public class HomeActivity extends AppCompatActivity {
 
         tvHome = findViewById(R.id.tvHome);
         btnLogout = findViewById(R.id.btnLogout);
+        btnAdmin = findViewById(R.id.btnAdmin);
+
         Button btnEventos = findViewById(R.id.btnEventos);
-        btnEventos.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, EventosActivity.class));
-        });
+        btnEventos.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, EventosActivity.class))
+        );
 
         Button btnPerfil = findViewById(R.id.btnPerfil);
         btnPerfil.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, PerfilActivity.class))
+        );
+
+        btnAdmin.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, AdminPanelActivity.class))
         );
 
         btnLogout.setOnClickListener(v -> {
@@ -48,14 +58,15 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(i);
         });
 
-        mostrarNombreUsuario();   // <-- esto es lo nuevo
-        comprobarTerminos();      // <-- si ya lo tenías, déjalo aquí
+        mostrarNombreUsuario();
+        comprobarTerminos();
+        comprobarAccesoAdmin();
     }
 
     private void mostrarNombreUsuario() {
         FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
         if (u == null) {
-            tvHome.setText("No hay sesión");
+            tvHome.setText("No hay sesion");
             volverAuth();
             return;
         }
@@ -63,7 +74,9 @@ public class HomeActivity extends AppCompatActivity {
         String uid = u.getUid();
 
         FirebaseFirestore.getInstance()
-                .collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
+                .collection(FirestoreSchema.Collections.USUARIOS)
+                .document(uid)
+                .get()
                 .addOnSuccessListener(doc -> {
                     String nombre = doc.getString(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO);
 
@@ -74,12 +87,12 @@ public class HomeActivity extends AppCompatActivity {
                         nombre = u.getEmail();
                     }
 
-                    tvHome.setText("Has iniciado sesión\n" + nombre);
+                    tvHome.setText("Has iniciado sesion\n" + nombre);
                 })
                 .addOnFailureListener(e -> {
                     String nombre = u.getDisplayName();
                     if (nombre == null || nombre.trim().isEmpty()) nombre = u.getEmail();
-                    tvHome.setText("Has iniciado sesión\n" + nombre);
+                    tvHome.setText("Has iniciado sesion\n" + nombre);
                 });
     }
 
@@ -90,7 +103,10 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseFirestore.getInstance().collection(FirestoreSchema.Collections.USUARIOS).document(u.getUid()).get()
+        FirebaseFirestore.getInstance()
+                .collection(FirestoreSchema.Collections.USUARIOS)
+                .document(u.getUid())
+                .get()
                 .addOnSuccessListener(doc -> {
                     Boolean acepta = doc.getBoolean(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS);
                     boolean ok = acepta != null && acepta;
@@ -101,8 +117,8 @@ public class HomeActivity extends AppCompatActivity {
 
     private void mostrarDialogTerminos(String uid) {
         new AlertDialog.Builder(this)
-                .setTitle("Términos y condiciones")
-                .setMessage("Para usar la app debes aceptar los términos.")
+                .setTitle("Terminos y condiciones")
+                .setMessage("Para usar la app debes aceptar los terminos.")
                 .setCancelable(false)
                 .setNegativeButton("Salir", (d, w) -> {
                     FirebaseAuth.getInstance().signOut();
@@ -114,10 +130,27 @@ public class HomeActivity extends AppCompatActivity {
                     up.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS_EN, Timestamp.now());
 
                     FirebaseFirestore.getInstance()
-                            .collection(FirestoreSchema.Collections.USUARIOS).document(uid)
+                            .collection(FirestoreSchema.Collections.USUARIOS)
+                            .document(uid)
                             .set(up, SetOptions.merge());
                 })
                 .show();
+    }
+
+    private void comprobarAccesoAdmin() {
+        btnAdmin.setVisibility(View.GONE);
+
+        adminAccessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
+            @Override
+            public void onResult(boolean isAdmin) {
+                btnAdmin.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                btnAdmin.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void volverAuth() {

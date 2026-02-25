@@ -28,6 +28,14 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.Locale;
 
+/**
+ * Pantalla de perfil organizada por secciones:
+ * - Informacion general (solo lectura amigable).
+ * - Seguridad (vincular password).
+ * - Modificar datos (edicion de perfil).
+ *
+ * La navegacion entre secciones se hace mediante Drawer lateral.
+ */
 public class PerfilActivity extends AppCompatActivity {
 
     private static final int ESTADO_INFO = 0;
@@ -88,6 +96,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
 
         usuarioRepository = new UsuarioRepository();
+        // Orden de inicializacion: vistas -> navegacion -> estado inicial -> carga remota.
         bindViews();
         configurarAnimacionEntrada();
         configurarDrawer();
@@ -142,6 +151,7 @@ public class PerfilActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                // Si el menu lateral esta abierto, la accion atras lo cierra primero.
                 if (drawerPerfil.isDrawerOpen(GravityCompat.START)) {
                     drawerPerfil.closeDrawer(GravityCompat.START);
                     return;
@@ -157,6 +167,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         navPerfil.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
+            // Cada item del drawer activa una seccion concreta de la misma activity.
             if (id == R.id.nav_info_general) {
                 mostrarSeccion(SECCION_INFO);
             } else if (id == R.id.nav_seguridad) {
@@ -221,11 +232,13 @@ public class PerfilActivity extends AppCompatActivity {
     }
 
     private void renderPerfil(UsuarioPerfil perfil) {
+        // Precarga la seccion de edicion con los datos actuales.
         etNombrePerfil.setText(perfil.getNombreMostrado());
         etTelefonoPerfil.setText(perfil.getTelefono());
         etCiudadPerfil.setText(perfil.getCiudad());
         etBioPerfil.setText(perfil.getBiografia());
 
+        // En resumen se muestra el valor real del campo o "No establecida" si no existe.
         String email = valorCampoResumen(perfil.getEmail());
         tvInfoEmailPerfil.setText(getString(R.string.profile_summary_email_fmt, email));
 
@@ -259,6 +272,7 @@ public class PerfilActivity extends AppCompatActivity {
     }
 
     private void mostrarSeccion(int seccion) {
+        // Se mantiene una unica activity y se alterna visibilidad por bloque.
         sectionInformacionPerfil.setVisibility(seccion == SECCION_INFO ? View.VISIBLE : View.GONE);
         sectionSeguridadPerfil.setVisibility(seccion == SECCION_SEGURIDAD ? View.VISIBLE : View.GONE);
         sectionEditarPerfil.setVisibility(seccion == SECCION_EDITAR ? View.VISIBLE : View.GONE);
@@ -301,6 +315,7 @@ public class PerfilActivity extends AppCompatActivity {
         }
 
         if (perfilActual == null) perfilActual = new UsuarioPerfil();
+        // El modelo local se actualiza antes de persistir para mantener coherencia en UI.
         perfilActual.setNombreMostrado(nombre);
         perfilActual.setTelefono(telefono);
         perfilActual.setCiudad(ciudad);
@@ -413,6 +428,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         btnGuardarPerfil.setEnabled(enabled);
 
+        // Si ya existe password vinculada, el boton no debe permitir mas enlaces.
         if (perfilActual != null && perfilActual.isTienePassword()) {
             btnVincularPassword.setEnabled(false);
         } else {
@@ -448,6 +464,7 @@ public class PerfilActivity extends AppCompatActivity {
         if (perfilActual != null) perfilActual.setTienePassword(tienePassword);
 
         if (tienePassword) {
+            // Si ya tiene password, ocultamos inputs para evitar flujo redundante.
             tvPasswordEstado.setText(getString(R.string.profile_password_exists));
             btnVincularPassword.setText(getString(R.string.profile_password_exists_button));
             btnVincularPassword.setEnabled(false);
@@ -463,6 +480,7 @@ public class PerfilActivity extends AppCompatActivity {
     }
 
     private String valorCampoResumen(String valor) {
+        // Normaliza strings vacios para que el resumen no muestre texto en blanco.
         if (TextUtils.isEmpty(valor)) return getString(R.string.profile_status_unset);
         String limpio = valor.trim();
         return limpio.isEmpty() ? getString(R.string.profile_status_unset) : limpio;

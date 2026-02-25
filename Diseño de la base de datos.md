@@ -13,10 +13,13 @@ Campos usados por la app:
 - `metodosVinculados` (array<string>): metodos vinculados a la cuenta.
 - `nombreMostrado` (string): nombre visible del usuario.
 - `email` (string): email principal de la cuenta.
+- `telefono` (string): telefono opcional del perfil.
+- `ciudad` (string): ciudad opcional del perfil.
+- `biografia` (string): bio corta opcional del perfil.
 - `rol` (string): por defecto `usuario`.
 - `bloqueado` (boolean): por defecto `false`.
 - `creadoEn` (timestamp): solo en alta inicial.
-- `updatedAt` (timestamp): cuando se actualiza nombre desde perfil.
+- `updatedAt` (timestamp): cuando se actualiza perfil o metodos vinculados.
 - `aceptaTerminos` (boolean): control de terminos y condiciones.
 - `aceptaTerminosEn` (timestamp): fecha de aceptacion.
 - `tienePassword` (boolean): marca para cuentas que anaden password.
@@ -52,3 +55,8 @@ Para evitar desalineaciones, el proyecto centraliza nombres de colecciones y cam
 - `app/src/main/java/com/example/tarraco_fest/Data/FirestoreSchema.java`
 
 Si se cambia un nombre en Firestore, hay que actualizar esa clase y luego ajustar/migrar datos.
+
+## 4) Nota sobre roles
+
+- El campo `rol` se mantiene para control interno de permisos (por ejemplo admin/usuario).
+- La UI de perfil no muestra el rol al usuario final.

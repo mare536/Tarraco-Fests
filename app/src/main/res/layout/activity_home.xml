@@ -34,4 +34,11 @@
         android:layout_height="wrap_content"
         android:text="Perfil" />
 
+    <Button
+        android:id="@+id/btnAdmin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/admin_panel_title"
+        android:visibility="gone" />
+
 </LinearLayout>

@@ -6,6 +6,10 @@ import com.google.firebase.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Modelo de dominio para perfil de usuario.
+ * Incluye campos editables de cuenta y metadatos internos (rol, metodos, bloqueo).
+ */
 public class UsuarioPerfil {
 
     private String uid = "";
@@ -145,6 +149,7 @@ public class UsuarioPerfil {
     }
 
     public boolean esAdmin() {
+        // El rol es uso interno de permisos; no se muestra en UI de usuario final.
         return FirestoreSchema.UserRoles.ADMIN.equalsIgnoreCase(rol);
     }
 
