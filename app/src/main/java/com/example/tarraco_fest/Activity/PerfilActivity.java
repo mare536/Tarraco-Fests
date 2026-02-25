@@ -1,170 +1,393 @@
 package com.example.tarraco_fest.Activity;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
+import android.text.TextUtils;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.GravityCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.example.tarraco_fest.Modelo.UsuarioPerfil;
 import com.example.tarraco_fest.R;
-import com.google.firebase.Timestamp;
-import com.google.firebase.auth.EmailAuthProvider;
+import com.example.tarraco_fest.Repository.UsuarioRepository;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class PerfilActivity extends AppCompatActivity {
 
-    private TextView tvInfo;
-    private EditText etNombre;
+    private static final int SEC_INFO = 0;
+    private static final int SEC_SEGURIDAD = 1;
+    private static final int SEC_EDITAR = 2;
 
-    private EditText etPass1, etPass2;
-    private Button btnGuardarNombre, btnVincularPassword;
+    private final UsuarioRepository usuarioRepository = new UsuarioRepository();
+
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+
+    private android.view.View perfilContent;
+    private android.view.View sectionInfoGeneral;
+    private android.view.View sectionSeguridad;
+    private android.view.View sectionEditarDatos;
+    private android.view.View layoutVincularPassword;
+
+    private TextView tvInfoEmail;
+    private TextView tvInfoNombre;
+    private TextView tvInfoTelefono;
+    private TextView tvInfoCiudad;
+    private TextView tvInfoBiografia;
+    private TextView tvSeguridadMetodo;
+    private TextView tvSeguridadPasswordEstado;
+
+    private TextInputEditText etNombre;
+    private TextInputEditText etTelefono;
+    private TextInputEditText etCiudad;
+    private TextInputEditText etBiografia;
+    private TextInputEditText etPass1;
+    private TextInputEditText etPass2;
+
+    private MaterialButton btnGuardarNombre;
+    private MaterialButton btnVincularPassword;
+    private MaterialButton btnCambiarPassword;
+
+    private UsuarioPerfil perfilActual;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_perfil);
 
-        tvInfo = findViewById(R.id.tvInfo);
-        etNombre = findViewById(R.id.etNombre);
+        bindViews();
+        aplicarInsetsSistema();
+        configurarDrawer();
+        configurarAcciones();
+        mostrarSeccion(SEC_INFO);
+        cargarPerfil();
+    }
 
+    private void bindViews() {
+        drawerLayout = findViewById(R.id.drawerPerfil);
+        navigationView = findViewById(R.id.navPerfil);
+
+        perfilContent = findViewById(R.id.perfilContent);
+        sectionInfoGeneral = findViewById(R.id.sectionInfoGeneral);
+        sectionSeguridad = findViewById(R.id.sectionSeguridad);
+        sectionEditarDatos = findViewById(R.id.sectionEditarDatos);
+        layoutVincularPassword = findViewById(R.id.layoutVincularPassword);
+
+        tvInfoEmail = findViewById(R.id.tvInfoEmail);
+        tvInfoNombre = findViewById(R.id.tvInfoNombre);
+        tvInfoTelefono = findViewById(R.id.tvInfoTelefono);
+        tvInfoCiudad = findViewById(R.id.tvInfoCiudad);
+        tvInfoBiografia = findViewById(R.id.tvInfoBiografia);
+        tvSeguridadMetodo = findViewById(R.id.tvSeguridadMetodo);
+        tvSeguridadPasswordEstado = findViewById(R.id.tvSeguridadPasswordEstado);
+
+        etNombre = findViewById(R.id.etNombre);
+        etTelefono = findViewById(R.id.etTelefono);
+        etCiudad = findViewById(R.id.etCiudad);
+        etBiografia = findViewById(R.id.etBiografia);
         etPass1 = findViewById(R.id.etPass1);
         etPass2 = findViewById(R.id.etPass2);
 
         btnGuardarNombre = findViewById(R.id.btnGuardarNombre);
         btnVincularPassword = findViewById(R.id.btnVincularPassword);
+        btnCambiarPassword = findViewById(R.id.btnCambiarPassword);
+    }
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            Toast.makeText(this, "No hay sesión", Toast.LENGTH_LONG).show();
-            finish();
+    private void aplicarInsetsSistema() {
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) perfilContent.getLayoutParams();
+        final int baseTop = lp.topMargin;
+        final int baseBottom = lp.bottomMargin;
+
+        ViewCompat.setOnApplyWindowInsetsListener(perfilContent, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            params.topMargin = baseTop + systemBars.top;
+            params.bottomMargin = baseBottom + systemBars.bottom;
+            v.setLayoutParams(params);
+            return insets;
+        });
+
+        ViewCompat.requestApplyInsets(perfilContent);
+    }
+
+    private void configurarDrawer() {
+        findViewById(R.id.btnPerfilMenu).setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+
+        navigationView.setCheckedItem(R.id.nav_info_general);
+        navigationView.setNavigationItemSelectedListener(item -> {
+            boolean handled = manejarClickDrawer(item.getItemId());
+            if (handled) drawerLayout.closeDrawer(GravityCompat.START);
+            return handled;
+        });
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                    return;
+                }
+                setEnabled(false);
+                PerfilActivity.super.onBackPressed();
+            }
+        });
+    }
+
+    private boolean manejarClickDrawer(int itemId) {
+        if (itemId == R.id.nav_inicio) {
+            volverAInicio();
+            return true;
+        }
+        if (itemId == R.id.nav_info_general) {
+            mostrarSeccion(SEC_INFO);
+            navigationView.setCheckedItem(R.id.nav_info_general);
+            return true;
+        }
+        if (itemId == R.id.nav_seguridad) {
+            mostrarSeccion(SEC_SEGURIDAD);
+            navigationView.setCheckedItem(R.id.nav_seguridad);
+            return true;
+        }
+        if (itemId == R.id.nav_editar_datos) {
+            mostrarSeccion(SEC_EDITAR);
+            navigationView.setCheckedItem(R.id.nav_editar_datos);
+            return true;
+        }
+        if (itemId == R.id.nav_cerrar_sesion) {
+            cerrarSesion();
+            return true;
+        }
+        return false;
+    }
+
+    private void configurarAcciones() {
+        btnGuardarNombre.setOnClickListener(v -> guardarCambiosPerfil());
+        btnVincularPassword.setOnClickListener(v -> vincularPassword());
+        btnCambiarPassword.setOnClickListener(v -> cambiarPassword());
+    }
+
+    private void cargarPerfil() {
+        usuarioRepository.cargarPerfilActual(new UsuarioRepository.PerfilCallback() {
+            @Override
+            public void onOk(UsuarioPerfil perfil) {
+                perfilActual = perfil;
+                renderizarPerfil(perfil);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(PerfilActivity.this, getString(R.string.profile_load_error), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void renderizarPerfil(UsuarioPerfil perfil) {
+        String noEstablecida = getString(R.string.profile_not_set);
+
+        String nombre = perfil.getNombreMostrado();
+        if (esNombrePredeterminado(nombre)) nombre = "";
+
+        tvInfoEmail.setText(valorONoEstablecida(perfil.getEmail(), noEstablecida));
+        tvInfoNombre.setText(valorONoEstablecida(nombre, noEstablecida));
+        tvInfoTelefono.setText(valorONoEstablecida(perfil.getTelefono(), noEstablecida));
+        tvInfoCiudad.setText(valorONoEstablecida(perfil.getCiudad(), noEstablecida));
+        tvInfoBiografia.setText(valorONoEstablecida(perfil.getBiografia(), noEstablecida));
+
+        tvSeguridadMetodo.setText(obtenerMetodoAcceso(perfil, noEstablecida));
+        if (perfil.tieneMetodoEmail()) {
+            tvSeguridadPasswordEstado.setText(getString(R.string.profile_password_linked));
+            layoutVincularPassword.setVisibility(android.view.View.GONE);
+            btnCambiarPassword.setVisibility(android.view.View.VISIBLE);
+            btnCambiarPassword.setEnabled(true);
+        } else {
+            tvSeguridadPasswordEstado.setText(getString(R.string.profile_password_not_linked));
+            layoutVincularPassword.setVisibility(android.view.View.VISIBLE);
+            btnCambiarPassword.setVisibility(android.view.View.GONE);
+            btnVincularPassword.setEnabled(true);
+            btnVincularPassword.setText(getString(R.string.profile_security_add_password));
+        }
+
+        etNombre.setText(nombre);
+        etTelefono.setText(perfil.getTelefono());
+        etCiudad.setText(perfil.getCiudad());
+        etBiografia.setText(perfil.getBiografia());
+
+        etPass1.setText("");
+        etPass2.setText("");
+    }
+
+    private void guardarCambiosPerfil() {
+        if (perfilActual == null) {
+            Toast.makeText(this, getString(R.string.profile_load_error), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        tvInfo.setText("Cuenta: " + (user.getEmail() != null ? user.getEmail() : "(sin email)"));
+        String nombre = texto(etNombre);
+        String telefono = texto(etTelefono);
+        String ciudad = texto(etCiudad);
+        String biografia = texto(etBiografia);
 
-        // Cargar nombre desde Auth como base (luego Firestore lo pisa si existe)
-        if (user.getDisplayName() != null) etNombre.setText(user.getDisplayName());
-
-        // (Opcional) cargar nombre desde Firestore si lo tienes
-        FirebaseFirestore.getInstance().collection("usuarios").document(user.getUid()).get()
-                .addOnSuccessListener(doc -> {
-                    String nombre = doc.getString("nombreMostrado");
-                    if (nombre != null && !nombre.trim().isEmpty()) etNombre.setText(nombre);
-                });
-
-        btnGuardarNombre.setOnClickListener(v -> guardarNombre());
-        btnVincularPassword.setOnClickListener(v -> vincularPassword());
-
-        // Si ya tiene proveedor password, puedes ocultar la sección:
-        if (tieneProviderPassword(user)) {
-            btnVincularPassword.setEnabled(false);
-            btnVincularPassword.setText("Ya tienes contraseña");
-        }
-    }
-
-    private void guardarNombre() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
-
-        String nombre = etNombre.getText().toString().trim();
-        etNombre.setError(null);
-
-        if (nombre.isEmpty()) {
-            etNombre.setError("Nombre obligatorio");
+        if (TextUtils.isEmpty(nombre)) {
+            etNombre.setError(getString(R.string.profile_name_required));
             etNombre.requestFocus();
             return;
         }
 
-        // 1) Guardar en Auth (displayName)
-        UserProfileChangeRequest req =
-                new UserProfileChangeRequest.Builder().setDisplayName(nombre).build();
+        if (!TextUtils.isEmpty(telefono) && !esTelefonoValido(telefono)) {
+            etTelefono.setError(getString(R.string.profile_phone_invalid));
+            etTelefono.requestFocus();
+            return;
+        }
 
-        user.updateProfile(req)
-                .addOnSuccessListener(v -> {
-                    // 2) Guardar en Firestore
-                    Map<String, Object> up = new HashMap<>();
-                    up.put("nombreMostrado", nombre);
-                    up.put("updatedAt", Timestamp.now());
+        perfilActual.setNombreMostrado(nombre);
+        perfilActual.setTelefono(telefono);
+        perfilActual.setCiudad(ciudad);
+        perfilActual.setBiografia(biografia);
 
-                    FirebaseFirestore.getInstance()
-                            .collection("usuarios").document(user.getUid())
-                            .set(up, SetOptions.merge())
-                            .addOnSuccessListener(x -> Toast.makeText(this, "Nombre actualizado", Toast.LENGTH_SHORT).show())
-                            .addOnFailureListener(e -> Toast.makeText(this, "Firestore error: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Auth error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+        btnGuardarNombre.setEnabled(false);
+        usuarioRepository.guardarInformacionGeneral(perfilActual, new UsuarioRepository.ActionCallback() {
+            @Override
+            public void onOk() {
+                btnGuardarNombre.setEnabled(true);
+                Toast.makeText(PerfilActivity.this, getString(R.string.profile_save_ok), Toast.LENGTH_SHORT).show();
+                cargarPerfil();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                btnGuardarNombre.setEnabled(true);
+                Toast.makeText(PerfilActivity.this, getString(R.string.profile_save_error), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void vincularPassword() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null || user.getEmail() == null) {
-            Toast.makeText(this, "No se pudo obtener el email de la cuenta", Toast.LENGTH_LONG).show();
+        if (perfilActual != null && perfilActual.tieneMetodoEmail()) {
+            Toast.makeText(this, getString(R.string.profile_password_already_linked), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (tieneProviderPassword(user)) {
-            Toast.makeText(this, "Esta cuenta ya tiene contraseña", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        String pass1 = texto(etPass1);
+        String pass2 = texto(etPass2);
 
-        String p1 = etPass1.getText().toString();
-        String p2 = etPass2.getText().toString();
-
-        etPass1.setError(null);
-        etPass2.setError(null);
-
-        if (p1.isEmpty()) {
-            etPass1.setError("Contraseña obligatoria");
+        if (TextUtils.isEmpty(pass1)) {
+            etPass1.setError(getString(R.string.profile_password_required));
             etPass1.requestFocus();
             return;
         }
-        if (p1.length() < 6) {
-            etPass1.setError("Mínimo 6 caracteres");
+        if (pass1.length() < 6) {
+            etPass1.setError(getString(R.string.profile_password_min));
             etPass1.requestFocus();
             return;
         }
-        if (!p1.equals(p2)) {
-            etPass2.setError("Las contraseñas no coinciden");
+        if (!pass1.equals(pass2)) {
+            etPass2.setError(getString(R.string.profile_password_mismatch));
             etPass2.requestFocus();
             return;
         }
 
-        // Vincula email/password al usuario actual (normalmente logueado con Google)
-        user.linkWithCredential(EmailAuthProvider.getCredential(user.getEmail(), p1))
-                .addOnSuccessListener(r -> {
-                    // Reflejar en Firestore
-                    Map<String, Object> up = new HashMap<>();
-                    up.put("tienePassword", true);
-                    up.put("passwordVinculadaEn", Timestamp.now());
+        btnVincularPassword.setEnabled(false);
+        usuarioRepository.vincularPassword(pass1, new UsuarioRepository.ActionCallback() {
+            @Override
+            public void onOk() {
+                btnVincularPassword.setEnabled(true);
+                Toast.makeText(PerfilActivity.this, getString(R.string.profile_password_link_ok), Toast.LENGTH_SHORT).show();
+                etPass1.setText("");
+                etPass2.setText("");
+                cargarPerfil();
+            }
 
-                    FirebaseFirestore.getInstance()
-                            .collection("usuarios").document(user.getUid())
-                            .set(up, SetOptions.merge())
-                            .addOnSuccessListener(v -> {
-                                Toast.makeText(this, "Contraseña añadida", Toast.LENGTH_LONG).show();
-                                btnVincularPassword.setEnabled(false);
-                                btnVincularPassword.setText("Ya tienes contraseña");
-                            })
-                            .addOnFailureListener(e -> Toast.makeText(this, "Link OK pero Firestore falló: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error vinculando contraseña: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                );
+            @Override
+            public void onError(Exception e) {
+                btnVincularPassword.setEnabled(true);
+                Toast.makeText(PerfilActivity.this, getString(R.string.profile_password_link_error), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
-    private boolean tieneProviderPassword(FirebaseUser user) {
-        for (com.google.firebase.auth.UserInfo info : user.getProviderData()) {
-            if ("password".equals(info.getProviderId())) return true;
+    private void cambiarPassword() {
+        String email = perfilActual != null ? perfilActual.getEmail() : "";
+        if (TextUtils.isEmpty(email)) {
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUser != null && currentUser.getEmail() != null) {
+                email = currentUser.getEmail().trim();
+            }
         }
-        return false;
+
+        if (TextUtils.isEmpty(email)) {
+            Toast.makeText(this, getString(R.string.profile_password_change_missing_email), Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        btnCambiarPassword.setEnabled(false);
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                .addOnSuccessListener(unused -> {
+                    btnCambiarPassword.setEnabled(true);
+                    Toast.makeText(this, getString(R.string.profile_password_change_sent), Toast.LENGTH_LONG).show();
+                })
+                .addOnFailureListener(e -> {
+                    btnCambiarPassword.setEnabled(true);
+                    Toast.makeText(this, getString(R.string.profile_password_change_error), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void mostrarSeccion(int seccion) {
+        sectionInfoGeneral.setVisibility(seccion == SEC_INFO ? android.view.View.VISIBLE : android.view.View.GONE);
+        sectionSeguridad.setVisibility(seccion == SEC_SEGURIDAD ? android.view.View.VISIBLE : android.view.View.GONE);
+        sectionEditarDatos.setVisibility(seccion == SEC_EDITAR ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    private void volverAInicio() {
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
+    }
+
+    private void cerrarSesion() {
+        FirebaseAuth.getInstance().signOut();
+        Intent intent = new Intent(this, LandingActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private String valorONoEstablecida(String valor, String fallback) {
+        return TextUtils.isEmpty(valor == null ? "" : valor.trim()) ? fallback : valor.trim();
+    }
+
+    private String obtenerMetodoAcceso(UsuarioPerfil perfil, String fallback) {
+        boolean tieneGoogle = perfil.tieneMetodoGoogle();
+        boolean tieneEmail = perfil.tieneMetodoEmail();
+
+        if (tieneGoogle && tieneEmail) return getString(R.string.profile_method_google_email);
+        if (tieneGoogle) return getString(R.string.profile_method_google);
+        if (tieneEmail) return getString(R.string.profile_method_email);
+        return fallback;
+    }
+
+    private boolean esNombrePredeterminado(String nombre) {
+        return !TextUtils.isEmpty(nombre) && "Usuario".equalsIgnoreCase(nombre.trim());
+    }
+
+    private String texto(TextInputEditText et) {
+        if (et == null || et.getText() == null) return "";
+        return et.getText().toString().trim();
+    }
+
+    private boolean esTelefonoValido(String telefono) {
+        return telefono.matches("^[0-9+()\\-\\s]{6,20}$");
     }
 }

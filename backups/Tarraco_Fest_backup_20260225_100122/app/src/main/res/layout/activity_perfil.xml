@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cuenta:"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Datos -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Datos"
+            android:textStyle="bold"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre"
+            android:inputType="textPersonName"/>
+
+        <Button
+            android:id="@+id/btnGuardarNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Guardar nombre"
+            android:layout_marginTop="10dp"/>
+
+        <!-- Seguridad -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Seguridad"
+            android:textStyle="bold"
+            android:layout_marginTop="18dp"
+            android:paddingBottom="6dp"/>
+
+        <EditText
+            android:id="@+id/etPass1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nueva contraseña (mín. 6)"
+            android:inputType="textPassword"/>
+
+        <EditText
+            android:id="@+id/etPass2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Repite contraseña"
+            android:inputType="textPassword"
+            android:layout_marginTop="10dp"/>
+
+        <Button
+            android:id="@+id/btnVincularPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Añadir contraseña"
+            android:layout_marginTop="12dp"/>
+
+    </LinearLayout>
+</ScrollView>

@@ -1,14 +1,59 @@
 <resources>
     <string name="app_name">Tarraco_Fest</string>
     <string name="eventos">Eventos</string>
+    <string name="home_menu_open">Abrir menu</string>
+    <string name="home_nav_header_subtitle">Accesos rapidos</string>
+    <string name="home_menu_events">Eventos</string>
+    <string name="home_menu_profile">Perfil</string>
+    <string name="home_menu_admin">Panel admin</string>
+    <string name="home_menu_settings">Ajustes</string>
+    <string name="home_menu_logout">Cerrar sesion</string>
+    <string name="home_settings_pending">Ajustes disponibles pronto</string>
 
     <!-- Perfil -->
     <string name="profile_nav_header_title">Tarraco Fests</string>
     <string name="profile_nav_header_subtitle">Tu perfil</string>
+    <string name="profile_menu_home">Inicio</string>
     <string name="profile_menu_info">Informacion general</string>
     <string name="profile_menu_security">Seguridad</string>
     <string name="profile_menu_edit">Modificar datos</string>
     <string name="profile_menu_logout">Cerrar sesion</string>
+    <string name="profile_title">Perfil de usuario</string>
+    <string name="profile_chip">MI CUENTA</string>
+    <string name="profile_open_menu">Abrir menu de perfil</string>
+    <string name="profile_field_email">Correo</string>
+    <string name="profile_field_name">Nombre</string>
+    <string name="profile_field_phone">Telefono</string>
+    <string name="profile_field_city">Ciudad</string>
+    <string name="profile_field_bio">Biografia</string>
+    <string name="profile_field_access_method">Metodo de acceso</string>
+    <string name="profile_field_password_status">Estado de contrase&#241;a</string>
+    <string name="profile_not_set">No establecida</string>
+    <string name="profile_password_new">Nueva contrase&#241;a</string>
+    <string name="profile_password_repeat">Repetir contrase&#241;a</string>
+    <string name="profile_security_add_password">A&#241;adir contrase&#241;a</string>
+    <string name="profile_security_change_password">Cambiar contrase&#241;a</string>
+    <string name="profile_password_already_linked">Ya tienes contrase&#241;a</string>
+    <string name="profile_password_linked">Contrase&#241;a configurada</string>
+    <string name="profile_password_not_linked">Sin contrase&#241;a</string>
+    <string name="profile_save_changes">Guardar cambios</string>
+    <string name="profile_edit_subtitle">Actualiza tus datos personales para personalizar tu cuenta.</string>
+    <string name="profile_method_google">Google</string>
+    <string name="profile_method_email">Correo y contrase&#241;a</string>
+    <string name="profile_method_google_email">Google y correo con contrase&#241;a</string>
+    <string name="profile_load_error">No se pudo cargar tu perfil</string>
+    <string name="profile_save_ok">Perfil actualizado</string>
+    <string name="profile_save_error">No se pudo guardar el perfil</string>
+    <string name="profile_password_link_ok">Contrase&#241;a vinculada correctamente</string>
+    <string name="profile_password_link_error">No se pudo vincular la contrase&#241;a</string>
+    <string name="profile_password_change_sent">Te enviamos un correo para cambiar tu contrase&#241;a</string>
+    <string name="profile_password_change_error">No se pudo enviar el correo para cambiar la contrase&#241;a</string>
+    <string name="profile_password_change_missing_email">No hay un correo disponible para cambiar la contrase&#241;a</string>
+    <string name="profile_name_required">El nombre es obligatorio</string>
+    <string name="profile_phone_invalid">Telefono invalido</string>
+    <string name="profile_password_required">Contrase&#241;a obligatoria</string>
+    <string name="profile_password_min">Minimo 6 caracteres</string>
+    <string name="profile_password_mismatch">Las contrase&#241;as no coinciden</string>
 
     <!-- Admin -->
     <string name="admin_panel_title">Panel admin</string>

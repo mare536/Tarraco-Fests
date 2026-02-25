@@ -1,0 +1,4 @@
+Backup created: C:\Users\eric_\AndroidStudioProjects\Tarraco_Fest\backups\Tarraco_Fest_backup_20260225_100122
+Date: 2026-02-25 10:01:22
+Git HEAD: 447d267
+Robocopy exit code: 1

@@ -1,0 +1,61 @@
+<resources>
+    <string name="app_name">Tarraco_Fest</string>
+    <string name="eventos">Eventos</string>
+
+    <!-- Perfil -->
+    <string name="profile_nav_header_title">Tarraco Fests</string>
+    <string name="profile_nav_header_subtitle">Tu perfil</string>
+    <string name="profile_menu_info">Informacion general</string>
+    <string name="profile_menu_security">Seguridad</string>
+    <string name="profile_menu_edit">Modificar datos</string>
+    <string name="profile_menu_logout">Cerrar sesion</string>
+
+    <!-- Admin -->
+    <string name="admin_panel_title">Panel admin</string>
+    <string name="admin_panel_chip">ADMINISTRACION</string>
+    <string name="admin_panel_users">Gestionar usuarios</string>
+    <string name="admin_panel_events">Gestionar eventos</string>
+    <string name="admin_back">Volver</string>
+    <string name="admin_refresh">Recargar</string>
+    <string name="admin_edit">Editar</string>
+    <string name="admin_cancel">Cancelar</string>
+    <string name="admin_save">Guardar</string>
+    <string name="admin_checking_access">Comprobando permisos de administrador...</string>
+    <string name="admin_access_granted">Acceso concedido</string>
+    <string name="admin_access_denied">No tienes permisos de administrador</string>
+    <string name="admin_access_error">No se pudo validar permisos admin</string>
+
+    <string name="admin_users_title">Usuarios</string>
+    <string name="admin_users_subtitle">Visualiza cuentas, gestiona bloqueos y promueve administradores.</string>
+    <string name="admin_user_role_fmt">Rol: %1$s</string>
+    <string name="admin_user_active">Estado: activa</string>
+    <string name="admin_user_blocked">Estado: bloqueada</string>
+    <string name="admin_user_block">Bloquear</string>
+    <string name="admin_user_unblock">Desbloquear</string>
+    <string name="admin_user_make_admin">Hacer admin</string>
+    <string name="admin_user_make_user">Hacer usuario</string>
+    <string name="admin_user_updated_ok">Usuario actualizado</string>
+    <string name="admin_user_update_error">No se pudo actualizar usuario</string>
+    <string name="admin_users_load_error">No se pudo cargar usuarios</string>
+
+    <string name="admin_events_title">Eventos</string>
+    <string name="admin_events_subtitle">Crea eventos, edita informacion y activa o desactiva su publicacion.</string>
+    <string name="admin_events_create">Crear evento</string>
+    <string name="admin_events_load_error">No se pudo cargar eventos</string>
+    <string name="admin_event_create_title">Crear evento</string>
+    <string name="admin_event_edit_title">Editar evento</string>
+    <string name="admin_event_title_hint">Titulo</string>
+    <string name="admin_event_place_hint">Lugar</string>
+    <string name="admin_event_date_hint">Fecha (yyyy-MM-dd HH:mm)</string>
+    <string name="admin_event_title_required">El titulo es obligatorio</string>
+    <string name="admin_event_date_invalid">Fecha invalida (usa yyyy-MM-dd HH:mm)</string>
+    <string name="admin_event_saved_ok">Evento guardado</string>
+    <string name="admin_event_save_error">No se pudo guardar evento</string>
+    <string name="admin_event_active_checkbox">Evento activo</string>
+    <string name="admin_event_active">Estado: activo</string>
+    <string name="admin_event_inactive">Estado: inactivo</string>
+    <string name="admin_event_activate">Activar</string>
+    <string name="admin_event_deactivate">Desactivar</string>
+    <string name="admin_event_place_fmt">Lugar: %1$s</string>
+    <string name="admin_event_date_fmt">Fecha: %1$s</string>
+</resources>

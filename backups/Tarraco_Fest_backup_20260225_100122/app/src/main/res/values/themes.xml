@@ -1,0 +1,45 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Tarraco_Fest" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <style name="Theme.Tarraco_Fest" parent="Base.Theme.Tarraco_Fest" />
+
+    <style name="ThemeOverlay.TarracoFest.Dialog.Light" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowBackground">@drawable/bg_dialog_festival</item>
+    </style>
+
+    <!-- Registro: popup festival/glass (sin morado, adaptativo claro/oscuro) -->
+    <style name="ThemeOverlay.TarracoFests.RegisterDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="android:forceDarkAllowed">false</item>
+
+        <!-- Fondo tipo glass -->
+        <item name="android:windowBackground">@drawable/bg_dialog_glass</item>
+
+        <!-- Quita el morado por defecto del AlertDialog -->
+        <item name="colorPrimary">@color/festival_orange</item>
+        <item name="colorSecondary">@color/festival_orange</item>
+        <item name="colorControlActivated">@color/festival_orange</item>
+
+        <!-- Botones -->
+        <item name="buttonBarPositiveButtonStyle">@style/TarracoFests.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/TarracoFests.DialogButton.Negative</item>
+    </style>
+
+    <style name="TarracoFests.DialogButton.Positive" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/festival_orange</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="cornerRadius">16dp</item>
+    </style>
+
+    <style name="TarracoFests.DialogButton.Negative" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/festival_orange</item>
+        <item name="android:textColor">@color/festival_orange</item>
+        <item name="cornerRadius">16dp</item>
+    </style>
+
+
+</resources>
