@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dialog_surface">#1E1E1E</color>
+    <color name="dialog_on_surface">#FFFFFF</color>
+    <color name="dialog_on_surface_2">#BDBDBD</color>
+
+    <!-- Registro (popup) - estilo festival/glass -->
+    <color name="festival_orange">#FF8A1A</color>
+    <color name="festival_orange_dark">#FF7A00</color>
+
+    <!-- Fondo tipo glass (semi-transparente) -->
+    <color name="dialog_glass_bg">#CC1E1E1E</color>
+    <color name="dialog_glass_stroke">#33FFFFFF</color>
+    <color name="dialog_input_bg">#22FFFFFF</color>
+    <color name="dialog_divider">#22FFFFFF</color>
+    <color name="dialog_text">#F2F2F2</color>
+    <color name="dialog_hint">#99FFFFFF</color>
+
+</resources>
