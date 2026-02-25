@@ -16,4 +16,41 @@
     <color name="dialog_text">#F2F2F2</color>
     <color name="dialog_hint">#99FFFFFF</color>
 
+    <!-- Marca -->
+    <color name="my_light_primary">#FF8A1A</color>
+    <color name="my_dark_primary">#FFB36B</color>
+    <color name="tf_orange">#FF8A1A</color>
+
+    <!-- Botones auth -->
+    <color name="auth_btn_primary_bg">#FF8A1A</color>
+    <color name="auth_btn_primary_bg_pressed">#FF7A00</color>
+    <color name="auth_btn_primary_bg_disabled">#805A3A</color>
+    <color name="auth_btn_primary_text">#FFFFFFFF</color>
+
+    <color name="auth_btn_secondary_bg">#1AFFFFFF</color>
+    <color name="auth_btn_secondary_bg_pressed">#2AFFFFFF</color>
+    <color name="auth_btn_secondary_bg_disabled">#14FFFFFF</color>
+    <color name="auth_btn_secondary_stroke">#66FFFFFF</color>
+    <color name="auth_btn_secondary_stroke_disabled">#33FFFFFF</color>
+    <color name="auth_btn_secondary_text">#FFFFFFFF</color>
+
+    <!-- Boton Google -->
+    <color name="google_btn_bg">#FFFFFFFF</color>
+    <color name="google_btn_bg_pressed">#FFF2F2F2</color>
+    <color name="google_btn_bg_disabled">#FFE0E0E0</color>
+    <color name="google_btn_stroke">#29000000</color>
+    <color name="google_btn_stroke_disabled">#16000000</color>
+
+    <!-- Superficies tarjetas -->
+    <color name="landing_card_surface">#D11E1E1E</color>
+
+    <!-- Estados / roles -->
+    <color name="role_admin_bg">#33FFB74D</color>
+    <color name="role_admin_stroke">#80FFB74D</color>
+    <color name="role_admin_text">#FFFFD180</color>
+
+    <color name="role_user_bg">#332196F3</color>
+    <color name="role_user_stroke">#8042A5F5</color>
+    <color name="role_user_text">#FFBBDEFB</color>
+
 </resources>

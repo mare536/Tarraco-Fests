@@ -18,4 +18,54 @@
     <color name="festival_primary">#FF9800</color>
     <color name="festival_card">#FFFFFF</color>
     <color name="festival_text_dark">#1D1D1D</color>
+
+    <!-- Marca -->
+    <color name="my_light_primary">#FF8A1A</color>
+    <color name="my_dark_primary">#FFB36B</color>
+    <color name="tf_orange">#FF8A1A</color>
+
+    <!-- Dialog / glass (base claro) -->
+    <color name="dialog_surface">#FFFFFF</color>
+    <color name="dialog_on_surface">#1D1D1D</color>
+    <color name="dialog_on_surface_2">#757575</color>
+    <color name="festival_orange">#FF8A1A</color>
+    <color name="festival_orange_dark">#FF7A00</color>
+    <color name="dialog_glass_bg">#CCFFFFFF</color>
+    <color name="dialog_glass_stroke">#55FFFFFF</color>
+    <color name="dialog_input_bg">#22FFFFFF</color>
+    <color name="dialog_divider">#22FFFFFF</color>
+    <color name="dialog_text">#1F2937</color>
+    <color name="dialog_hint">#6B7280</color>
+
+    <!-- Botones auth -->
+    <color name="auth_btn_primary_bg">#FF8A1A</color>
+    <color name="auth_btn_primary_bg_pressed">#FF7A00</color>
+    <color name="auth_btn_primary_bg_disabled">#FFD9B897</color>
+    <color name="auth_btn_primary_text">#FFFFFFFF</color>
+
+    <color name="auth_btn_secondary_bg">#FFFDF9F3</color>
+    <color name="auth_btn_secondary_bg_pressed">#FFF8EAD8</color>
+    <color name="auth_btn_secondary_bg_disabled">#FFF2EEE8</color>
+    <color name="auth_btn_secondary_stroke">#FF8A1A</color>
+    <color name="auth_btn_secondary_stroke_disabled">#FFD9C1A6</color>
+    <color name="auth_btn_secondary_text">#CC5C00</color>
+
+    <!-- Boton Google -->
+    <color name="google_btn_bg">#FFFFFFFF</color>
+    <color name="google_btn_bg_pressed">#FFF7F7F7</color>
+    <color name="google_btn_bg_disabled">#FFEDEDED</color>
+    <color name="google_btn_stroke">#1F000000</color>
+    <color name="google_btn_stroke_disabled">#14000000</color>
+
+    <!-- Superficies tarjetas -->
+    <color name="landing_card_surface">#E6FFFFFF</color>
+
+    <!-- Estados / roles -->
+    <color name="role_admin_bg">#FFFCE9D6</color>
+    <color name="role_admin_stroke">#FFE0A35A</color>
+    <color name="role_admin_text">#9C4A00</color>
+
+    <color name="role_user_bg">#FFE8F2FF</color>
+    <color name="role_user_stroke">#FFA9C8F5</color>
+    <color name="role_user_text">#1E5AA5</color>
 </resources>

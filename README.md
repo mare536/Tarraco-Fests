@@ -61,3 +61,7 @@ El desenvolupament seguirà un enfocament **iteratiu i incremental**, dividit en
 
 ---
 *Projecte desenvolupat com a part del cicle formatiu de DAM (Desenvolupament d'Aplicacions Multiplataforma).*
+
+## Documentacion tecnica adicional
+
+- Modulo admin (acceso por rol, gestion y ajustes visuales): `DOCUMENTACION_ADMIN.md`

@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -569,36 +570,48 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        boolean hasGoogle = false, hasPassword = false;
+        boolean hasGoogle = false;
+        boolean hasPassword = false;
         for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
             if ("google.com".equals(info.getProviderId())) hasGoogle = true;
             if ("password".equals(info.getProviderId())) hasPassword = true;
         }
 
         List<String> metodos = new ArrayList<>();
-        if (hasGoogle) metodos.add("google");
-        if (hasPassword) metodos.add("email");
+        if (hasGoogle) metodos.add(FirestoreSchema.AuthMethods.GOOGLE);
+        if (hasPassword) metodos.add(FirestoreSchema.AuthMethods.EMAIL);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("metodoAuth", metodoLogin);       // método de ESTA sesión: "google" / "email"
-        data.put("metodosVinculados", metodos);    // métodos asociados reales
-        data.put("nombreMostrado", u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
-        data.put("email", u.getEmail() != null ? u.getEmail() : "");
-        data.put("rol", "usuario");
-        data.put("bloqueado", false);
+        data.put(FirestoreSchema.UsuarioFields.METODO_AUTH, metodoLogin);
+        data.put(FirestoreSchema.UsuarioFields.METODOS_VINCULADOS, metodos);
+        data.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO, u.getDisplayName() != null ? u.getDisplayName() : "Usuario");
+        data.put(FirestoreSchema.UsuarioFields.EMAIL, u.getEmail() != null ? u.getEmail() : "");
+        data.put(FirestoreSchema.UsuarioFields.TIENE_PASSWORD, hasPassword);
+        data.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
 
         if (aceptaTerminosEnEstePaso) {
-            data.put("aceptaTerminos", true);
-            data.put("aceptaTerminosEn", Timestamp.now());
+            data.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS, true);
+            data.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS_EN, Timestamp.now());
         }
 
         String uid = u.getUid();
 
-        db.collection("usuarios").document(uid).get()
+        db.collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
                 .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) data.put("creadoEn", Timestamp.now());
+                    if (!doc.exists()) {
+                        data.put(FirestoreSchema.UsuarioFields.ROL, FirestoreSchema.UserRoles.USUARIO);
+                        data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
+                        data.put(FirestoreSchema.UsuarioFields.CREADO_EN, Timestamp.now());
+                    } else {
+                        if (!doc.contains(FirestoreSchema.UsuarioFields.ROL)) {
+                            data.put(FirestoreSchema.UsuarioFields.ROL, FirestoreSchema.UserRoles.USUARIO);
+                        }
+                        if (!doc.contains(FirestoreSchema.UsuarioFields.BLOQUEADO)) {
+                            data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
+                        }
+                    }
 
-                    db.collection("usuarios").document(uid)
+                    db.collection(FirestoreSchema.Collections.USUARIOS).document(uid)
                             .set(data, SetOptions.merge())
                             .addOnSuccessListener(v -> {
                                 if (irHome) {
@@ -670,3 +683,4 @@ public class AuthActivity extends AppCompatActivity {
         );
     }
 }
+

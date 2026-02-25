@@ -3,7 +3,10 @@ package com.example.prueba_tarracofests;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.tarraco_fest.R;
 import com.bumptech.glide.Glide;
 
 public class DetailActivity extends AppCompatActivity {
@@ -16,10 +19,10 @@ public class DetailActivity extends AppCompatActivity {
 
         if (e != null) {
             TextView title = findViewById(R.id.detailTitle);
-            TextView info = findViewById(R.id.detailInfo);
+            TextView info = findViewById(R.id.detailDate);
             TextView loc = findViewById(R.id.detailLocation);
-            TextView desc = findViewById(R.id.detailDesc);
-            ImageView img = findViewById(R.id.detailImg);
+            TextView desc = findViewById(R.id.detailDescription);
+            ImageView img = findViewById(R.id.detailImage);
 
             title.setText(e.titulo);
             info.setText("🗓 " + e.fecha + "  •  ⏰ " + e.hora);
