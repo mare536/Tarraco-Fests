@@ -1,6 +1,5 @@
 package com.example.tarraco_fest.Repository;
 
-import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -24,12 +23,12 @@ public class ReminderRepository {
         }
 
         Map<String, Object> data = new HashMap<>();
-        data.put(FirestoreSchema.RecordatorioFields.EVENT_ID, eventId);
-        data.put(FirestoreSchema.RecordatorioFields.CREATED_AT, Timestamp.now());
+        data.put("eventId", eventId);
+        data.put("createdAt", Timestamp.now());
 
         FirebaseFirestore.getInstance()
-                .collection(FirestoreSchema.Collections.USUARIOS).document(uid)
-                .collection(FirestoreSchema.Subcollections.RECORDATORIOS).document(eventId)
+                .collection("usuarios").document(uid)
+                .collection("recordatorios").document(eventId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onOk())
                 .addOnFailureListener(cb::onError);

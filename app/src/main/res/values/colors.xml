@@ -1,52 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="festival_primary">#FF2D55</color>   <!-- rosa fuerte -->
-    <color name="festival_secondary">#7C3AED</color> <!-- morado -->
-    <color name="festival_accent">#22C55E</color>    <!-- verde -->
-    <color name="festival_bg1">#FF2D55</color>
-    <color name="festival_bg2">#7C3AED</color>
-    <color name="festival_text_dark">#0F172A</color>
-    <color name="festival_text_light">#FFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+    <color name="text_black">#1D1D1D</color>
+    <color name="text_gray">#757575</color>
+    <color name="primary_orange">#FF9800</color>
+    <color name="primary_orange_dark">#F57C00</color>
+    <color name="background_light">#F5F5F5</color>
+
+    <color name="festival_primary">#FF9800</color>
     <color name="festival_card">#FFFFFF</color>
-    <color name="dialog_surface">#FFFFFF</color>
-    <color name="dialog_on_surface">#1E1E1E</color>
-    <color name="dialog_on_surface_2">#6B6B6B</color>
-
-    <!-- Registro (popup) - estilo festival/glass -->
-    <color name="festival_orange">#FF7A00</color>
-    <color name="festival_orange_dark">#E86E00</color>
-
-    <!-- Fondo tipo glass (semi-transparente) -->
-    <color name="dialog_glass_bg">#E6FFFFFF</color>
-    <color name="dialog_glass_stroke">#66FFFFFF</color>
-    <color name="dialog_input_bg">#80FFFFFF</color>
-    <color name="dialog_divider">#33FFFFFF</color>
-    <color name="dialog_text">#1A1A1A</color>
-    <color name="dialog_hint">#73000000</color>
-    <color name="tf_orange">#FF8A2B</color>
-    <color name="landing_card_surface">#E6FFFFFF</color>
-    <color name="auth_btn_primary_bg">#FF8A2B</color>
-    <color name="auth_btn_primary_bg_pressed">#F07C1D</color>
-    <color name="auth_btn_primary_bg_disabled">#E7B98E</color>
-    <color name="auth_btn_primary_text">#FFFFFF</color>
-    <color name="auth_btn_secondary_bg">#26FFFFFF</color>
-    <color name="auth_btn_secondary_bg_pressed">#40FFFFFF</color>
-    <color name="auth_btn_secondary_bg_disabled">#14FFFFFF</color>
-    <color name="auth_btn_secondary_stroke">#FF8A2B</color>
-    <color name="auth_btn_secondary_stroke_disabled">#80FF8A2B</color>
-    <color name="auth_btn_secondary_text">#C96412</color>
-    <color name="auth_btn_secondary_text_disabled">#80C96412</color>
-    <color name="google_btn_bg">#FFFFFF</color>
-    <color name="google_btn_bg_pressed">#F5F5F5</color>
-    <color name="google_btn_bg_disabled">#E8EAED</color>
-    <color name="google_btn_stroke">#DADCE0</color>
-    <color name="google_btn_stroke_disabled">#DADCE0</color>
-    <color name="google_btn_text">#3C4043</color>
-    <color name="role_user_bg">#26FF8A2B</color>
-    <color name="role_user_stroke">#99FF8A2B</color>
-    <color name="role_user_text">#A74F0A</color>
-    <color name="role_admin_bg">#1A0A84FF</color>
-    <color name="role_admin_stroke">#660A84FF</color>
-    <color name="role_admin_text">#0A4FA8</color>
-
+    <color name="festival_text_dark">#1D1D1D</color>
 </resources>

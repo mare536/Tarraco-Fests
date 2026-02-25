@@ -1,7 +1,7 @@
 package com.example.tarraco_fest.Repository;
 
-import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.Evento;
+import com.example.tarraco_fest.R;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -17,8 +17,8 @@ public class EventosRepository {
 
     public void cargarEventos(Callback cb) {
         FirebaseFirestore.getInstance()
-                .collection(FirestoreSchema.Collections.EVENTOS)
-                .orderBy(FirestoreSchema.EventoFields.INICIO)
+                .collection("eventos")
+                .orderBy("inicio")   // <-- tu campo real
                 .limit(50)
                 .get()
                 .addOnSuccessListener(qs -> {
@@ -26,14 +26,45 @@ public class EventosRepository {
 
                     for (QueryDocumentSnapshot d : qs) {
 
-                        Boolean activo = d.getBoolean(FirestoreSchema.EventoFields.ACTIVO);
+                        // Si quieres mostrar solo activos sin crear índices, filtramos aquí:
+                        Boolean activo = d.getBoolean("activo");
                         if (activo != null && !activo) continue;
 
                         Evento e = new Evento();
-                        e.id = d.getId();
-                        e.titulo = d.getString(FirestoreSchema.EventoFields.TITULO);
-                        e.inicio = d.getTimestamp(FirestoreSchema.EventoFields.INICIO);
-                        e.lugar = d.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE);
+                        e.setId(d.getId());
+
+// Campos directos de Firebase
+                        e.setTitulo(d.getString("titulo"));
+                        e.setDescripcion(d.getString("descripcion"));
+                        e.setCategoriaId(d.getString("categoriaId"));
+                        e.setLugarNombre(d.getString("lugarNombre"));
+                        e.setCiudad(d.getString("ciudad"));
+                        e.setDireccion(d.getString("direccion"));
+                        e.setImagenUrl(d.getString("imagenUrl"));
+
+                        Boolean estadoActivo = d.getBoolean("activo");
+                        e.setActivo(estadoActivo != null ? estadoActivo : true);
+
+// Casteo seguro de Array a List
+                        Object palabrasObj = d.get("palabrasClave");
+                        if (palabrasObj instanceof java.util.List) {
+                            e.setPalabrasClave((java.util.List<String>) palabrasObj);
+                        }
+
+// Transformación del Timestamp a String para la UI
+                        com.google.firebase.Timestamp timestamp = d.getTimestamp("inicio");
+                        if (timestamp != null) {
+                            // Formato: "17 Ene 2026 - 21:00"
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd MMM yyyy - HH:mm", java.util.Locale.getDefault());
+                            e.setFecha(sdf.format(timestamp.toDate()));
+                        } else {
+                            e.setFecha("Fecha por confirmar");
+                        }
+
+// Campos faltantes en BD pero necesarios en UI
+                        Double precioBase = d.getDouble("precio");
+                        e.setPrecio(precioBase != null ? precioBase : 0.0);
+                        e.setImagenResId(R.drawable.card_festival); // Mock
 
                         list.add(e);
                     }

@@ -1,128 +1,141 @@
 package com.example.tarraco_fest.Activity;
 
-import android.app.AlertDialog;
-import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.widget.Button;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.tarraco_fest.Data.FirestoreSchema;
+import com.example.tarraco_fest.Adapter.EventosAdapter;
+import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
-import com.google.firebase.Timestamp;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
+import com.example.tarraco_fest.Repository.EventosRepository;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private TextView tvHome;
-    private Button btnLogout;
+    private EventosAdapter adapter;
+    private final EventosRepository repo = new EventosRepository();
+
+    // Listas para el motor de búsqueda
+    private List<Evento> listaCompleta = new ArrayList<>();
+
+    // Estado del filtro
+    private String categoriaActual = "Todos";
+    private String textoBusqueda = "";
+
+    // Vistas
+    private TextView chipTodos, chipMusica, chipCultura, chipGastronomia;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        tvHome = findViewById(R.id.tvHome);
-        btnLogout = findViewById(R.id.btnLogout);
-        Button btnEventos = findViewById(R.id.btnEventos);
-        btnEventos.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, EventosActivity.class));
+        configurarRecyclerView();
+        configurarBuscadorYFiltros();
+        cargarDatosDesdeFirebase();
+    }
+
+    private void configurarRecyclerView() {
+        RecyclerView rv = findViewById(R.id.recyclerViewMain);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new EventosAdapter(new ArrayList<>(), this);
+        rv.setAdapter(adapter);
+    }
+
+    private void configurarBuscadorYFiltros() {
+        EditText etBuscador = findViewById(R.id.etBuscador);
+        chipTodos = findViewById(R.id.chipTodos);
+        chipMusica = findViewById(R.id.chipMusica);
+        chipCultura = findViewById(R.id.chipCultura);
+        chipGastronomia = findViewById(R.id.chipGastronomia);
+
+        // Listener del Buscador en tiempo real
+        etBuscador.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                textoBusqueda = s.toString().trim().toLowerCase();
+                aplicarFiltros();
+            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
-        Button btnPerfil = findViewById(R.id.btnPerfil);
-        btnPerfil.setOnClickListener(v ->
-                startActivity(new Intent(HomeActivity.this, PerfilActivity.class))
-        );
+        // Listeners de los Chips
+        chipTodos.setOnClickListener(v -> seleccionarCategoria("Todos", chipTodos));
+        chipMusica.setOnClickListener(v -> seleccionarCategoria("Música", chipMusica));
+        chipCultura.setOnClickListener(v -> seleccionarCategoria("Cultura", chipCultura));
+        chipGastronomia.setOnClickListener(v -> seleccionarCategoria("Gastronomía", chipGastronomia));
+    }
 
-        btnLogout.setOnClickListener(v -> {
-            FirebaseAuth.getInstance().signOut();
-            Intent i = new Intent(HomeActivity.this, AuthActivity.class);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(i);
+    private void cargarDatosDesdeFirebase() {
+        repo.cargarEventos(new EventosRepository.Callback() {
+            @Override
+            public void onOk(List<Evento> eventos) {
+                listaCompleta = eventos; // Guardamos el listado original intocable
+                aplicarFiltros(); // Mandamos los datos iniciales al recycler
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
+            }
         });
-
-        mostrarNombreUsuario();   // <-- esto es lo nuevo
-        comprobarTerminos();      // <-- si ya lo tenías, déjalo aquí
     }
 
-    private void mostrarNombreUsuario() {
-        FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
-        if (u == null) {
-            tvHome.setText("No hay sesión");
-            volverAuth();
-            return;
+    // --- LÓGICA DE FILTRADO ---
+
+    private void seleccionarCategoria(String categoria, TextView chipActivo) {
+        categoriaActual = categoria;
+        actualizarEstiloChips(chipActivo);
+        aplicarFiltros();
+    }
+
+    private void aplicarFiltros() {
+        List<Evento> listaFiltrada = new ArrayList<>();
+
+        for (Evento e : listaCompleta) {
+            // 1. Coincidencia de texto (título o descripción)
+            boolean coincideTexto = e.getTitulo().toLowerCase().contains(textoBusqueda) ||
+                    e.getDescripcion().toLowerCase().contains(textoBusqueda);
+
+            // 2. Coincidencia de categoría
+            boolean coincideCategoria = categoriaActual.equals("Todos") ||
+                    categoriaActual.equalsIgnoreCase(e.getCategoriaUI());
+
+            if (coincideTexto && coincideCategoria) {
+                listaFiltrada.add(e);
+            }
         }
 
-        String uid = u.getUid();
-
-        FirebaseFirestore.getInstance()
-                .collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
-                .addOnSuccessListener(doc -> {
-                    String nombre = doc.getString(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO);
-
-                    if (nombre == null || nombre.trim().isEmpty()) {
-                        nombre = u.getDisplayName();
-                    }
-                    if (nombre == null || nombre.trim().isEmpty()) {
-                        nombre = u.getEmail();
-                    }
-
-                    tvHome.setText("Has iniciado sesión\n" + nombre);
-                })
-                .addOnFailureListener(e -> {
-                    String nombre = u.getDisplayName();
-                    if (nombre == null || nombre.trim().isEmpty()) nombre = u.getEmail();
-                    tvHome.setText("Has iniciado sesión\n" + nombre);
-                });
+        adapter.setEventos(listaFiltrada); // El Adapter repinta los cambios
     }
 
-    private void comprobarTerminos() {
-        FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
-        if (u == null) {
-            volverAuth();
-            return;
-        }
+    // --- INTERFAZ DE USUARIO ---
 
-        FirebaseFirestore.getInstance().collection(FirestoreSchema.Collections.USUARIOS).document(u.getUid()).get()
-                .addOnSuccessListener(doc -> {
-                    Boolean acepta = doc.getBoolean(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS);
-                    boolean ok = acepta != null && acepta;
-                    if (!ok) mostrarDialogTerminos(u.getUid());
-                })
-                .addOnFailureListener(e -> volverAuth());
+    private void actualizarEstiloChips(TextView chipActivo) {
+        // Resetear todos
+        resetearChip(chipTodos);
+        resetearChip(chipMusica);
+        resetearChip(chipCultura);
+        resetearChip(chipGastronomia);
+
+        // Activar el seleccionado (Naranja)
+        chipActivo.setTextColor(Color.parseColor("#FFFFFF"));
+        chipActivo.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
     }
 
-    private void mostrarDialogTerminos(String uid) {
-        new AlertDialog.Builder(this)
-                .setTitle("Términos y condiciones")
-                .setMessage("Para usar la app debes aceptar los términos.")
-                .setCancelable(false)
-                .setNegativeButton("Salir", (d, w) -> {
-                    FirebaseAuth.getInstance().signOut();
-                    volverAuth();
-                })
-                .setPositiveButton("Aceptar", (d, w) -> {
-                    Map<String, Object> up = new HashMap<>();
-                    up.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS, true);
-                    up.put(FirestoreSchema.UsuarioFields.ACEPTA_TERMINOS_EN, Timestamp.now());
-
-                    FirebaseFirestore.getInstance()
-                            .collection(FirestoreSchema.Collections.USUARIOS).document(uid)
-                            .set(up, SetOptions.merge());
-                })
-                .show();
-    }
-
-    private void volverAuth() {
-        Intent i = new Intent(this, AuthActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(i);
+    private void resetearChip(TextView chip) {
+        // Estilo inactivo (Gris)
+        chip.setTextColor(Color.parseColor("#757575"));
+        chip.setBackgroundTintList(null); // Quita el tinte para mostrar el fondo original transparente
     }
 }

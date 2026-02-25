@@ -1,113 +1,88 @@
 package com.example.tarraco_fest.Adapter;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.tarraco_fest.Activity.DetailActivity;
 import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
-public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.VH> {
+public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoViewHolder> {
 
-    public interface OnEventoClick {
-        void onClick(Evento e);
+    private List<Evento> listaEventos;
+    private final Context context;
+
+    // Constructor
+    public EventosAdapter(List<Evento> listaEventos, Context context) {
+        this.listaEventos = listaEventos;
+        this.context = context;
     }
 
-    private final List<Evento> data = new ArrayList<>();
-    private final OnEventoClick listener;
-    private final SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-
-    public EventosAdapter(OnEventoClick listener) {
-        this.listener = listener;
-    }
-
-    public void setData(List<Evento> nuevos) {
-        List<Evento> oldData = new ArrayList<>(data);
-        DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() {
-                return oldData.size();
-            }
-
-            @Override
-            public int getNewListSize() {
-                return nuevos.size();
-            }
-
-            @Override
-            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                Evento oldItem = oldData.get(oldItemPosition);
-                Evento newItem = nuevos.get(newItemPosition);
-                return oldItem.id != null && oldItem.id.equals(newItem.id);
-            }
-
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                Evento oldItem = oldData.get(oldItemPosition);
-                Evento newItem = nuevos.get(newItemPosition);
-                return safeEq(oldItem.titulo, newItem.titulo)
-                        && safeEq(oldItem.lugar, newItem.lugar)
-                        && safeEq(oldItem.inicio, newItem.inicio);
-            }
-        });
-
-        data.clear();
-        data.addAll(nuevos);
-        diff.dispatchUpdatesTo(this);
+    // MÉTODO QUE FALTABA: Actualiza la lista cuando llegan datos de Firebase
+    public void setEventos(List<Evento> nuevosEventos) {
+        this.listaEventos = nuevosEventos;
+        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
-    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_evento, parent, false);
-        return new VH(v);
+    public EventoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_evento, parent, false);
+        return new EventoViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull VH h, int pos) {
-        Evento e = data.get(pos);
+    public void onBindViewHolder(@NonNull EventoViewHolder holder, int position) {
+        Evento evento = listaEventos.get(position);
 
-        h.tvTitulo.setText(e.titulo != null ? e.titulo : "(Sin título)");
+        holder.txtTitulo.setText(evento.getTitulo());
+        holder.txtFecha.setText(evento.getFecha());
 
-        if (e.inicio != null) {
-            Date d = e.inicio.toDate();
-            h.tvFecha.setText(fmt.format(d));
+        // --- LÓGICA DE IMAGEN CON GLIDE ---
+        if (evento.getImagenUrl() != null && !evento.getImagenUrl().isEmpty()) {
+            com.bumptech.glide.Glide.with(context)
+                    .load(evento.getImagenUrl())
+                    .placeholder(R.drawable.card_festival) // Muestra esto mientras carga
+                    .error(R.drawable.card_festival)       // Muestra esto si el link está roto
+                    .centerCrop()
+                    .into(holder.imgEvento);
         } else {
-            h.tvFecha.setText("(Sin fecha)");
+            // Si en Firebase no le has puesto URL, ponemos la imagen por defecto
+            holder.imgEvento.setImageResource(R.drawable.card_festival);
         }
 
-        h.tvLugar.setText(e.lugar != null ? e.lugar : "(Sin lugar)");
-
-        h.itemView.setOnClickListener(v -> listener.onClick(e));
+        // Clic para ir al detalle
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, DetailActivity.class);
+            intent.putExtra("extra_evento", evento);
+            context.startActivity(intent);
+        });
     }
 
     @Override
     public int getItemCount() {
-        return data.size();
+        return listaEventos == null ? 0 : listaEventos.size();
     }
 
-    private boolean safeEq(Object a, Object b) {
-        return a == b || (a != null && a.equals(b));
-    }
+    public static class EventoViewHolder extends RecyclerView.ViewHolder {
+        final TextView txtTitulo;
+        final TextView txtFecha;
+        final ImageView imgEvento;
 
-    static class VH extends RecyclerView.ViewHolder {
-        TextView tvTitulo, tvFecha, tvLugar;
-        VH(@NonNull View itemView) {
+        public EventoViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTitulo = itemView.findViewById(R.id.tvTituloEvento);
-            tvFecha = itemView.findViewById(R.id.tvFechaEvento);
-            tvLugar = itemView.findViewById(R.id.tvLugarEvento);
+            txtTitulo = itemView.findViewById(R.id.txtTituloEvento);
+            txtFecha = itemView.findViewById(R.id.txtFechaEvento);
+            imgEvento = itemView.findViewById(R.id.imgEvento);
         }
     }
 }

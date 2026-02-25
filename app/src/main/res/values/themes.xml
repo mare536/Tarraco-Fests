@@ -30,25 +30,15 @@
     </style>
 
     <style name="TarracoFests.DialogButton.Positive" parent="Widget.MaterialComponents.Button">
-        <item name="android:background">@drawable/btn_auth_primary</item>
-        <item name="backgroundTint">@null</item>
-        <item name="android:textColor">@color/auth_btn_primary_text</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:minHeight">44dp</item>
-        <item name="android:paddingStart">18dp</item>
-        <item name="android:paddingEnd">18dp</item>
+        <item name="backgroundTint">@color/festival_orange</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="cornerRadius">16dp</item>
     </style>
 
     <style name="TarracoFests.DialogButton.Negative" parent="Widget.MaterialComponents.Button.OutlinedButton">
-        <item name="android:background">@drawable/btn_auth_secondary</item>
-        <item name="backgroundTint">@null</item>
-        <item name="android:textColor">@color/auth_btn_secondary_text</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:minHeight">44dp</item>
-        <item name="android:paddingStart">18dp</item>
-        <item name="android:paddingEnd">18dp</item>
+        <item name="strokeColor">@color/festival_orange</item>
+        <item name="android:textColor">@color/festival_orange</item>
+        <item name="cornerRadius">16dp</item>
     </style>
 
 
