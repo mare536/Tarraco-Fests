@@ -1,140 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_page">
+    tools:context=".Activity.HomeActivity">
 
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="250dp"
-                android:background="@drawable/header_bg"
-                android:padding="24dp">
-
-                <TextView
-                    android:id="@+id/txtLoc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍 Tarragona"
-                    android:textColor="@color/white"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:text="TarracoFests"
-                    android:textColor="@color/white"
-                    android:textSize="38sp"
-                    android:textStyle="bold" />
-            </RelativeLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="16dp"
-                android:orientation="horizontal">
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnHoy"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="55dp"
-                    android:text="Hoy"
-                    android:background="@drawable/chip_bg"
-                    android:layout_margin="4dp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_black" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnSemana"
-                    android:layout_width="0dp"
-                    android:layout_weight="1.2"
-                    android:layout_height="55dp"
-                    android:text="Esta Semana"
-                    android:background="@drawable/chip_bg"
-                    android:layout_margin="4dp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_black" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnTodosTiempo"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="55dp"
-                    android:text="Todos"
-                    android:background="@drawable/chip_bg"
-                    android:layout_margin="4dp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_black" />
-            </LinearLayout>
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none"
-                android:paddingBottom="8dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingHorizontal="12dp"
-                    android:orientation="horizontal">
-
-                    <androidx.appcompat.widget.AppCompatButton
-                        android:id="@+id/btnCatTodos"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="📂 Todos"
-                        android:background="@drawable/chip_bg"
-                        android:layout_margin="4dp"
-                        android:paddingHorizontal="16dp"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_black" />
-
-                    <androidx.appcompat.widget.AppCompatButton
-                        android:id="@+id/btnTrad"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="🏛️ Tradicional"
-                        android:background="@drawable/chip_bg"
-                        android:layout_margin="4dp"
-                        android:paddingHorizontal="16dp"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_black" />
-
-                    <androidx.appcompat.widget.AppCompatButton
-                        android:id="@+id/btnCult"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="🎨 Cultural"
-                        android:background="@drawable/chip_bg"
-                        android:layout_margin="4dp"
-                        android:paddingHorizontal="16dp"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_black" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvEvents"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:nestedScrollingEnabled="false" />
-
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

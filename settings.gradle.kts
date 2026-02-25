@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Prueba_TarracoFests"
+rootProject.name = "Tarraco_Fest"
 include(":app")
- 
