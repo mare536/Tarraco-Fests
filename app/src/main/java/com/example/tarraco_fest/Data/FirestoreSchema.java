@@ -22,6 +22,8 @@ public final class FirestoreSchema {
         public static final String INICIO = "inicio";
         public static final String LUGAR_NOMBRE = "lugarNombre";
         public static final String ACTIVO = "activo";
+        public static final String UPDATED_AT = "updatedAt";
+        public static final String CREADO_EN = "creadoEn";
 
         private EventoFields() {}
     }

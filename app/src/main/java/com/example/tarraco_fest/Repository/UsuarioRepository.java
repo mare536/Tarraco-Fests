@@ -16,6 +16,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Capa de acceso a datos para perfil de usuario.
+ * Centraliza Firebase Auth + Firestore para evitar logica de datos en la UI.
+ */
 public class UsuarioRepository {
 
     public interface PerfilCallback {
@@ -51,6 +55,7 @@ public class UsuarioRepository {
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
+                    // Primera sesion: crea un documento base para mantener esquema consistente.
                     if (!doc.exists() || doc.getData() == null) {
                         Map<String, Object> inicial = crearDatosIniciales(user);
                         db.collection(FirestoreSchema.Collections.USUARIOS)
@@ -85,6 +90,7 @@ public class UsuarioRepository {
 
         user.updateProfile(req)
                 .addOnSuccessListener(v -> {
+                    // Firestore almacena datos extendidos del perfil (Auth solo displayName/email).
                     Map<String, Object> up = new HashMap<>();
                     up.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO, nombre);
                     up.put(FirestoreSchema.UsuarioFields.EMAIL, user.getEmail() != null ? user.getEmail() : "");
@@ -119,6 +125,7 @@ public class UsuarioRepository {
             return;
         }
 
+        // Vincula credencial email/password sobre una cuenta ya autenticada (normalmente Google).
         user.linkWithCredential(EmailAuthProvider.getCredential(user.getEmail(), password))
                 .addOnSuccessListener(r -> {
                     Map<String, Object> up = new HashMap<>();
@@ -197,7 +204,11 @@ public class UsuarioRepository {
         if (user == null) return out;
 
         for (UserInfo info : user.getProviderData()) {
-            if (info == null || info.getProviderId() == null) continue;
+            if (info == null) {
+                continue;
+            } else {
+                info.getProviderId();
+            }
             if ("google.com".equals(info.getProviderId())
                     && !out.contains(FirestoreSchema.AuthMethods.GOOGLE)) {
                 out.add(FirestoreSchema.AuthMethods.GOOGLE);
@@ -221,6 +232,7 @@ public class UsuarioRepository {
             }
         }
 
+        // Asegura que Firestore y providers reales de Auth no queden desalineados.
         for (String metodo : resolverMetodosVinculados(user)) {
             if (!out.contains(metodo)) out.add(metodo);
         }
