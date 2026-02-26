@@ -46,6 +46,13 @@
                 android:layout_height="wrap_content"
                 android:text="@string/home_filter_date_week"
                 android:textColor="@color/dialog_text" />
+
+            <RadioButton
+                android:id="@+id/rbFiltroFechaWeekend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_date_weekend"
+                android:textColor="@color/dialog_text" />
         </RadioGroup>
 
         <TextView
@@ -95,11 +102,56 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/home_filter_section_time"
+            android:textColor="@color/dialog_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/rgFiltroHorario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/rbFiltroHorarioTodos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_time_all"
+                android:textColor="@color/dialog_text" />
+
+            <RadioButton
+                android:id="@+id/rbFiltroHorarioManana"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_time_morning"
+                android:textColor="@color/dialog_text" />
+
+            <RadioButton
+                android:id="@+id/rbFiltroHorarioTarde"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_time_afternoon"
+                android:textColor="@color/dialog_text" />
+
+            <RadioButton
+                android:id="@+id/rbFiltroHorarioNoche"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_time_night"
+                android:textColor="@color/dialog_text" />
+        </RadioGroup>
+
         <EditText
             android:id="@+id/etDialogFiltroZona"
             android:layout_width="match_parent"
             android:layout_height="44dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/bg_input_dialog"
             android:hint="@string/home_filter_zone_hint"
             android:imeOptions="actionDone"

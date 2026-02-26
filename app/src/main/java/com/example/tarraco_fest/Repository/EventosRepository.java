@@ -309,21 +309,27 @@ public class EventosRepository {
         String n = normalizar(categoriesRaw);
         if (n.contains("music") || n.contains("concert")) return "musica";
         if (n.contains("gastronom")) return "gastronomia";
+        if (n.contains("sport") || n.contains("esport") || n.contains("deport")
+                || n.contains("futbol") || n.contains("basket") || n.contains("basquet")) {
+            return "esport";
+        }
+        if (n.contains("famil") || n.contains("infantil") || n.contains("kids")
+                || n.contains("nens") || n.contains("nenes")) {
+            return "familiar";
+        }
         return "cultura";
     }
 
     private int obtenerImagenPredefinida(String categoriaId) {
-        if (categoriaId == null) return R.drawable.card_festival;
-        switch (categoriaId.toLowerCase(Locale.ROOT)) {
-            case "musica":
-                return R.drawable.card_musica;
-            case "gastronomia":
-                return R.drawable.card_gastronomia;
-            case "cultura":
-                return R.drawable.card_cultura;
-            default:
-                return R.drawable.card_festival;
+        String n = normalizar(categoriaId);
+        if (n.contains("music")) return R.drawable.card_musica;
+        if (n.contains("gastronom")) return R.drawable.card_gastronomia;
+        if (n.contains("cultur")) return R.drawable.card_cultura;
+        if (n.contains("sport") || n.contains("esport") || n.contains("deport")) {
+            return R.drawable.card_esport;
         }
+        if (n.contains("famil")) return R.drawable.card_familiar;
+        return R.drawable.card_festival;
     }
 
     private String normalizar(String raw) {
