@@ -134,53 +134,56 @@
                         android:id="@+id/chipTodos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
+                        android:text="Todos"
+                        android:textColor="#FFFFFF"
                         android:background="@drawable/chip_bg"
                         android:backgroundTint="#FF9800"
-                        android:paddingStart="20dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="20dp"
-                        android:paddingBottom="8dp"
-                        android:text="Todos"
-                        android:textColor="#FFFFFF" />
-
-                    <TextView
-                        android:id="@+id/chipMusica"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/chip_bg"
-                        android:paddingStart="20dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="20dp"
-                        android:paddingBottom="8dp"
-                        android:text="Música"
-                        android:textColor="#757575" />
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:layout_marginEnd="8dp"/>
 
                     <TextView
                         android:id="@+id/chipCultura"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/chip_bg"
-                        android:paddingStart="20dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="20dp"
-                        android:paddingBottom="8dp"
                         android:text="Cultura"
-                        android:textColor="#757575" />
+                        android:textColor="#757575"
+                        android:background="@drawable/chip_bg"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:layout_marginEnd="8dp"/>
 
                     <TextView
-                        android:id="@+id/chipGastronomia"
+                        android:id="@+id/chipEsport"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="Esport"
+                        android:textColor="#757575"
                         android:background="@drawable/chip_bg"
-                        android:paddingStart="20dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="20dp"
-                        android:paddingBottom="8dp"
-                        android:text="Gastronomía"
-                        android:textColor="#757575" />
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <TextView
+                        android:id="@+id/chipMusica"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Música"
+                        android:textColor="#757575"
+                        android:background="@drawable/chip_bg"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <TextView
+                        android:id="@+id/chipFamiliar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Familiar"
+                        android:textColor="#757575"
+                        android:background="@drawable/chip_bg"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp" />
                 </LinearLayout>
             </HorizontalScrollView>
         </com.google.android.material.appbar.AppBarLayout>

@@ -46,11 +46,13 @@ public class HomeActivity extends AppCompatActivity {
     private String categoriaActual = "Todos";
     private String textoBusqueda = "";
 
-    // Vistas.
+    // Vistas - CHIPS ACTUALIZADOS
     private TextView chipTodos;
-    private TextView chipMusica;
     private TextView chipCultura;
-    private TextView chipGastronomia;
+    private TextView chipEsport;
+    private TextView chipMusica;
+    private TextView chipFamiliar;
+
     private View homeContent;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -182,16 +184,18 @@ public class HomeActivity extends AppCompatActivity {
 
     private void configurarBuscadorYFiltros() {
         EditText etBuscador = findViewById(R.id.etBuscador);
+
+        // VINCULACIÓN CON LOS NUEVOS IDS DEL XML
         chipTodos = findViewById(R.id.chipTodos);
-        chipMusica = findViewById(R.id.chipMusica);
         chipCultura = findViewById(R.id.chipCultura);
-        chipGastronomia = findViewById(R.id.chipGastronomia);
+        chipEsport = findViewById(R.id.chipEsport);
+        chipMusica = findViewById(R.id.chipMusica);
+        chipFamiliar = findViewById(R.id.chipFamiliar);
 
         // Listener del buscador en tiempo real.
         etBuscador.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -200,15 +204,15 @@ public class HomeActivity extends AppCompatActivity {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) {}
         });
 
-        // Listeners de chips.
+        // Listeners de chips modificados.
         chipTodos.setOnClickListener(v -> seleccionarCategoria("Todos", chipTodos));
-        chipMusica.setOnClickListener(v -> seleccionarCategoria(chipMusica.getText().toString(), chipMusica));
-        chipCultura.setOnClickListener(v -> seleccionarCategoria(chipCultura.getText().toString(), chipCultura));
-        chipGastronomia.setOnClickListener(v -> seleccionarCategoria(chipGastronomia.getText().toString(), chipGastronomia));
+        chipCultura.setOnClickListener(v -> seleccionarCategoria("Cultura", chipCultura));
+        chipEsport.setOnClickListener(v -> seleccionarCategoria("Esport", chipEsport));
+        chipMusica.setOnClickListener(v -> seleccionarCategoria("Música", chipMusica));
+        chipFamiliar.setOnClickListener(v -> seleccionarCategoria("Familiar", chipFamiliar));
     }
 
     private void cargarDatosDesdeFirebase() {
@@ -236,12 +240,18 @@ public class HomeActivity extends AppCompatActivity {
         List<Evento> listaFiltrada = new ArrayList<>();
 
         for (Evento e : listaCompleta) {
-            // 1) Coincidencia de texto (titulo o descripcion).
+            // 1) Coincidencia de texto (título, descripción, UBICACIÓN o FECHA).
             String titulo = safeLower(e.getTitulo());
             String descripcion = safeLower(e.getDescripcion());
-            boolean coincideTexto = titulo.contains(textoBusqueda) || descripcion.contains(textoBusqueda);
+            String ubicacion = safeLower(e.getUbicacion());
+            String fecha = safeLower(e.getFecha());
 
-            // 2) Coincidencia de categoria.
+            boolean coincideTexto = titulo.contains(textoBusqueda) ||
+                    descripcion.contains(textoBusqueda) ||
+                    ubicacion.contains(textoBusqueda) ||
+                    fecha.contains(textoBusqueda);
+
+            // 2) Coincidencia de categoría.
             String categoriaEvento = e.getCategoriaUI() == null ? "" : e.getCategoriaUI();
             boolean coincideCategoria = categoriaActual.equals("Todos")
                     || categoriaActual.equalsIgnoreCase(categoriaEvento);
@@ -256,9 +266,10 @@ public class HomeActivity extends AppCompatActivity {
 
     private void actualizarEstiloChips(TextView chipActivo) {
         resetearChip(chipTodos);
-        resetearChip(chipMusica);
         resetearChip(chipCultura);
-        resetearChip(chipGastronomia);
+        resetearChip(chipEsport);
+        resetearChip(chipMusica);
+        resetearChip(chipFamiliar);
 
         chipActivo.setTextColor(Color.parseColor("#FFFFFF"));
         chipActivo.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));

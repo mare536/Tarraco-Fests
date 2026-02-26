@@ -67,9 +67,10 @@ public class Evento implements Serializable {
     public String getCategoriaUI() {
         if (categoriaId == null) return "Todos";
         switch (categoriaId.toLowerCase()) {
-            case "musica": return "Música";
             case "cultura": return "Cultura";
-            case "gastronomia": return "Gastronomía";
+            case "esport": return "Esport";
+            case "musica": return "Música";
+            case "familiar": return "Familiar";
             default: return "Todos";
         }
     }
