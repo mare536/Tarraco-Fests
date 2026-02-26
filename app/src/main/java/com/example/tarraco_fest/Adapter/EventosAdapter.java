@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,13 +22,11 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     private List<Evento> listaEventos;
     private final Context context;
 
-    // Constructor
     public EventosAdapter(List<Evento> listaEventos, Context context) {
         this.listaEventos = listaEventos;
         this.context = context;
     }
 
-    // MÉTODO QUE FALTABA: Actualiza la lista cuando llegan datos de Firebase
     public void setEventos(List<Evento> nuevosEventos) {
         this.listaEventos = nuevosEventos;
         notifyDataSetChanged();
@@ -43,24 +42,22 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     @Override
     public void onBindViewHolder(@NonNull EventoViewHolder holder, int position) {
         Evento evento = listaEventos.get(position);
+        int fallbackImage = evento.getImagenResId() != 0 ? evento.getImagenResId() : R.drawable.card_festival;
 
         holder.txtTitulo.setText(evento.getTitulo());
         holder.txtFecha.setText(evento.getFecha());
 
-        // --- LÓGICA DE IMAGEN CON GLIDE ---
         if (evento.getImagenUrl() != null && !evento.getImagenUrl().isEmpty()) {
             com.bumptech.glide.Glide.with(context)
                     .load(evento.getImagenUrl())
-                    .placeholder(R.drawable.card_festival) // Muestra esto mientras carga
-                    .error(R.drawable.card_festival)       // Muestra esto si el link está roto
+                    .placeholder(fallbackImage)
+                    .error(fallbackImage)
                     .centerCrop()
                     .into(holder.imgEvento);
         } else {
-            // Si en Firebase no le has puesto URL, ponemos la imagen por defecto
-            holder.imgEvento.setImageResource(R.drawable.card_festival);
+            holder.imgEvento.setImageResource(fallbackImage);
         }
 
-        // Clic para ir al detalle
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, DetailActivity.class);
             intent.putExtra("extra_evento", evento);

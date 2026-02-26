@@ -45,6 +45,11 @@
     <color name="landing_card_surface">#D11E1E1E</color>
     <color name="landing_chip_bg">#26FFFFFF</color>
     <color name="landing_chip_stroke">#40FFFFFF</color>
+    <color name="event_card_surface">#CC262A31</color>
+    <color name="event_card_stroke">#4DFFFFFF</color>
+    <color name="event_title_text">#FFF3F4F6</color>
+    <color name="event_date_text">#FFFFC58A</color>
+    <color name="event_image_bg">#334B5563</color>
 
     <!-- Login premium (oscuro) -->
     <color name="login_card_surface">#CC1E1E1E</color>
@@ -72,4 +77,6 @@
     <color name="role_user_stroke">#8042A5F5</color>
     <color name="role_user_text">#FFBBDEFB</color>
 
+    <color name="home_status_bar_fill">#FF5F43</color>
 </resources>
+

@@ -94,7 +94,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="Accede con Google o correo y contraseña."
+                    android:text="Accede con Google o correo y contrase&#241;a."
                     android:textColor="@color/dialog_hint"
                     android:textSize="13sp" />
 
@@ -179,7 +179,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:hint="Contrasena"
+                    android:hint="Contrase&#241;a"
                     app:boxBackgroundColor="@color/login_input_bg"
                     app:boxBackgroundMode="filled"
                     app:boxCornerRadiusBottomEnd="14dp"
@@ -237,3 +237,4 @@
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

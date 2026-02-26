@@ -64,6 +64,12 @@ public final class FirestoreSchema {
 
     public static final class RecordatorioFields {
         public static final String EVENT_ID = "eventId";
+        public static final String EVENT_TITLE = "eventTitle";
+        public static final String EVENT_START_AT = "eventStartAt";
+        public static final String REMINDER_OFFSET_HOURS = "reminderOffsetHours";
+        public static final String REMINDER_OFFSET_MINUTES = "reminderOffsetMinutes";
+        public static final String REMIND_AT = "remindAt";
+        public static final String ENABLED = "enabled";
         public static final String CREATED_AT = "createdAt";
 
         private RecordatorioFields() {}

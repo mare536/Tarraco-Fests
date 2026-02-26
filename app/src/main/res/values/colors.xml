@@ -61,6 +61,11 @@
     <color name="landing_card_surface">#E6FFFFFF</color>
     <color name="landing_chip_bg">#EFF1F3</color>
     <color name="landing_chip_stroke">#E3E7EB</color>
+    <color name="event_card_surface">#FFFDFBF8</color>
+    <color name="event_card_stroke">#FFE8E0D7</color>
+    <color name="event_title_text">#1F2937</color>
+    <color name="event_date_text">#CC5C00</color>
+    <color name="event_image_bg">#FFE7E2DA</color>
 
     <!-- Login premium (claro) -->
     <color name="login_card_surface">#F2FFFFFF</color>
@@ -87,4 +92,6 @@
     <color name="role_user_bg">#FFE8F2FF</color>
     <color name="role_user_stroke">#FFA9C8F5</color>
     <color name="role_user_text">#1E5AA5</color>
+    <color name="home_status_bar_fill">#FF5F43</color>
 </resources>
+

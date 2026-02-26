@@ -255,6 +255,34 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
+                                android:text="@string/profile_field_google_status"
+                                android:textColor="@color/dialog_hint"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvSeguridadGoogleEstado"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/dialog_text"
+                                android:textSize="15sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnVincularGoogle"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:layout_marginTop="10dp"
+                                android:background="@drawable/btn_auth_secondary"
+                                android:text="@string/profile_google_link_button"
+                                android:textAllCaps="false"
+                                android:textColor="@color/auth_btn_secondary_text"
+                                android:textStyle="bold"
+                                app:backgroundTint="@null" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
                                 android:text="@string/profile_field_password_status"
                                 android:textColor="@color/dialog_hint"
                                 android:textSize="12sp" />

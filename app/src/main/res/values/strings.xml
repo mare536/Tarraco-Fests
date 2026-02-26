@@ -27,15 +27,20 @@
     <string name="profile_field_city">Ciudad</string>
     <string name="profile_field_bio">Biografia</string>
     <string name="profile_field_access_method">Metodo de acceso</string>
+    <string name="profile_field_google_status">Estado de Google</string>
     <string name="profile_field_password_status">Estado de contrase&#241;a</string>
     <string name="profile_not_set">No establecida</string>
     <string name="profile_password_new">Nueva contrase&#241;a</string>
     <string name="profile_password_repeat">Repetir contrase&#241;a</string>
     <string name="profile_security_add_password">A&#241;adir contrase&#241;a</string>
     <string name="profile_security_change_password">Cambiar contrase&#241;a</string>
+    <string name="profile_google_link_button">Vincular Google</string>
+    <string name="profile_google_linked_button">Google vinculado</string>
     <string name="profile_password_already_linked">Ya tienes contrase&#241;a</string>
     <string name="profile_password_linked">Contrase&#241;a configurada</string>
     <string name="profile_password_not_linked">Sin contrase&#241;a</string>
+    <string name="profile_google_linked">Vinculado</string>
+    <string name="profile_google_not_linked">No vinculado</string>
     <string name="profile_save_changes">Guardar cambios</string>
     <string name="profile_edit_subtitle">Actualiza tus datos personales para personalizar tu cuenta.</string>
     <string name="profile_method_google">Google</string>
@@ -46,6 +51,8 @@
     <string name="profile_save_error">No se pudo guardar el perfil</string>
     <string name="profile_password_link_ok">Contrase&#241;a vinculada correctamente</string>
     <string name="profile_password_link_error">No se pudo vincular la contrase&#241;a</string>
+    <string name="profile_google_link_ok">Google vinculado correctamente</string>
+    <string name="profile_google_link_error">No se pudo vincular Google</string>
     <string name="profile_password_change_sent">Te enviamos un correo para cambiar tu contrase&#241;a</string>
     <string name="profile_password_change_error">No se pudo enviar el correo para cambiar la contrase&#241;a</string>
     <string name="profile_password_change_missing_email">No hay un correo disponible para cambiar la contrase&#241;a</string>
@@ -103,4 +110,13 @@
     <string name="admin_event_deactivate">Desactivar</string>
     <string name="admin_event_place_fmt">Lugar: %1$s</string>
     <string name="admin_event_date_fmt">Fecha: %1$s</string>
+
+    <!-- Detalle / recordatorios -->
+    <string name="detail_reminder_button">Activar recordatorio</string>
+    <string name="detail_reminder_title">Recordatorio del evento</string>
+    <string name="detail_reminder_saved_at">Recordatorio guardado para %1$s</string>
+    <string name="detail_reminder_error">No se pudo guardar el recordatorio</string>
+    <string name="detail_reminder_invalid_event_date">El evento no tiene una fecha valida para recordatorios</string>
+    <string name="detail_event_not_found">No se encontro el evento</string>
+    <string name="detail_cancel">Cancelar</string>
 </resources>

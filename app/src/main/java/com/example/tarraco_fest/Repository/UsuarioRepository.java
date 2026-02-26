@@ -143,6 +143,26 @@ public class UsuarioRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    public void sincronizarMetodosAutenticacion(ActionCallback cb) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            cb.onError(new IllegalStateException("No hay sesion"));
+            return;
+        }
+
+        Map<String, Object> up = new HashMap<>();
+        up.put(FirestoreSchema.UsuarioFields.EMAIL, user.getEmail() != null ? user.getEmail() : "");
+        up.put(FirestoreSchema.UsuarioFields.METODOS_VINCULADOS, resolverMetodosVinculados(user));
+        up.put(FirestoreSchema.UsuarioFields.TIENE_PASSWORD, tieneProveedorPassword(user));
+        up.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
+
+        db.collection(FirestoreSchema.Collections.USUARIOS)
+                .document(user.getUid())
+                .set(up, SetOptions.merge())
+                .addOnSuccessListener(v -> cb.onOk())
+                .addOnFailureListener(cb::onError);
+    }
+
     private UsuarioPerfil mapearPerfil(FirebaseUser user, Map<String, Object> data) {
         UsuarioPerfil p = new UsuarioPerfil();
 
@@ -204,7 +224,7 @@ public class UsuarioRepository {
         if (user == null) return out;
 
         for (UserInfo info : user.getProviderData()) {
-            if (info == null) {
+            if (info == nullw) {
                 continue;
             } else {
                 info.getProviderId();

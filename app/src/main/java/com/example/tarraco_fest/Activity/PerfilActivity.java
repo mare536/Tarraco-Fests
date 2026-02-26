@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -18,11 +20,18 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.example.tarraco_fest.Modelo.UsuarioPerfil;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.UsuarioRepository;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 public class PerfilActivity extends AppCompatActivity {
 
@@ -47,6 +56,7 @@ public class PerfilActivity extends AppCompatActivity {
     private TextView tvInfoCiudad;
     private TextView tvInfoBiografia;
     private TextView tvSeguridadMetodo;
+    private TextView tvSeguridadGoogleEstado;
     private TextView tvSeguridadPasswordEstado;
 
     private TextInputEditText etNombre;
@@ -57,10 +67,56 @@ public class PerfilActivity extends AppCompatActivity {
     private TextInputEditText etPass2;
 
     private MaterialButton btnGuardarNombre;
+    private MaterialButton btnVincularGoogle;
     private MaterialButton btnVincularPassword;
     private MaterialButton btnCambiarPassword;
 
     private UsuarioPerfil perfilActual;
+    private GoogleSignInClient googleClient;
+
+    private final ActivityResultLauncher<Intent> googleLinkLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                try {
+                    if (result.getData() == null) {
+                        Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    GoogleSignInAccount account = GoogleSignIn
+                            .getSignedInAccountFromIntent(result.getData())
+                            .getResult(ApiException.class);
+
+                    if (account == null) {
+                        Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user == null) {
+                        Toast.makeText(this, getString(R.string.profile_load_error), Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+                    user.linkWithCredential(credential)
+                            .addOnSuccessListener(r -> usuarioRepository.sincronizarMetodosAutenticacion(new UsuarioRepository.ActionCallback() {
+                                @Override
+                                public void onOk() {
+                                    Toast.makeText(PerfilActivity.this, getString(R.string.profile_google_link_ok), Toast.LENGTH_SHORT).show();
+                                    cargarPerfil();
+                                }
+
+                                @Override
+                                public void onError(Exception e) {
+                                    Toast.makeText(PerfilActivity.this, getString(R.string.profile_google_link_error), Toast.LENGTH_LONG).show();
+                                }
+                            }))
+                            .addOnFailureListener(e -> Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_LONG).show());
+
+                } catch (ApiException e) {
+                    Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_SHORT).show();
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +125,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         bindViews();
         aplicarInsetsSistema();
+        configurarGoogle();
         configurarDrawer();
         configurarAcciones();
         mostrarSeccion(SEC_INFO);
@@ -91,6 +148,7 @@ public class PerfilActivity extends AppCompatActivity {
         tvInfoCiudad = findViewById(R.id.tvInfoCiudad);
         tvInfoBiografia = findViewById(R.id.tvInfoBiografia);
         tvSeguridadMetodo = findViewById(R.id.tvSeguridadMetodo);
+        tvSeguridadGoogleEstado = findViewById(R.id.tvSeguridadGoogleEstado);
         tvSeguridadPasswordEstado = findViewById(R.id.tvSeguridadPasswordEstado);
 
         etNombre = findViewById(R.id.etNombre);
@@ -101,8 +159,17 @@ public class PerfilActivity extends AppCompatActivity {
         etPass2 = findViewById(R.id.etPass2);
 
         btnGuardarNombre = findViewById(R.id.btnGuardarNombre);
+        btnVincularGoogle = findViewById(R.id.btnVincularGoogle);
         btnVincularPassword = findViewById(R.id.btnVincularPassword);
         btnCambiarPassword = findViewById(R.id.btnCambiarPassword);
+    }
+
+    private void configurarGoogle() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        googleClient = GoogleSignIn.getClient(this, gso);
     }
 
     private void aplicarInsetsSistema() {
@@ -174,6 +241,7 @@ public class PerfilActivity extends AppCompatActivity {
 
     private void configurarAcciones() {
         btnGuardarNombre.setOnClickListener(v -> guardarCambiosPerfil());
+        btnVincularGoogle.setOnClickListener(v -> vincularGoogle());
         btnVincularPassword.setOnClickListener(v -> vincularPassword());
         btnCambiarPassword.setOnClickListener(v -> cambiarPassword());
     }
@@ -206,6 +274,16 @@ public class PerfilActivity extends AppCompatActivity {
         tvInfoBiografia.setText(valorONoEstablecida(perfil.getBiografia(), noEstablecida));
 
         tvSeguridadMetodo.setText(obtenerMetodoAcceso(perfil, noEstablecida));
+        if (perfil.tieneMetodoGoogle()) {
+            tvSeguridadGoogleEstado.setText(getString(R.string.profile_google_linked));
+            btnVincularGoogle.setEnabled(false);
+            btnVincularGoogle.setText(getString(R.string.profile_google_linked_button));
+        } else {
+            tvSeguridadGoogleEstado.setText(getString(R.string.profile_google_not_linked));
+            btnVincularGoogle.setEnabled(true);
+            btnVincularGoogle.setText(getString(R.string.profile_google_link_button));
+        }
+
         if (perfil.tieneMetodoEmail()) {
             tvSeguridadPasswordEstado.setText(getString(R.string.profile_password_linked));
             layoutVincularPassword.setVisibility(android.view.View.GONE);
@@ -226,6 +304,16 @@ public class PerfilActivity extends AppCompatActivity {
 
         etPass1.setText("");
         etPass2.setText("");
+    }
+
+    private void vincularGoogle() {
+        if (perfilActual != null && perfilActual.tieneMetodoGoogle()) {
+            Toast.makeText(this, getString(R.string.profile_google_linked_button), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = googleClient.getSignInIntent();
+        googleLinkLauncher.launch(intent);
     }
 
     private void guardarCambiosPerfil() {
