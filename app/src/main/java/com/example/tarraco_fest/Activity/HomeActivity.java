@@ -5,13 +5,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,7 +40,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,6 +51,12 @@ public class HomeActivity extends AppCompatActivity {
     private static final String PREF_PERMISOS = "permisos_app";
     private static final String KEY_NOTIF_SOLICITADO = "notif_solicitado";
     private static final String KEY_UBI_SOLICITADO = "ubi_solicitado";
+    private static final String FILTRO_FECHA_TODAS = "fecha_todas";
+    private static final String FILTRO_FECHA_HOY = "fecha_hoy";
+    private static final String FILTRO_FECHA_SEMANA = "fecha_semana";
+    private static final String FILTRO_PRECIO_TODOS = "precio_todos";
+    private static final String FILTRO_PRECIO_GRATIS = "precio_gratis";
+    private static final String FILTRO_PRECIO_PAGO = "precio_pago";
 
     private EventosAdapter adapter;
     private final EventosRepository repo = new EventosRepository();
@@ -56,6 +65,10 @@ public class HomeActivity extends AppCompatActivity {
     private List<Evento> listaCompleta = new ArrayList<>();
     private String categoriaActual = "Todos";
     private String textoBusqueda = "";
+    private String filtroFechaActual = FILTRO_FECHA_TODAS;
+    private String filtroPrecioActual = FILTRO_PRECIO_TODOS;
+    private String filtroZonaTexto = "";
+    private String filtroZonaNormalizada = "";
 
     private TextView chipTodos;
     private TextView chipMusica;
@@ -63,6 +76,10 @@ public class HomeActivity extends AppCompatActivity {
     private TextView chipEsport;
     private TextView chipFamiliar;
     private TextView chipGastronomia;
+    private View cardFiltersSummary;
+    private TextView tvFilterSummary;
+    private TextView tvOpenFilters;
+    private TextView tvClearFilters;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private androidx.appcompat.widget.AppCompatImageButton btnHomeMenu;
@@ -292,6 +309,10 @@ public class HomeActivity extends AppCompatActivity {
         chipEsport = findViewById(R.id.chipEsport);
         chipFamiliar = findViewById(R.id.chipFamiliar);
         chipGastronomia = findViewById(R.id.chipGastronomia);
+        cardFiltersSummary = findViewById(R.id.cardFiltersSummary);
+        tvFilterSummary = findViewById(R.id.tvFilterSummary);
+        tvOpenFilters = findViewById(R.id.tvOpenFilters);
+        tvClearFilters = findViewById(R.id.tvClearFilters);
 
         etBuscador.addTextChangedListener(new TextWatcher() {
             @Override
@@ -317,6 +338,17 @@ public class HomeActivity extends AppCompatActivity {
         if (chipGastronomia != null) {
             chipGastronomia.setOnClickListener(v -> seleccionarCategoria("Gastronomia", chipGastronomia));
         }
+
+        if (cardFiltersSummary != null) {
+            cardFiltersSummary.setOnClickListener(v -> abrirDialogoFiltros());
+        }
+        if (tvOpenFilters != null) {
+            tvOpenFilters.setOnClickListener(v -> abrirDialogoFiltros());
+        }
+        tvClearFilters.setOnClickListener(v -> limpiarFiltros());
+
+        actualizarEstiloChips(chipTodos);
+        actualizarResumenFiltros();
     }
 
     private void cargarDatosDesdeFirebase() {
@@ -342,6 +374,18 @@ public class HomeActivity extends AppCompatActivity {
         aplicarFiltros();
     }
 
+    private void limpiarFiltros() {
+        categoriaActual = "Todos";
+        filtroFechaActual = FILTRO_FECHA_TODAS;
+        filtroPrecioActual = FILTRO_PRECIO_TODOS;
+        filtroZonaTexto = "";
+        filtroZonaNormalizada = "";
+
+        actualizarEstiloChips(chipTodos);
+        actualizarResumenFiltros();
+        aplicarFiltros();
+    }
+
     private void aplicarFiltros() {
         List<Evento> listaFiltrada = new ArrayList<>();
 
@@ -350,22 +394,89 @@ public class HomeActivity extends AppCompatActivity {
             String descripcion = safeLower(e.getDescripcion());
             String ubicacion = safeLower(e.getUbicacion());
             String fecha = safeLower(e.getFecha());
+            String direccion = safeLower(e.getDireccion());
+            String lugar = safeLower(e.getLugarNombre());
 
             boolean coincideTexto = titulo.contains(textoBusqueda)
                     || descripcion.contains(textoBusqueda)
                     || ubicacion.contains(textoBusqueda)
-                    || fecha.contains(textoBusqueda);
+                    || fecha.contains(textoBusqueda)
+                    || direccion.contains(textoBusqueda)
+                    || lugar.contains(textoBusqueda);
 
             String categoriaEvento = e.getCategoriaUI() == null ? "" : e.getCategoriaUI();
             boolean coincideCategoria = categoriaActual.equals("Todos")
                     || categoriaActual.equalsIgnoreCase(categoriaEvento);
+            boolean coincideFecha = coincideFiltroFecha(e);
+            boolean coincidePrecio = coincideFiltroPrecio(e.getPrecio());
+            boolean coincideZona = filtroZonaNormalizada.isEmpty()
+                    || normalizarTexto(e.getDireccion()).contains(filtroZonaNormalizada)
+                    || normalizarTexto(e.getLugarNombre()).contains(filtroZonaNormalizada);
 
-            if (coincideTexto && coincideCategoria) {
+            if (coincideTexto && coincideCategoria && coincideFecha && coincidePrecio && coincideZona) {
                 listaFiltrada.add(e);
             }
         }
 
         adapter.setEventos(listaFiltrada);
+    }
+
+    private void abrirDialogoFiltros() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_home_filters, null);
+
+        RadioGroup rgFecha = dialogView.findViewById(R.id.rgFiltroFecha);
+        RadioGroup rgPrecio = dialogView.findViewById(R.id.rgFiltroPrecio);
+        EditText etZona = dialogView.findViewById(R.id.etDialogFiltroZona);
+
+        if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
+            rgFecha.check(R.id.rbFiltroFechaHoy);
+        } else if (FILTRO_FECHA_SEMANA.equals(filtroFechaActual)) {
+            rgFecha.check(R.id.rbFiltroFechaSemana);
+        } else {
+            rgFecha.check(R.id.rbFiltroFechaTodas);
+        }
+
+        if (FILTRO_PRECIO_GRATIS.equals(filtroPrecioActual)) {
+            rgPrecio.check(R.id.rbFiltroPrecioGratis);
+        } else if (FILTRO_PRECIO_PAGO.equals(filtroPrecioActual)) {
+            rgPrecio.check(R.id.rbFiltroPrecioPago);
+        } else {
+            rgPrecio.check(R.id.rbFiltroPrecioTodos);
+        }
+
+        etZona.setText(filtroZonaTexto);
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(R.string.home_filter_dialog_title)
+                .setView(dialogView)
+                .setNegativeButton(R.string.detail_cancel, null)
+                .setNeutralButton(R.string.home_filter_clear, (dialog, which) -> limpiarFiltros())
+                .setPositiveButton(R.string.home_filter_apply, (dialog, which) -> {
+                    int fechaId = rgFecha.getCheckedRadioButtonId();
+                    if (fechaId == R.id.rbFiltroFechaHoy) {
+                        filtroFechaActual = FILTRO_FECHA_HOY;
+                    } else if (fechaId == R.id.rbFiltroFechaSemana) {
+                        filtroFechaActual = FILTRO_FECHA_SEMANA;
+                    } else {
+                        filtroFechaActual = FILTRO_FECHA_TODAS;
+                    }
+
+                    int precioId = rgPrecio.getCheckedRadioButtonId();
+                    if (precioId == R.id.rbFiltroPrecioGratis) {
+                        filtroPrecioActual = FILTRO_PRECIO_GRATIS;
+                    } else if (precioId == R.id.rbFiltroPrecioPago) {
+                        filtroPrecioActual = FILTRO_PRECIO_PAGO;
+                    } else {
+                        filtroPrecioActual = FILTRO_PRECIO_TODOS;
+                    }
+
+                    filtroZonaTexto = etZona.getText() == null ? "" : etZona.getText().toString().trim();
+                    filtroZonaNormalizada = normalizarTexto(filtroZonaTexto);
+
+                    actualizarResumenFiltros();
+                    aplicarFiltros();
+                })
+                .show();
     }
 
     private void actualizarEstiloChips(TextView chipActivo) {
@@ -376,16 +487,84 @@ public class HomeActivity extends AppCompatActivity {
         resetearChip(chipFamiliar);
         resetearChip(chipGastronomia);
 
-        if (chipActivo != null) {
-            chipActivo.setTextColor(Color.parseColor("#FFFFFF"));
-            chipActivo.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
-        }
+        activarChip(chipActivo);
+    }
+
+    private void activarChip(TextView chip) {
+        if (chip == null) return;
+        chip.setTextColor(ContextCompat.getColor(this, R.color.home_chip_text_active));
+        chip.setBackgroundTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(this, R.color.home_chip_active_bg)));
     }
 
     private void resetearChip(TextView chip) {
         if (chip == null) return;
-        chip.setTextColor(Color.parseColor("#757575"));
+        chip.setTextColor(ContextCompat.getColor(this, R.color.home_chip_text_inactive));
         chip.setBackgroundTintList(null);
+    }
+
+    private boolean coincideFiltroFecha(Evento e) {
+        if (FILTRO_FECHA_TODAS.equals(filtroFechaActual)) return true;
+        if (e == null || e.getInicioMillis() <= 0L) return false;
+
+        Calendar ahora = Calendar.getInstance();
+        Calendar eventoCal = Calendar.getInstance();
+        eventoCal.setTimeInMillis(e.getInicioMillis());
+
+        if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
+            return ahora.get(Calendar.YEAR) == eventoCal.get(Calendar.YEAR)
+                    && ahora.get(Calendar.DAY_OF_YEAR) == eventoCal.get(Calendar.DAY_OF_YEAR);
+        }
+
+        if (FILTRO_FECHA_SEMANA.equals(filtroFechaActual)) {
+            return ahora.get(Calendar.YEAR) == eventoCal.get(Calendar.YEAR)
+                    && ahora.get(Calendar.WEEK_OF_YEAR) == eventoCal.get(Calendar.WEEK_OF_YEAR);
+        }
+
+        return true;
+    }
+
+    private boolean coincideFiltroPrecio(double precio) {
+        if (FILTRO_PRECIO_TODOS.equals(filtroPrecioActual)) return true;
+        if (FILTRO_PRECIO_GRATIS.equals(filtroPrecioActual)) return precio <= 0.009d;
+        if (FILTRO_PRECIO_PAGO.equals(filtroPrecioActual)) return precio > 0.009d;
+        return true;
+    }
+
+    private void actualizarResumenFiltros() {
+        List<String> partes = new ArrayList<>();
+        if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
+            partes.add(getString(R.string.home_filter_date_today));
+        } else if (FILTRO_FECHA_SEMANA.equals(filtroFechaActual)) {
+            partes.add(getString(R.string.home_filter_date_week));
+        }
+
+        if (FILTRO_PRECIO_GRATIS.equals(filtroPrecioActual)) {
+            partes.add(getString(R.string.home_filter_price_free));
+        } else if (FILTRO_PRECIO_PAGO.equals(filtroPrecioActual)) {
+            partes.add(getString(R.string.home_filter_price_paid));
+        }
+
+        if (!filtroZonaTexto.isEmpty()) {
+            partes.add(getString(R.string.home_filter_zone_prefix, filtroZonaTexto));
+        }
+
+        if (tvFilterSummary != null) {
+            if (partes.isEmpty()) {
+                tvFilterSummary.setText(getString(R.string.home_filter_summary_default));
+            } else {
+                tvFilterSummary.setText(String.join(" • ", partes));
+            }
+        }
+        if (tvClearFilters != null) {
+            tvClearFilters.setVisibility(partes.isEmpty() ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private String normalizarTexto(String value) {
+        String base = safeLower(value).trim();
+        String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 
     private String safeLower(String value) {

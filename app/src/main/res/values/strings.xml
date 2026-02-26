@@ -9,6 +9,22 @@
     <string name="home_menu_settings">Ajustes</string>
     <string name="home_menu_logout">Cerrar sesion</string>
     <string name="home_settings_pending">Ajustes disponibles pronto</string>
+    <string name="home_filter_date_all">Fecha: todas</string>
+    <string name="home_filter_date_today">Hoy</string>
+    <string name="home_filter_date_week">Esta semana</string>
+    <string name="home_filter_price_all">Precio: todos</string>
+    <string name="home_filter_price_free">Gratis</string>
+    <string name="home_filter_price_paid">De pago</string>
+    <string name="home_filter_zone_hint">Calle o zona (Rambla, Part Alta...)</string>
+    <string name="home_filter_clear">Limpiar</string>
+    <string name="home_filter_open">Ajustar</string>
+    <string name="home_filter_apply">Aplicar</string>
+    <string name="home_filter_dialog_title">Filtros de eventos</string>
+    <string name="home_filter_section_date">Fecha</string>
+    <string name="home_filter_section_price">Precio</string>
+    <string name="home_filter_section_zone">Calle o zona</string>
+    <string name="home_filter_summary_default">Filtros</string>
+    <string name="home_filter_zone_prefix">Zona: %1$s</string>
 
     <!-- Perfil -->
     <string name="profile_nav_header_title">Tarraco Fests</string>

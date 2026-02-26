@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="background_light">#FF14181F</color>
     <color name="dialog_surface">#1E1E1E</color>
     <color name="dialog_on_surface">#FFFFFF</color>
     <color name="dialog_on_surface_2">#BDBDBD</color>
@@ -77,6 +78,13 @@
     <color name="role_user_stroke">#8042A5F5</color>
     <color name="role_user_text">#FFBBDEFB</color>
 
+    <!-- Home / filtros -->
+    <color name="home_chip_text_inactive">#FFE5E7EB</color>
+    <color name="home_chip_text_active">#FFFFFFFF</color>
+    <color name="home_chip_active_bg">#FF8A1A</color>
+    <color name="home_filter_summary_text">#FFE5E7EB</color>
+    <color name="home_filter_icon_tint">#FFD1D5DB</color>
+    <color name="home_filter_action_text">#FFFFD7B0</color>
     <color name="home_status_bar_fill">#FF5F43</color>
 </resources>
 
