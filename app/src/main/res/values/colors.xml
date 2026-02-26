@@ -100,6 +100,19 @@
     <color name="home_filter_summary_text">#4B5563</color>
     <color name="home_filter_icon_tint">#6B7280</color>
     <color name="home_filter_action_text">#CC5C00</color>
+    <color name="home_filter_panel_bg">#F9FBFD</color>
+    <color name="home_filter_panel_stroke">#DDE4EC</color>
+    <color name="home_filter_section_title">#CC5C00</color>
+    <color name="home_filter_option_bg">#FFFFFFFF</color>
+    <color name="home_filter_option_stroke">#DEE5EE</color>
+    <color name="home_filter_option_checked_bg">#1AFF8A1A</color>
+    <color name="home_filter_option_checked_stroke">#FF8A1A</color>
+    <color name="home_filter_option_text_default">#1F2937</color>
+    <color name="home_filter_option_text_checked">#A85400</color>
+    <color name="home_filter_radio_checked">#FF8A1A</color>
+    <color name="home_filter_radio_unchecked">#8E97A5</color>
+    <color name="home_filter_input_bg">#FFFFFFFF</color>
+    <color name="home_filter_input_stroke">#D3DCE7</color>
     <color name="home_status_bar_fill">#FF5F43</color>
 </resources>
 

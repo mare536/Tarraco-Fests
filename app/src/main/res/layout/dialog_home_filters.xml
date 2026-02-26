@@ -2,165 +2,272 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:overScrollMode="ifContentScrolls">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingTop="8dp"
-        android:paddingBottom="6dp">
+        android:paddingBottom="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/home_filter_section_date"
-            android:textColor="@color/dialog_text"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_home_filter_section"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-        <RadioGroup
-            android:id="@+id/rgFiltroFecha"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_section_date"
+                android:textColor="@color/home_filter_section_title"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgFiltroFecha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbFiltroFechaTodas"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_date_all"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroFechaHoy"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_date_today"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroFechaSemana"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_date_week"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroFechaWeekend"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_date_weekend"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical">
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_home_filter_section"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <RadioButton
-                android:id="@+id/rbFiltroFechaTodas"
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/home_filter_date_all"
-                android:textColor="@color/dialog_text" />
+                android:text="@string/home_filter_section_price"
+                android:textColor="@color/home_filter_section_title"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
-            <RadioButton
-                android:id="@+id/rbFiltroFechaHoy"
+            <RadioGroup
+                android:id="@+id/rgFiltroPrecio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/home_filter_date_today"
-                android:textColor="@color/dialog_text" />
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
 
-            <RadioButton
-                android:id="@+id/rbFiltroFechaSemana"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_date_week"
-                android:textColor="@color/dialog_text" />
+                <RadioButton
+                    android:id="@+id/rbFiltroPrecioTodos"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_price_all"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
 
-            <RadioButton
-                android:id="@+id/rbFiltroFechaWeekend"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_date_weekend"
-                android:textColor="@color/dialog_text" />
-        </RadioGroup>
+                <RadioButton
+                    android:id="@+id/rbFiltroPrecioGratis"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_price_free"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
 
-        <TextView
+                <RadioButton
+                    android:id="@+id/rbFiltroPrecioPago"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_price_paid"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/home_filter_section_price"
-            android:textColor="@color/dialog_text"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_home_filter_section"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-        <RadioGroup
-            android:id="@+id/rgFiltroPrecio"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_filter_section_time"
+                android:textColor="@color/home_filter_section_title"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgFiltroHorario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbFiltroHorarioTodos"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_time_all"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroHorarioManana"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_time_morning"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroHorarioTarde"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_time_afternoon"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbFiltroHorarioNoche"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_home_filter_option"
+                    android:buttonTint="@color/home_filter_radio_tint"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/home_filter_time_night"
+                    android:textColor="@color/home_filter_option_text"
+                    android:textSize="14sp" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical">
+            android:background="@drawable/bg_home_filter_section"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <RadioButton
-                android:id="@+id/rbFiltroPrecioTodos"
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/home_filter_price_all"
-                android:textColor="@color/dialog_text" />
+                android:text="@string/home_filter_section_zone"
+                android:textColor="@color/home_filter_section_title"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
-            <RadioButton
-                android:id="@+id/rbFiltroPrecioGratis"
+            <EditText
+                android:id="@+id/etDialogFiltroZona"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_price_free"
-                android:textColor="@color/dialog_text" />
-
-            <RadioButton
-                android:id="@+id/rbFiltroPrecioPago"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_price_paid"
-                android:textColor="@color/dialog_text" />
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/home_filter_section_zone"
-            android:textColor="@color/dialog_text"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/home_filter_section_time"
-            android:textColor="@color/dialog_text"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/rgFiltroHorario"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/rbFiltroHorarioTodos"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_time_all"
-                android:textColor="@color/dialog_text" />
-
-            <RadioButton
-                android:id="@+id/rbFiltroHorarioManana"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_time_morning"
-                android:textColor="@color/dialog_text" />
-
-            <RadioButton
-                android:id="@+id/rbFiltroHorarioTarde"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_time_afternoon"
-                android:textColor="@color/dialog_text" />
-
-            <RadioButton
-                android:id="@+id/rbFiltroHorarioNoche"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/home_filter_time_night"
-                android:textColor="@color/dialog_text" />
-        </RadioGroup>
-
-        <EditText
-            android:id="@+id/etDialogFiltroZona"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_input_dialog"
-            android:hint="@string/home_filter_zone_hint"
-            android:imeOptions="actionDone"
-            android:inputType="textCapWords"
-            android:maxLines="1"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textColor="@color/dialog_text"
-            android:textColorHint="@color/dialog_hint"
-            android:textSize="14sp" />
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_home_filter_input"
+                android:hint="@string/home_filter_zone_hint"
+                android:imeOptions="actionDone"
+                android:inputType="textCapWords"
+                android:maxLines="1"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/dialog_text"
+                android:textColorHint="@color/dialog_hint"
+                android:textSize="14sp" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
