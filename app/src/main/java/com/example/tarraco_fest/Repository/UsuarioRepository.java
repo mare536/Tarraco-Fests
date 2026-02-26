@@ -224,11 +224,7 @@ public class UsuarioRepository {
         if (user == null) return out;
 
         for (UserInfo info : user.getProviderData()) {
-            if (info == nullw) {
-                continue;
-            } else {
-                info.getProviderId();
-            }
+            if (info == null) continue;
             if ("google.com".equals(info.getProviderId())
                     && !out.contains(FirestoreSchema.AuthMethods.GOOGLE)) {
                 out.add(FirestoreSchema.AuthMethods.GOOGLE);
