@@ -21,6 +21,9 @@ public class Evento implements Serializable {
     private long inicioMillis;
     private double precio;
     private int imagenResId;
+    private Double latitud;
+    private Double longitud;
+    private Double distanciaKm;
 
     public Evento() {
     }
@@ -39,6 +42,9 @@ public class Evento implements Serializable {
     public double getPrecio() { return precio; }
     public int getImagenResId() { return imagenResId; }
     public String getImagenUrl() { return imagenUrl; }
+    public Double getLatitud() { return latitud; }
+    public Double getLongitud() { return longitud; }
+    public Double getDistanciaKm() { return distanciaKm; }
 
     public void setId(String id) { this.id = id; }
     public void setActivo(boolean activo) { this.activo = activo; }
@@ -54,6 +60,13 @@ public class Evento implements Serializable {
     public void setPrecio(double precio) { this.precio = precio; }
     public void setImagenResId(int imagenResId) { this.imagenResId = imagenResId; }
     public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
+    public void setLatitud(Double latitud) { this.latitud = latitud; }
+    public void setLongitud(Double longitud) { this.longitud = longitud; }
+    public void setDistanciaKm(Double distanciaKm) { this.distanciaKm = distanciaKm; }
+
+    public boolean tieneCoordenadas() {
+        return latitud != null && longitud != null;
+    }
 
     public String getUbicacion() {
         return (lugarNombre != null ? lugarNombre : "")

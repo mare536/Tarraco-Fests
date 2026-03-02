@@ -1,6 +1,9 @@
 package com.example.tarraco_fest.Repository;
 
+import android.content.Context;
+
 import com.example.tarraco_fest.Data.FirestoreSchema;
+import com.example.tarraco_fest.Reminder.ReminderScheduler;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -12,8 +15,30 @@ import java.util.Map;
 
 public class ReminderRepository {
 
+    private final Context appContext;
+
+    public ReminderRepository(Context context) {
+        this.appContext = context == null ? null : context.getApplicationContext();
+    }
+
     public interface Callback {
         void onOk();
+        void onError(Exception e);
+    }
+
+    public static class ReminderInfo {
+        public final long remindAtMillis;
+        public final boolean enabled;
+
+        public ReminderInfo(long remindAtMillis, boolean enabled) {
+            this.remindAtMillis = remindAtMillis;
+            this.enabled = enabled;
+        }
+    }
+
+    public interface ReminderInfoCallback {
+        void onOk(ReminderInfo info);
+        void onEmpty();
         void onError(Exception e);
     }
 
@@ -67,7 +92,55 @@ public class ReminderRepository {
                 .collection(FirestoreSchema.Subcollections.RECORDATORIOS)
                 .document(eventId)
                 .set(data, SetOptions.merge())
-                .addOnSuccessListener(v -> cb.onOk())
+                .addOnSuccessListener(v -> {
+                    if (appContext != null) {
+                        ReminderScheduler.schedule(
+                                appContext,
+                                eventId,
+                                eventTitle,
+                                inicioMillis,
+                                remindAtMillis
+                        );
+                    }
+                    cb.onOk();
+                })
+                .addOnFailureListener(cb::onError);
+    }
+
+    public void obtenerRecordatorio(String eventId, ReminderInfoCallback cb) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) {
+            cb.onError(new IllegalStateException("No hay usuario autenticado"));
+            return;
+        }
+        if (eventId == null || eventId.trim().isEmpty()) {
+            cb.onError(new IllegalArgumentException("Evento invalido"));
+            return;
+        }
+
+        FirebaseFirestore.getInstance()
+                .collection(FirestoreSchema.Collections.USUARIOS)
+                .document(uid)
+                .collection(FirestoreSchema.Subcollections.RECORDATORIOS)
+                .document(eventId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc == null || !doc.exists()) {
+                        cb.onEmpty();
+                        return;
+                    }
+
+                    boolean enabled = Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.RecordatorioFields.ENABLED));
+                    Timestamp ts = doc.getTimestamp(FirestoreSchema.RecordatorioFields.REMIND_AT);
+                    long remindAt = ts != null ? ts.toDate().getTime() : 0L;
+
+                    if (!enabled || remindAt <= System.currentTimeMillis()) {
+                        cb.onEmpty();
+                        return;
+                    }
+
+                    cb.onOk(new ReminderInfo(remindAt, true));
+                })
                 .addOnFailureListener(cb::onError);
     }
 }

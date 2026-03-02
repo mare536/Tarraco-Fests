@@ -1,11 +1,14 @@
 package com.example.tarraco_fest.Activity;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,22 +21,32 @@ import com.example.tarraco_fest.Modelo.AdminEvento;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.AdminEventosRepository;
+import com.example.tarraco_fest.Repository.EventosRepository;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.Timestamp;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class AdminEventosActivity extends AppCompatActivity {
 
+    private static final String FILTRO_TODOS = "todos";
+    private static final String FILTRO_ACTIVOS = "activos";
+    private static final String FILTRO_INACTIVOS = "inactivos";
+
     private final AdminAccessRepository accessRepository = new AdminAccessRepository();
     private final AdminEventosRepository eventosRepository = new AdminEventosRepository();
     private final SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
     private AdminEventosAdapter adapter;
+    private final List<AdminEvento> eventos = new ArrayList<>();
+    private String busquedaNormalizada = "";
+    private String filtroEstadoActual = FILTRO_TODOS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,11 +69,44 @@ public class AdminEventosActivity extends AppCompatActivity {
         });
         rv.setAdapter(adapter);
 
+        configurarBuscadorYFiltros();
         findViewById(R.id.btnAdminEventosCrear).setOnClickListener(v -> mostrarDialogEvento(null));
         findViewById(R.id.btnAdminEventosRecargar).setOnClickListener(v -> cargarEventos());
         findViewById(R.id.btnAdminEventosVolver).setOnClickListener(v -> finish());
 
         validarAccesoYCargar();
+    }
+
+    private void configurarBuscadorYFiltros() {
+        EditText etBuscar = findViewById(R.id.etAdminEventosBuscar);
+        RadioGroup rgEstado = findViewById(R.id.rgAdminEventosEstado);
+
+        rgEstado.check(R.id.rbAdminEventosEstadoTodos);
+
+        etBuscar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                busquedaNormalizada = normalizar(s == null ? "" : s.toString());
+                aplicarFiltrosLocales();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) { }
+        });
+
+        rgEstado.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbAdminEventosEstadoActivos) {
+                filtroEstadoActual = FILTRO_ACTIVOS;
+            } else if (checkedId == R.id.rbAdminEventosEstadoInactivos) {
+                filtroEstadoActual = FILTRO_INACTIVOS;
+            } else {
+                filtroEstadoActual = FILTRO_TODOS;
+            }
+            aplicarFiltrosLocales();
+        });
     }
 
     private void validarAccesoYCargar() {
@@ -87,7 +133,9 @@ public class AdminEventosActivity extends AppCompatActivity {
         eventosRepository.cargarEventos(new AdminEventosRepository.ListCallback() {
             @Override
             public void onOk(List<AdminEvento> eventos) {
-                adapter.setData(eventos);
+                AdminEventosActivity.this.eventos.clear();
+                AdminEventosActivity.this.eventos.addAll(eventos);
+                aplicarFiltrosLocales();
             }
 
             @Override
@@ -95,6 +143,28 @@ public class AdminEventosActivity extends AppCompatActivity {
                 Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_events_load_error), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void aplicarFiltrosLocales() {
+        List<AdminEvento> filtrados = new ArrayList<>();
+
+        for (AdminEvento e : eventos) {
+            String titulo = normalizar(e.titulo);
+            String lugar = normalizar(e.lugarNombre);
+            boolean coincideTexto = busquedaNormalizada.isEmpty()
+                    || titulo.contains(busquedaNormalizada)
+                    || lugar.contains(busquedaNormalizada);
+
+            boolean coincideEstado = FILTRO_TODOS.equals(filtroEstadoActual)
+                    || (FILTRO_ACTIVOS.equals(filtroEstadoActual) && e.activo)
+                    || (FILTRO_INACTIVOS.equals(filtroEstadoActual) && !e.activo);
+
+            if (coincideTexto && coincideEstado) {
+                filtrados.add(e);
+            }
+        }
+
+        adapter.setData(filtrados);
     }
 
     private void mostrarDialogEvento(AdminEvento original) {
@@ -150,6 +220,7 @@ public class AdminEventosActivity extends AppCompatActivity {
                 eventosRepository.crearEvento(evento, new AdminEventosRepository.ActionCallback() {
                     @Override
                     public void onOk() {
+                        EventosRepository.invalidarCacheApi();
                         Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
                         cargarEventos();
@@ -164,6 +235,7 @@ public class AdminEventosActivity extends AppCompatActivity {
                 eventosRepository.actualizarEvento(evento, new AdminEventosRepository.ActionCallback() {
                     @Override
                     public void onOk() {
+                        EventosRepository.invalidarCacheApi();
                         Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
                         cargarEventos();
@@ -182,6 +254,7 @@ public class AdminEventosActivity extends AppCompatActivity {
         eventosRepository.actualizarActivo(evento.id, !evento.activo, new AdminEventosRepository.ActionCallback() {
             @Override
             public void onOk() {
+                EventosRepository.invalidarCacheApi();
                 Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                 cargarEventos();
             }
@@ -206,5 +279,12 @@ public class AdminEventosActivity extends AppCompatActivity {
         } catch (ParseException e) {
             return null;
         }
+    }
+
+    private String normalizar(String value) {
+        if (value == null) return "";
+        String base = value.trim().toLowerCase(Locale.ROOT);
+        String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 }

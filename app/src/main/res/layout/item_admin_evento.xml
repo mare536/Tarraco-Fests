@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/dialog_input_bg"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/landing_card_surface"
     app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
-    app:strokeColor="@color/dialog_glass_stroke"
+    app:strokeColor="@color/event_card_stroke"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -29,6 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
+            android:maxLines="1"
             android:textColor="@color/dialog_text"
             android:textSize="13sp" />
 
@@ -37,6 +38,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
+            android:maxLines="1"
             android:textColor="@color/dialog_text"
             android:textSize="13sp" />
 
@@ -58,12 +60,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal">
+            android:background="@drawable/bg_admin_action_row"
+            android:orientation="horizontal"
+            android:padding="8dp">
 
             <Button
                 android:id="@+id/btnAdminEventoEditar"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
+                android:layout_height="44dp"
                 android:layout_weight="1"
                 android:background="@drawable/btn_auth_primary"
                 android:text="@string/admin_edit"
@@ -75,7 +79,7 @@
             <Button
                 android:id="@+id/btnAdminEventoActivo"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:background="@drawable/btn_auth_secondary"

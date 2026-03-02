@@ -3,16 +3,20 @@ package com.example.tarraco_fest.Repository;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.example.tarraco_fest.BuildConfig;
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.Source;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -34,7 +38,7 @@ public class EventosRepository {
     private static final String TARRAGONA_API_CSV_URL = "https://opendatafiles.tarragona.cat/00302.csv";
     private static final int FIRESTORE_LIMIT = 80;
     private static final int API_LIMIT = 400;
-    private static final long API_CACHE_MS = 5L * 60L * 1000L;
+    private static final long API_CACHE_MS = Math.max(60_000L, BuildConfig.EVENTS_API_CACHE_MS);
 
     private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
@@ -49,19 +53,35 @@ public class EventosRepository {
     }
 
     public void cargarEventos(Callback cb) {
-        FirebaseFirestore.getInstance()
+        Query query = FirebaseFirestore.getInstance()
                 .collection(FirestoreSchema.Collections.EVENTOS)
                 .orderBy(FirestoreSchema.EventoFields.INICIO)
-                .limit(FIRESTORE_LIMIT)
-                .get()
+                .limit(FIRESTORE_LIMIT);
+
+        query.get(Source.SERVER)
                 .addOnSuccessListener(qs -> {
                     List<Evento> firestoreEventos = mapearEventosFirestore(qs);
                     cb.onOk(firestoreEventos);
                     cargarEventosApiAsincrono(firestoreEventos, cb, null);
                 })
-                .addOnFailureListener(firestoreError -> {
-                    cargarEventosApiAsincrono(new ArrayList<>(), cb, firestoreError);
+                .addOnFailureListener(serverError -> {
+                    query.get()
+                            .addOnSuccessListener(qs -> {
+                                List<Evento> firestoreEventos = mapearEventosFirestore(qs);
+                                cb.onOk(firestoreEventos);
+                                cargarEventosApiAsincrono(firestoreEventos, cb, null);
+                            })
+                            .addOnFailureListener(firestoreError -> {
+                                cargarEventosApiAsincrono(new ArrayList<>(), cb, firestoreError);
+                            });
                 });
+    }
+
+    public static void invalidarCacheApi() {
+        synchronized (API_CACHE_LOCK) {
+            apiCache.clear();
+            apiCacheAt = 0L;
+        }
     }
 
     private List<Evento> mapearEventosFirestore(Iterable<QueryDocumentSnapshot> docs) {
@@ -80,6 +100,8 @@ public class EventosRepository {
             e.setCiudad(d.getString("ciudad"));
             e.setDireccion(d.getString("direccion"));
             e.setImagenUrl(d.getString("imagenUrl"));
+            e.setLatitud(leerDouble(d, "latitud", "latitudEvento", "lat", "latitude"));
+            e.setLongitud(leerDouble(d, "longitud", "longitudEvento", "lng", "lon", "longitude"));
 
             Boolean estadoActivo = d.getBoolean(FirestoreSchema.EventoFields.ACTIVO);
             e.setActivo(estadoActivo == null || estadoActivo);
@@ -209,6 +231,8 @@ public class EventosRepository {
         String inicioRaw = valorCampo(row, idx, "INICI");
         String fiRaw = valorCampo(row, idx, "FI");
         String categoriesRaw = valorCampo(row, idx, "CATEGORIES");
+        String latitudRaw = valorCampo(row, idx, "LATITUD");
+        String longitudRaw = valorCampo(row, idx, "LONGITUD");
 
         if (titulo.isEmpty() || inicioRaw.isEmpty()) return null;
 
@@ -236,19 +260,72 @@ public class EventosRepository {
         e.setPrecio(0.0);
         e.setImagenResId(obtenerImagenPredefinida(e.getCategoriaId()));
         e.setImagenUrl("");
+        e.setLatitud(parsearDouble(rawOrEmpty(latitudRaw)));
+        e.setLongitud(parsearDouble(rawOrEmpty(longitudRaw)));
 
         String categoriesClean = categoriesRaw
                 .replace("[", "")
                 .replace("]", "")
                 .replace("\"", "")
                 .trim();
-        String descripcion = categoriesClean.isEmpty() ? "Evento importado de agenda publica" : ("Categorias: " + categoriesClean);
-        if (!url.isEmpty()) {
-            descripcion = descripcion + "\n" + url;
+        String urlNormalizada = normalizarUrlPublica(url);
+        String descripcion = construirDescripcionApi(titulo, adreca, categoriesClean, inicioMillis);
+        if (!urlNormalizada.isEmpty()) {
+            descripcion = descripcion + "\n" + urlNormalizada;
         }
         e.setDescripcion(descripcion);
 
         return e;
+    }
+
+    private String construirDescripcionApi(String titulo, String adreca, String categorias, long inicioMillis) {
+        String t = titulo == null ? "" : titulo.trim();
+        String lugar = adreca == null ? "" : adreca.trim();
+        String tema = categorias == null ? "" : categorias.trim();
+
+        StringBuilder sb = new StringBuilder();
+        if (!t.isEmpty()) {
+            sb.append(t).append(".");
+        } else {
+            sb.append("Evento de la agenda cultural de Tarragona.");
+        }
+
+        if (inicioMillis > 0L) {
+            sb.append(" Fecha: ").append(formatearFecha(inicioMillis)).append(".");
+        }
+        if (!lugar.isEmpty()) {
+            sb.append(" Lugar: ").append(lugar).append(".");
+        }
+        if (!tema.isEmpty()) {
+            sb.append(" Categoria: ").append(tema).append(".");
+        }
+        sb.append(" Consulta la web oficial para mas detalles.");
+        return sb.toString();
+    }
+
+    private String normalizarUrlPublica(String rawUrl) {
+        if (rawUrl == null) return "";
+        String url = rawUrl.trim();
+        if (url.isEmpty()) return "";
+
+        url = url.replaceAll("[),.;]+$", "");
+        if (url.isEmpty()) return "";
+
+        if (url.startsWith("www.")) {
+            url = "https://" + url;
+        } else if (!url.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            url = "https://" + url;
+        }
+
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if (scheme == null || host == null || host.trim().isEmpty()) return "";
+            return uri.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private List<Evento> fusionarEventos(List<Evento> firestoreEventos, List<Evento> apiEventos) {
@@ -394,6 +471,37 @@ public class EventosRepository {
 
     private String safeLower(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String rawOrEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private Double parsearDouble(String raw) {
+        if (raw == null) return null;
+        String clean = raw.trim().replace("\"", "").replace(",", ".");
+        if (clean.isEmpty()) return null;
+        try {
+            return Double.parseDouble(clean);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private Double leerDouble(QueryDocumentSnapshot d, String... keys) {
+        if (d == null || keys == null) return null;
+        for (String key : keys) {
+            if (key == null || key.isEmpty()) continue;
+            Object value = d.get(key);
+            if (value instanceof Number) {
+                return ((Number) value).doubleValue();
+            }
+            if (value instanceof String) {
+                Double parsed = parsearDouble((String) value);
+                if (parsed != null) return parsed;
+            }
+        }
+        return null;
     }
 
     private void publicarOk(Callback cb, List<Evento> data) {

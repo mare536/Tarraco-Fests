@@ -5,12 +5,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -19,6 +22,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -43,6 +47,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -56,6 +61,7 @@ public class HomeActivity extends AppCompatActivity {
     private static final String KEY_FILTER_FECHA = "filter_fecha";
     private static final String KEY_FILTER_PRECIO = "filter_precio";
     private static final String KEY_FILTER_HORARIO = "filter_horario";
+    private static final String KEY_FILTER_DISTANCIA = "filter_distancia";
     private static final String KEY_FILTER_ZONA = "filter_zona";
     private static final String FILTRO_FECHA_TODAS = "fecha_todas";
     private static final String FILTRO_FECHA_HOY = "fecha_hoy";
@@ -68,6 +74,9 @@ public class HomeActivity extends AppCompatActivity {
     private static final String FILTRO_HORARIO_MANANA = "horario_manana";
     private static final String FILTRO_HORARIO_TARDE = "horario_tarde";
     private static final String FILTRO_HORARIO_NOCHE = "horario_noche";
+    private static final String FILTRO_DISTANCIA_TODAS = "distancia_todas";
+    private static final String FILTRO_DISTANCIA_CERCA = "distancia_cerca";
+    private static final double DISTANCIA_CERCA_KM = 5.0d;
 
     private EventosAdapter adapter;
     private final EventosRepository repo = new EventosRepository();
@@ -79,8 +88,12 @@ public class HomeActivity extends AppCompatActivity {
     private String filtroFechaActual = FILTRO_FECHA_TODAS;
     private String filtroPrecioActual = FILTRO_PRECIO_TODOS;
     private String filtroHorarioActual = FILTRO_HORARIO_TODOS;
+    private String filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
     private String filtroZonaTexto = "";
     private String filtroZonaNormalizada = "";
+    private double userLat = 0d;
+    private double userLng = 0d;
+    private boolean hasUserLocation = false;
 
     private TextView chipTodos;
     private TextView chipMusica;
@@ -105,6 +118,9 @@ public class HomeActivity extends AppCompatActivity {
 
     private final ActivityResultLauncher<String[]> ubicacionPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                refrescarUbicacionUsuario();
+                aplicarFiltros();
+                actualizarResumenFiltros();
             });
 
     @Override
@@ -121,11 +137,13 @@ public class HomeActivity extends AppCompatActivity {
         configurarBuscadorYFiltros();
         cargarDatosDesdeFirebase();
         solicitarPermisosIniciales();
+        refrescarUbicacionUsuario();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        refrescarUbicacionUsuario();
         actualizarSeleccionDrawerActual();
         if (loadedAtLeastOnce) {
             cargarDatosDesdeFirebase();
@@ -227,7 +245,7 @@ public class HomeActivity extends AppCompatActivity {
             return true;
         }
         if (itemId == R.id.nav_home_settings) {
-            Toast.makeText(this, getString(R.string.home_settings_pending), Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, AjustesActivity.class));
             return true;
         }
         if (itemId == R.id.nav_home_logout) {
@@ -268,15 +286,60 @@ public class HomeActivity extends AppCompatActivity {
         return !permisosPrefs.getBoolean(KEY_UBI_SOLICITADO, false);
     }
 
+    private boolean tienePermisoUbicacion() {
+        boolean fineOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        boolean coarseOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        return fineOk || coarseOk;
+    }
+
+    private boolean refrescarUbicacionUsuario() {
+        if (!tienePermisoUbicacion()) {
+            hasUserLocation = false;
+            return false;
+        }
+
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager == null) {
+            hasUserLocation = false;
+            return false;
+        }
+
+        Location mejor = null;
+        try {
+            Location gps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location net = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            Location passive = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+
+            if (gps != null) mejor = gps;
+            if (net != null && (mejor == null || net.getTime() > mejor.getTime())) mejor = net;
+            if (passive != null && (mejor == null || passive.getTime() > mejor.getTime())) mejor = passive;
+        } catch (SecurityException ignored) {
+            hasUserLocation = false;
+            return false;
+        }
+
+        if (mejor == null) {
+            hasUserLocation = false;
+            return false;
+        }
+
+        userLat = mejor.getLatitude();
+        userLng = mejor.getLongitude();
+        hasUserLocation = true;
+        return true;
+    }
+
     private void mostrarDialogoPermisoNotificaciones() {
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle("Permiso de notificaciones")
-                .setMessage("Activa notificaciones para avisos de eventos y recordatorios.")
-                .setPositiveButton("Permitir", (d, w) -> {
+                .setTitle(R.string.permissions_notif_title)
+                .setMessage(R.string.permissions_notif_message)
+                .setPositiveButton(R.string.permissions_allow, (d, w) -> {
                     permisosPrefs.edit().putBoolean(KEY_NOTIF_SOLICITADO, true).apply();
                     notificacionesPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
                 })
-                .setNegativeButton("Ahora no", (d, w) -> {
+                .setNegativeButton(R.string.permissions_not_now, (d, w) -> {
                     permisosPrefs.edit().putBoolean(KEY_NOTIF_SOLICITADO, true).apply();
                     solicitarPermisosIniciales();
                 })
@@ -285,16 +348,16 @@ public class HomeActivity extends AppCompatActivity {
 
     private void mostrarDialogoPermisoUbicacion() {
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle("Permiso de ubicacion")
-                .setMessage("Activa ubicacion para funciones de eventos cercanos y mejoras de recomendacion.")
-                .setPositiveButton("Permitir", (d, w) -> {
+                .setTitle(R.string.permissions_location_title)
+                .setMessage(R.string.permissions_location_message)
+                .setPositiveButton(R.string.permissions_allow, (d, w) -> {
                     permisosPrefs.edit().putBoolean(KEY_UBI_SOLICITADO, true).apply();
                     ubicacionPermissionLauncher.launch(new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
                     });
                 })
-                .setNegativeButton("Ahora no", (d, w) -> {
+                .setNegativeButton(R.string.permissions_not_now, (d, w) -> {
                     permisosPrefs.edit().putBoolean(KEY_UBI_SOLICITADO, true).apply();
                 })
                 .show();
@@ -395,6 +458,7 @@ public class HomeActivity extends AppCompatActivity {
         filtroFechaActual = FILTRO_FECHA_TODAS;
         filtroPrecioActual = FILTRO_PRECIO_TODOS;
         filtroHorarioActual = FILTRO_HORARIO_TODOS;
+        filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
         filtroZonaTexto = "";
         filtroZonaNormalizada = "";
 
@@ -405,9 +469,18 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void aplicarFiltros() {
+        if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual) && !hasUserLocation) {
+            filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+            guardarFiltrosPersistidos();
+            actualizarResumenFiltros();
+        }
+
         List<Evento> listaFiltrada = new ArrayList<>();
 
         for (Evento e : listaCompleta) {
+            Double distanciaKm = calcularDistanciaEventoKm(e);
+            e.setDistanciaKm(distanciaKm);
+
             String titulo = safeLower(e.getTitulo());
             String descripcion = safeLower(e.getDescripcion());
             String ubicacion = safeLower(e.getUbicacion());
@@ -428,13 +501,22 @@ public class HomeActivity extends AppCompatActivity {
             boolean coincideFecha = coincideFiltroFecha(e);
             boolean coincidePrecio = coincideFiltroPrecio(e.getPrecio());
             boolean coincideHorario = coincideFiltroHorario(e);
+            boolean coincideDistancia = coincideFiltroDistancia(distanciaKm);
             boolean coincideZona = filtroZonaNormalizada.isEmpty()
                     || normalizarTexto(e.getDireccion()).contains(filtroZonaNormalizada)
                     || normalizarTexto(e.getLugarNombre()).contains(filtroZonaNormalizada);
 
-            if (coincideTexto && coincideCategoria && coincideFecha && coincidePrecio && coincideHorario && coincideZona) {
+            if (coincideTexto && coincideCategoria && coincideFecha && coincidePrecio
+                    && coincideHorario && coincideDistancia && coincideZona) {
                 listaFiltrada.add(e);
             }
+        }
+
+        if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual)) {
+            listaFiltrada.sort(Comparator.comparingDouble(ev -> {
+                Double d = ev.getDistanciaKm();
+                return d == null ? Double.MAX_VALUE : d;
+            }));
         }
 
         adapter.setEventos(listaFiltrada);
@@ -446,6 +528,7 @@ public class HomeActivity extends AppCompatActivity {
         RadioGroup rgFecha = dialogView.findViewById(R.id.rgFiltroFecha);
         RadioGroup rgPrecio = dialogView.findViewById(R.id.rgFiltroPrecio);
         RadioGroup rgHorario = dialogView.findViewById(R.id.rgFiltroHorario);
+        RadioGroup rgDistancia = dialogView.findViewById(R.id.rgFiltroDistancia);
         EditText etZona = dialogView.findViewById(R.id.etDialogFiltroZona);
 
         if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
@@ -476,14 +559,20 @@ public class HomeActivity extends AppCompatActivity {
             rgHorario.check(R.id.rbFiltroHorarioTodos);
         }
 
+        if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual)) {
+            rgDistancia.check(R.id.rbFiltroDistanciaCerca);
+        } else {
+            rgDistancia.check(R.id.rbFiltroDistanciaTodas);
+        }
+
         etZona.setText(filtroZonaTexto);
 
-        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
                 .setTitle(R.string.home_filter_dialog_title)
                 .setView(dialogView)
                 .setNegativeButton(R.string.detail_cancel, null)
-                .setNeutralButton(R.string.home_filter_clear, (dialog, which) -> limpiarFiltros())
-                .setPositiveButton(R.string.home_filter_apply, (dialog, which) -> {
+                .setNeutralButton(R.string.home_filter_clear, (dlg, which) -> limpiarFiltros())
+                .setPositiveButton(R.string.home_filter_apply, (dlg, which) -> {
                     int fechaId = rgFecha.getCheckedRadioButtonId();
                     if (fechaId == R.id.rbFiltroFechaHoy) {
                         filtroFechaActual = FILTRO_FECHA_HOY;
@@ -515,6 +604,32 @@ public class HomeActivity extends AppCompatActivity {
                         filtroHorarioActual = FILTRO_HORARIO_TODOS;
                     }
 
+                    int distanciaId = rgDistancia.getCheckedRadioButtonId();
+                    if (distanciaId == R.id.rbFiltroDistanciaCerca) {
+                        if (!tienePermisoUbicacion()) {
+                            filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+                            Toast.makeText(
+                                    HomeActivity.this,
+                                    getString(R.string.home_filter_location_unavailable),
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        } else {
+                            boolean ok = refrescarUbicacionUsuario();
+                            if (!ok) {
+                                filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+                                Toast.makeText(
+                                        HomeActivity.this,
+                                        getString(R.string.home_filter_location_no_fix),
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            } else {
+                                filtroDistanciaActual = FILTRO_DISTANCIA_CERCA;
+                            }
+                        }
+                    } else {
+                        filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+                    }
+
                     filtroZonaTexto = etZona.getText() == null ? "" : etZona.getText().toString().trim();
                     filtroZonaNormalizada = normalizarTexto(filtroZonaTexto);
 
@@ -522,7 +637,28 @@ public class HomeActivity extends AppCompatActivity {
                     guardarFiltrosPersistidos();
                     aplicarFiltros();
                 })
-                .show();
+                .create();
+
+        dialog.show();
+
+        Button neutral = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+        if (neutral != null) {
+            neutral.setAllCaps(false);
+            neutral.setTextColor(ContextCompat.getColor(this, R.color.home_filter_action_text));
+            neutral.setBackgroundResource(R.drawable.bg_home_filter_clear_chip);
+            int hp = dpToPx(12);
+            int vp = dpToPx(6);
+            neutral.setPadding(hp, vp, hp, vp);
+        }
+
+        Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (positive != null) {
+            positive.setAllCaps(false);
+        }
+        Button negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        if (negative != null) {
+            negative.setAllCaps(false);
+        }
     }
 
     private void actualizarEstiloChips(TextView chipActivo) {
@@ -602,6 +738,23 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
+    private boolean coincideFiltroDistancia(Double distanciaKm) {
+        if (FILTRO_DISTANCIA_TODAS.equals(filtroDistanciaActual)) return true;
+        if (!FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual)) return true;
+        return distanciaKm != null && distanciaKm <= DISTANCIA_CERCA_KM;
+    }
+
+    private Double calcularDistanciaEventoKm(Evento e) {
+        if (!hasUserLocation || e == null || !e.tieneCoordenadas()) return null;
+        Double lat = e.getLatitud();
+        Double lng = e.getLongitud();
+        if (lat == null || lng == null) return null;
+
+        float[] result = new float[1];
+        Location.distanceBetween(userLat, userLng, lat, lng, result);
+        return result[0] / 1000d;
+    }
+
     private void actualizarResumenFiltros() {
         List<String> partes = new ArrayList<>();
         if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
@@ -624,6 +777,10 @@ public class HomeActivity extends AppCompatActivity {
             partes.add(getString(R.string.home_filter_time_afternoon));
         } else if (FILTRO_HORARIO_NOCHE.equals(filtroHorarioActual)) {
             partes.add(getString(R.string.home_filter_time_night));
+        }
+
+        if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual)) {
+            partes.add(getString(R.string.home_filter_distance_near_short));
         }
 
         if (!filtroZonaTexto.isEmpty()) {
@@ -658,8 +815,13 @@ public class HomeActivity extends AppCompatActivity {
         filtroFechaActual = filtrosPrefs.getString(KEY_FILTER_FECHA, FILTRO_FECHA_TODAS);
         filtroPrecioActual = filtrosPrefs.getString(KEY_FILTER_PRECIO, FILTRO_PRECIO_TODOS);
         filtroHorarioActual = filtrosPrefs.getString(KEY_FILTER_HORARIO, FILTRO_HORARIO_TODOS);
+        filtroDistanciaActual = filtrosPrefs.getString(KEY_FILTER_DISTANCIA, FILTRO_DISTANCIA_TODAS);
         filtroZonaTexto = filtrosPrefs.getString(KEY_FILTER_ZONA, "");
         filtroZonaNormalizada = normalizarTexto(filtroZonaTexto);
+
+        if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual) && !tienePermisoUbicacion()) {
+            filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+        }
     }
 
     private void guardarFiltrosPersistidos() {
@@ -670,6 +832,7 @@ public class HomeActivity extends AppCompatActivity {
                 .putString(KEY_FILTER_FECHA, filtroFechaActual)
                 .putString(KEY_FILTER_PRECIO, filtroPrecioActual)
                 .putString(KEY_FILTER_HORARIO, filtroHorarioActual)
+                .putString(KEY_FILTER_DISTANCIA, filtroDistanciaActual)
                 .putString(KEY_FILTER_ZONA, filtroZonaTexto)
                 .apply();
     }
@@ -682,6 +845,10 @@ public class HomeActivity extends AppCompatActivity {
 
     private String safeLower(String value) {
         return value == null ? "" : value.toLowerCase(Locale.ROOT);
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }
 

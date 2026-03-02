@@ -34,6 +34,11 @@
         <activity android:name=".Activity.AdminPanelActivity" android:exported="false" />
         <activity android:name=".Activity.AdminUsuariosActivity" android:exported="false" />
         <activity android:name=".Activity.AdminEventosActivity" android:exported="false" />
+        <activity android:name=".Activity.AjustesActivity" android:exported="false" />
+        <receiver
+            android:name=".Reminder.ReminderReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
 
 

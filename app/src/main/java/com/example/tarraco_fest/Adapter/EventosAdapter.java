@@ -46,6 +46,14 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
 
         holder.txtTitulo.setText(evento.getTitulo());
         holder.txtFecha.setText(evento.getFecha());
+        Double distanciaKm = evento.getDistanciaKm();
+        if (distanciaKm != null && distanciaKm >= 0d) {
+            holder.txtDistancia.setVisibility(View.VISIBLE);
+            holder.txtDistancia.setText(context.getString(R.string.event_distance_km, distanciaKm));
+        } else {
+            holder.txtDistancia.setVisibility(View.GONE);
+            holder.txtDistancia.setText("");
+        }
 
         if (evento.getImagenUrl() != null && !evento.getImagenUrl().isEmpty()) {
             com.bumptech.glide.Glide.with(context)
@@ -73,12 +81,14 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     public static class EventoViewHolder extends RecyclerView.ViewHolder {
         final TextView txtTitulo;
         final TextView txtFecha;
+        final TextView txtDistancia;
         final ImageView imgEvento;
 
         public EventoViewHolder(@NonNull View itemView) {
             super(itemView);
             txtTitulo = itemView.findViewById(R.id.txtTituloEvento);
             txtFecha = itemView.findViewById(R.id.txtFechaEvento);
+            txtDistancia = itemView.findViewById(R.id.txtDistanciaEvento);
             imgEvento = itemView.findViewById(R.id.imgEvento);
         }
     }

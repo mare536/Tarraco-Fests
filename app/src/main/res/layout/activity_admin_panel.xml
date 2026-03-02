@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <ImageView
         android:layout_width="0dp"
@@ -60,9 +61,17 @@
             android:orientation="vertical"
             android:padding="20dp">
 
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_drawer_admin"
+                app:tint="@color/festival_orange" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:background="@drawable/bg_glass_chip"
                 android:paddingStart="12dp"
                 android:paddingTop="4dp"
@@ -84,6 +93,14 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/admin_panel_subtitle"
+                android:textColor="@color/dialog_hint"
+                android:textSize="13sp" />
+
+            <TextView
                 android:id="@+id/tvAdminEstado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,7 +111,7 @@
                 android:textColor="@color/dialog_text"
                 android:textSize="13sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAdminUsuarios"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
@@ -104,9 +121,13 @@
                 android:textAllCaps="false"
                 android:textColor="@color/auth_btn_primary_text"
                 android:textStyle="bold"
-                app:backgroundTint="@null" />
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_person"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@color/auth_btn_primary_text" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAdminEventos"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
@@ -116,9 +137,13 @@
                 android:textAllCaps="false"
                 android:textColor="@color/auth_btn_secondary_text"
                 android:textStyle="bold"
-                app:backgroundTint="@null" />
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_detail_calendar"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@color/auth_btn_secondary_text" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAdminVolver"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
@@ -128,7 +153,11 @@
                 android:textAllCaps="false"
                 android:textColor="@color/auth_btn_secondary_text"
                 android:textStyle="bold"
-                app:backgroundTint="@null" />
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_detail_back"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@color/auth_btn_secondary_text" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -9,6 +9,24 @@
     <string name="home_menu_settings">Ajustes</string>
     <string name="home_menu_logout">Cerrar sesion</string>
     <string name="home_settings_pending">Ajustes disponibles pronto</string>
+    <string name="settings_chip">AJUSTES</string>
+    <string name="settings_title">Permisos y ajustes</string>
+    <string name="settings_subtitle">Gestiona permisos para notificaciones, ubicaci&#243;n y acceso del sistema.</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_location">Ubicacion</string>
+    <string name="settings_request_permission">Solicitar permiso</string>
+    <string name="settings_open_system">Abrir ajustes del sistema</string>
+    <string name="settings_status_granted">Concedido</string>
+    <string name="settings_status_pending">Pendiente</string>
+    <string name="settings_notifications_not_required">No requerido en tu version de Android</string>
+    <string name="settings_already_granted">Permiso ya concedido</string>
+    <string name="settings_permission_denied_hint">Puedes activarlo despues en Ajustes del sistema</string>
+    <string name="permissions_notif_title">Permiso de notificaciones</string>
+    <string name="permissions_notif_message">Activa notificaciones para avisos de eventos y recordatorios.</string>
+    <string name="permissions_location_title">Permiso de ubicaci&#243;n</string>
+    <string name="permissions_location_message">Activa ubicaci&#243;n para funciones de eventos cercanos y recomendaciones.</string>
+    <string name="permissions_allow">Permitir</string>
+    <string name="permissions_not_now">Ahora no</string>
     <string name="home_filter_date_all">Fecha: todas</string>
     <string name="home_filter_date_today">Hoy</string>
     <string name="home_filter_date_week">Esta semana</string>
@@ -20,17 +38,25 @@
     <string name="home_filter_time_morning">Ma&#241;ana</string>
     <string name="home_filter_time_afternoon">Tarde</string>
     <string name="home_filter_time_night">Noche</string>
+    <string name="home_filter_distance_all">Distancia: todas</string>
+    <string name="home_filter_distance_near">Cerca de mi (max 5 km)</string>
+    <string name="home_filter_distance_near_short">Cerca de mi</string>
+    <string name="home_filter_location_unavailable">Activa ubicacion para usar Cerca de mi</string>
+    <string name="home_filter_location_no_fix">No pudimos obtener tu ubicacion ahora</string>
     <string name="home_filter_zone_hint">Calle o zona (Rambla, Part Alta...)</string>
     <string name="home_filter_clear">Limpiar</string>
     <string name="home_filter_open">Ajustar</string>
     <string name="home_filter_apply">Aplicar</string>
     <string name="home_filter_dialog_title">Filtros de eventos</string>
+    <string name="home_filter_dialog_subtitle">Personaliza tu b&#250;squeda para ver solo lo que te interesa.</string>
     <string name="home_filter_section_date">Fecha</string>
     <string name="home_filter_section_price">Precio</string>
     <string name="home_filter_section_time">Franja horaria</string>
+    <string name="home_filter_section_proximity">Ubicacion</string>
     <string name="home_filter_section_zone">Calle o zona</string>
     <string name="home_filter_summary_default">Filtros</string>
     <string name="home_filter_zone_prefix">Zona: %1$s</string>
+    <string name="event_distance_km">%1$.1f km</string>
 
     <!-- Perfil -->
     <string name="profile_nav_header_title">Tarraco Fests</string>
@@ -87,6 +113,7 @@
     <!-- Admin -->
     <string name="admin_panel_title">Panel admin</string>
     <string name="admin_panel_chip">ADMINISTRACION</string>
+    <string name="admin_panel_subtitle">Gesti&#243;n centralizada de usuarios y eventos.</string>
     <string name="admin_panel_users">Gestionar usuarios</string>
     <string name="admin_panel_events">Gestionar eventos</string>
     <string name="admin_back">Volver</string>
@@ -101,6 +128,7 @@
 
     <string name="admin_users_title">Usuarios</string>
     <string name="admin_users_subtitle">Visualiza cuentas, gestiona bloqueos y promueve administradores.</string>
+    <string name="admin_users_search_hint">Buscar por nombre o correo</string>
     <string name="admin_user_role_fmt">Rol: %1$s</string>
     <string name="admin_user_active">Estado: activa</string>
     <string name="admin_user_blocked">Estado: bloqueada</string>
@@ -114,6 +142,7 @@
 
     <string name="admin_events_title">Eventos</string>
     <string name="admin_events_subtitle">Crea eventos, edita informacion y activa o desactiva su publicacion.</string>
+    <string name="admin_events_search_hint">Buscar por t&#237;tulo o lugar</string>
     <string name="admin_events_create">Crear evento</string>
     <string name="admin_events_load_error">No se pudo cargar eventos</string>
     <string name="admin_event_create_title">Crear evento</string>
@@ -132,6 +161,12 @@
     <string name="admin_event_deactivate">Desactivar</string>
     <string name="admin_event_place_fmt">Lugar: %1$s</string>
     <string name="admin_event_date_fmt">Fecha: %1$s</string>
+    <string name="admin_filter_all">Todos</string>
+    <string name="admin_filter_admin">Admin</string>
+    <string name="admin_filter_user">Usuario</string>
+    <string name="admin_filter_active">Activos</string>
+    <string name="admin_filter_blocked">Bloqueados</string>
+    <string name="admin_filter_inactive">Inactivos</string>
 
     <!-- Detalle / recordatorios -->
     <string name="detail_reminder_button">Activar recordatorio</string>
@@ -139,6 +174,47 @@
     <string name="detail_reminder_saved_at">Recordatorio guardado para %1$s</string>
     <string name="detail_reminder_error">No se pudo guardar el recordatorio</string>
     <string name="detail_reminder_invalid_event_date">El evento no tiene una fecha valida para recordatorios</string>
+    <string name="detail_reminder_no_available_slot">Este evento empieza muy pronto para crear recordatorio</string>
+    <string name="detail_reminder_pick_time_title">Selecciona hora del recordatorio</string>
+    <string name="detail_reminder_before_event_required">El recordatorio debe ser antes del evento</string>
+    <string name="detail_reminder_after_now_required">El recordatorio debe ser posterior a la hora actual</string>
+    <string name="detail_reminder_range_hint">Debe estar entre ahora y antes del inicio del evento</string>
+    <string name="detail_reminder_event_soon">El evento empieza pronto; ya no se pueden crear recordatorios</string>
+    <string name="detail_reminder_event_finished_button">Evento finalizado</string>
+    <string name="detail_reminder_event_finished_status">Este evento ya finalizo; no se pueden crear recordatorios</string>
+    <string name="detail_reminder_unavailable_button">No disponible</string>
     <string name="detail_event_not_found">No se encontro el evento</string>
     <string name="detail_cancel">Cancelar</string>
+    <string name="detail_reminder_notif_title">Recordatorio de evento</string>
+    <string name="detail_reminder_notif_channel_name">Recordatorios</string>
+    <string name="detail_reminder_notif_channel_desc">Avisos de eventos guardados</string>
+    <string name="detail_reminder_notif_default_text">Tienes un evento pendiente</string>
+    <string name="detail_back">Volver</string>
+    <string name="detail_share">Compartir</string>
+    <string name="detail_directions">Como llegar</string>
+    <string name="detail_open_source">Abrir enlace oficial</string>
+    <string name="detail_section_description">Descripcion</string>
+    <string name="detail_section_summary">Resumen del evento</string>
+    <string name="detail_section_event_detail">Detalle del evento</string>
+    <string name="detail_section_info">Informacion practica</string>
+    <string name="detail_info_description">Descripcion</string>
+    <string name="detail_info_status">Estado del evento</string>
+    <string name="detail_info_address">Direccion</string>
+    <string name="detail_info_category">Categoria</string>
+    <string name="detail_info_source">Web oficial</string>
+    <string name="detail_price_label">Precio</string>
+    <string name="detail_status_upcoming">Proximamente</string>
+    <string name="detail_status_today">Hoy</string>
+    <string name="detail_status_finished">Finalizado</string>
+    <string name="detail_status_no_date">Fecha por confirmar</string>
+    <string name="detail_source_link_fmt">Visitar %1$s</string>
+    <string name="detail_source_open_error">No se pudo abrir el enlace oficial</string>
+    <string name="detail_price_free">Gratis</string>
+    <string name="detail_price_paid_fmt">%1$.2f EUR</string>
+    <string name="detail_description_fallback">Sin descripcion adicional</string>
+    <string name="detail_reminder_status_none">Aun no tienes recordatorio activo</string>
+    <string name="detail_reminder_status_active">Recordatorio activo para %1$s</string>
+    <string name="detail_reminder_edit_button">Editar recordatorio</string>
+    <string name="detail_share_text">Evento: %1$s\nFecha: %2$s\nLugar: %3$s</string>
+    <string name="detail_map_error">No hay app de mapas disponible</string>
 </resources>
