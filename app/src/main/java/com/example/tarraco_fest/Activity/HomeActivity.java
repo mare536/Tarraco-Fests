@@ -9,6 +9,8 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
@@ -22,6 +24,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -48,8 +51,10 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Pantalla principal tras login.
@@ -81,6 +86,8 @@ public class HomeActivity extends AppCompatActivity {
     private static final String FILTRO_DISTANCIA_TODAS = "distancia_todas";
     private static final String FILTRO_DISTANCIA_CERCA = "distancia_cerca";
     private static final double DISTANCIA_CERCA_KM = 5.0d;
+    private static final long AUTO_REFRESH_MIN_INTERVAL_MS = 180_000L;
+    private static final long SYNC_HINT_HIDE_DELAY_MS = 1_500L;
 
     private EventosAdapter adapter;
     private final EventosRepository repo = new EventosRepository();
@@ -109,12 +116,28 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvFilterSummary;
     private TextView tvOpenFilters;
     private TextView tvClearFilters;
+    private TextView tvDataSyncHint;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private androidx.appcompat.widget.AppCompatImageButton btnHomeMenu;
     private SharedPreferences permisosPrefs;
     private SharedPreferences filtrosPrefs;
     private boolean loadedAtLeastOnce = false;
+    private long lastDataRefreshAt = 0L;
+    private String lastDataSignature = "";
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    private final Runnable hideSyncHintRunnable = () -> {
+        if (tvDataSyncHint == null) return;
+        tvDataSyncHint.animate()
+                .alpha(0f)
+                .setDuration(180L)
+                .withEndAction(() -> {
+                    if (tvDataSyncHint != null) {
+                        tvDataSyncHint.setVisibility(View.GONE);
+                    }
+                })
+                .start();
+    };
 
     private final ActivityResultLauncher<String> notificacionesPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted ->
@@ -140,7 +163,7 @@ public class HomeActivity extends AppCompatActivity {
         cargarFiltrosPersistidos();
         configurarRecyclerView();
         configurarBuscadorYFiltros();
-        cargarDatosDesdeFirebase();
+        cargarDatosDesdeFirebase(false);
         solicitarPermisosIniciales();
         refrescarUbicacionUsuario();
     }
@@ -151,9 +174,16 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
         refrescarUbicacionUsuario();
         actualizarSeleccionDrawerActual();
-        if (loadedAtLeastOnce) {
-            cargarDatosDesdeFirebase();
+        if (loadedAtLeastOnce && debeActualizarEnResume()) {
+            cargarDatosDesdeFirebase(true);
         }
+    }
+
+    // Gestiona on destroy en este bloque.
+    @Override
+    protected void onDestroy() {
+        uiHandler.removeCallbacks(hideSyncHintRunnable);
+        super.onDestroy();
     }
 
     // Configura status bar segun el contexto actual.
@@ -436,6 +466,7 @@ public class HomeActivity extends AppCompatActivity {
         tvFilterSummary = findViewById(R.id.tvFilterSummary);
         tvOpenFilters = findViewById(R.id.tvOpenFilters);
         tvClearFilters = findViewById(R.id.tvClearFilters);
+        tvDataSyncHint = findViewById(R.id.tvDataSyncHint);
 
         etBuscador.addTextChangedListener(new TextWatcher() {
             // Gestiona before text changed en este bloque.
@@ -478,23 +509,88 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     // Carga datos desde firebase desde la fuente correspondiente.
-    private void cargarDatosDesdeFirebase() {
+    private void cargarDatosDesdeFirebase(boolean showSyncFeedback) {
+        final boolean hadDataBeforeRequest = loadedAtLeastOnce;
+
+        if (showSyncFeedback && hadDataBeforeRequest) {
+            mostrarEstadoSincronizacion(R.string.home_sync_updating, false);
+        }
+
         repo.cargarEventos(new EventosRepository.Callback() {
             // Gestiona on ok en este bloque.
             @Override
             public void onOk(List<Evento> eventos) {
                 loadedAtLeastOnce = true;
-                listaCompleta = eventos;
-                aplicarFiltros();
+                lastDataRefreshAt = System.currentTimeMillis();
+
+                List<Evento> safeEventos = eventos == null ? Collections.emptyList() : eventos;
+                String nuevaFirma = construirFirmaEventos(safeEventos);
+                boolean hayCambios = !Objects.equals(nuevaFirma, lastDataSignature);
+
+                if (hayCambios || listaCompleta.isEmpty()) {
+                    listaCompleta = new ArrayList<>(safeEventos);
+                    lastDataSignature = nuevaFirma;
+                    aplicarFiltros();
+                }
+
+                if (showSyncFeedback && hadDataBeforeRequest) {
+                    mostrarEstadoSincronizacion(
+                            hayCambios ? R.string.home_sync_updated : R.string.home_sync_no_changes,
+                            true
+                    );
+                }
             }
 
             // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 loadedAtLeastOnce = true;
+                if (showSyncFeedback && hadDataBeforeRequest) {
+                    mostrarEstadoSincronizacion(R.string.home_sync_error, true);
+                }
                 Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    // Indica si corresponde refrescar datos al volver a Home.
+    private boolean debeActualizarEnResume() {
+        long elapsed = System.currentTimeMillis() - lastDataRefreshAt;
+        return elapsed >= AUTO_REFRESH_MIN_INTERVAL_MS;
+    }
+
+    // Muestra un hint temporal para hacer explicita la sincronizacion de datos.
+    private void mostrarEstadoSincronizacion(@StringRes int textRes, boolean autoHide) {
+        if (tvDataSyncHint == null) return;
+
+        uiHandler.removeCallbacks(hideSyncHintRunnable);
+        tvDataSyncHint.setText(textRes);
+        tvDataSyncHint.setVisibility(View.VISIBLE);
+        tvDataSyncHint.animate().cancel();
+        tvDataSyncHint.setAlpha(1f);
+
+        if (autoHide) {
+            uiHandler.postDelayed(hideSyncHintRunnable, SYNC_HINT_HIDE_DELAY_MS);
+        }
+    }
+
+    // Construye una firma compacta para evitar repintados cuando la lista no cambia.
+    private String construirFirmaEventos(List<Evento> eventos) {
+        if (eventos == null || eventos.isEmpty()) return "";
+
+        StringBuilder sb = new StringBuilder(eventos.size() * 24);
+        for (Evento e : eventos) {
+            if (e == null) continue;
+            String imgUrl = e.getImagenUrl();
+            String imgB64 = e.getImagenBase64();
+            sb.append(safeLower(e.getId())).append('|')
+                    .append(safeLower(e.getTitulo())).append('|')
+                    .append(e.getInicioMillis()).append('|')
+                    .append(safeLower(e.getFecha())).append('|')
+                    .append(imgUrl == null ? "" : imgUrl).append('|')
+                    .append(imgB64 == null ? 0 : imgB64.hashCode()).append(';');
+        }
+        return sb.toString();
     }
 
     // Gestiona seleccionar categoria en este bloque.

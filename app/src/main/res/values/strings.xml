@@ -56,6 +56,10 @@
     <string name="home_filter_section_zone">Calle o zona</string>
     <string name="home_filter_summary_default">Filtros</string>
     <string name="home_filter_zone_prefix">Zona: %1$s</string>
+    <string name="home_sync_updating">Actualizando agenda...</string>
+    <string name="home_sync_updated">Agenda actualizada</string>
+    <string name="home_sync_no_changes">Sin cambios nuevos</string>
+    <string name="home_sync_error">No se pudo actualizar ahora</string>
     <string name="event_distance_km">%1$.1f km</string>
 
     <!-- Perfil -->

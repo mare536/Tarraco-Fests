@@ -2,6 +2,7 @@ package com.example.tarraco_fest.Adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -11,13 +12,18 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.tarraco_fest.Activity.DetailActivity;
 import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Adapter de eventos para el flujo de usuario final.
@@ -29,14 +35,44 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     private final Context context;
 
     public EventosAdapter(List<Evento> listaEventos, Context context) {
-        this.listaEventos = listaEventos;
+        this.listaEventos = listaEventos == null ? Collections.emptyList() : new ArrayList<>(listaEventos);
         this.context = context;
+        setHasStableIds(true);
     }
 
     // Actualiza eventos con el valor recibido.
     public void setEventos(List<Evento> nuevosEventos) {
-        this.listaEventos = nuevosEventos;
-        notifyDataSetChanged();
+        List<Evento> nuevaLista = nuevosEventos == null ? Collections.emptyList() : new ArrayList<>(nuevosEventos);
+        List<Evento> listaAnterior = this.listaEventos == null ? Collections.emptyList() : this.listaEventos;
+
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return listaAnterior.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return nuevaLista.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Evento oldItem = listaAnterior.get(oldItemPosition);
+                Evento newItem = nuevaLista.get(newItemPosition);
+                return construirClaveEstable(oldItem).equals(construirClaveEstable(newItem));
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                Evento oldItem = listaAnterior.get(oldItemPosition);
+                Evento newItem = nuevaLista.get(newItemPosition);
+                return mismoContenidoVisual(oldItem, newItem);
+            }
+        });
+
+        this.listaEventos = nuevaLista;
+        diffResult.dispatchUpdatesTo(this);
     }
 
     // Gestiona on create view holder en este bloque.
@@ -64,8 +100,12 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
             holder.txtDistancia.setText("");
         }
 
+        // Evita artefactos por reciclado: cancela cualquier carga pendiente previa.
+        Glide.with(context).clear(holder.imgEvento);
+        holder.imgEvento.setImageResource(fallbackImage);
+
         if (evento.getImagenUrl() != null && !evento.getImagenUrl().isEmpty()) {
-            com.bumptech.glide.Glide.with(context)
+            Glide.with(context)
                     .load(evento.getImagenUrl())
                     .placeholder(fallbackImage)
                     .error(fallbackImage)
@@ -74,12 +114,11 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         } else if (!TextUtils.isEmpty(evento.getImagenBase64())) {
             try {
                 byte[] bytes = Base64.decode(evento.getImagenBase64(), Base64.DEFAULT);
-                com.bumptech.glide.Glide.with(context)
-                        .load(bytes)
-                        .placeholder(fallbackImage)
-                        .error(fallbackImage)
-                        .centerCrop()
-                        .into(holder.imgEvento);
+                if (bytes != null && bytes.length > 0) {
+                    holder.imgEvento.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
+                } else {
+                    holder.imgEvento.setImageResource(fallbackImage);
+                }
             } catch (IllegalArgumentException ex) {
                 holder.imgEvento.setImageResource(fallbackImage);
             }
@@ -98,6 +137,43 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     @Override
     public int getItemCount() {
         return listaEventos == null ? 0 : listaEventos.size();
+    }
+
+    // IDs estables para reducir inconsistencias visuales al reciclar celdas.
+    @Override
+    public long getItemId(int position) {
+        if (listaEventos == null || position < 0 || position >= listaEventos.size()) return RecyclerView.NO_ID;
+        return construirClaveEstable(listaEventos.get(position)).hashCode();
+    }
+
+    // Limpia request e imagen al reciclar para evitar arrastre visual entre tarjetas.
+    @Override
+    public void onViewRecycled(@NonNull EventoViewHolder holder) {
+        super.onViewRecycled(holder);
+        Glide.with(context).clear(holder.imgEvento);
+        holder.imgEvento.setImageDrawable(null);
+    }
+
+    // Genera una clave consistente para identificar cada evento en updates diferenciales.
+    private String construirClaveEstable(Evento e) {
+        if (e == null) return "";
+        String id = e.getId();
+        if (id != null && !id.trim().isEmpty()) return id.trim();
+        String titulo = e.getTitulo() == null ? "" : e.getTitulo().trim();
+        return titulo + "|" + e.getInicioMillis() + "|" + (e.getFecha() == null ? "" : e.getFecha());
+    }
+
+    // Compara solo los campos visibles para evitar rebinds innecesarios.
+    private boolean mismoContenidoVisual(Evento oldItem, Evento newItem) {
+        if (oldItem == null && newItem == null) return true;
+        if (oldItem == null || newItem == null) return false;
+
+        return Objects.equals(oldItem.getTitulo(), newItem.getTitulo())
+                && Objects.equals(oldItem.getFecha(), newItem.getFecha())
+                && Objects.equals(oldItem.getDistanciaKm(), newItem.getDistanciaKm())
+                && oldItem.getImagenResId() == newItem.getImagenResId()
+                && Objects.equals(oldItem.getImagenUrl(), newItem.getImagenUrl())
+                && Objects.equals(oldItem.getImagenBase64(), newItem.getImagenBase64());
     }
 
     public static class EventoViewHolder extends RecyclerView.ViewHolder {
