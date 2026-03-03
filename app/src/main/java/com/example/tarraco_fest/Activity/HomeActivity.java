@@ -4,7 +4,9 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
@@ -119,6 +121,7 @@ public class HomeActivity extends AppCompatActivity {
     private boolean hasUserLocation = false;
 
     private TextView chipTodos;
+    private TextView chipFavoritos;
     private TextView chipMusica;
     private TextView chipCultura;
     private TextView chipEsport;
@@ -212,11 +215,25 @@ public class HomeActivity extends AppCompatActivity {
 
     // Configura status bar segun el contexto actual.
     private void configurarStatusBar() {
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.home_status_bar_fill));
+        android.view.Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
         WindowInsetsControllerCompat controller =
-                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                WindowCompat.getInsetsController(window, window.getDecorView());
         if (controller != null) {
+            // Header superior es oscuro en Home, por eso mantenemos iconos claros en status bar.
             controller.setAppearanceLightStatusBars(false);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
         }
     }
 
@@ -469,8 +486,10 @@ public class HomeActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(rv, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int safeBottom = Math.max(bars.bottom, ime.bottom);
             int extraBottom = dpToPx(16);
-            ViewCompat.setPaddingRelative(v, baseStart, baseTop, baseEnd, baseBottom + bars.bottom + extraBottom);
+            ViewCompat.setPaddingRelative(v, baseStart, baseTop, baseEnd, baseBottom + safeBottom + extraBottom);
             return insets;
         });
 
@@ -481,6 +500,7 @@ public class HomeActivity extends AppCompatActivity {
     private void configurarBuscadorYFiltros() {
         EditText etBuscador = findViewById(R.id.etBuscador);
         chipTodos = findViewById(R.id.chipTodos);
+        chipFavoritos = findViewById(R.id.chipFavoritos);
         chipMusica = findViewById(R.id.chipMusica);
         chipCultura = findViewById(R.id.chipCultura);
         chipEsport = findViewById(R.id.chipEsport);
@@ -512,6 +532,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         chipTodos.setOnClickListener(v -> seleccionarCategoria("Todos", chipTodos));
+        chipFavoritos.setOnClickListener(v -> seleccionarFavoritos());
         chipMusica.setOnClickListener(v -> seleccionarCategoria("Musica", chipMusica));
         chipCultura.setOnClickListener(v -> seleccionarCategoria("Cultura", chipCultura));
         chipEsport.setOnClickListener(v -> seleccionarCategoria("Esport", chipEsport));
@@ -680,7 +701,19 @@ public class HomeActivity extends AppCompatActivity {
     // Gestiona seleccionar categoria en este bloque.
     private void seleccionarCategoria(String categoria, TextView chipActivo) {
         categoriaActual = categoria;
+        filtroFavoritosActual = FILTRO_FAVORITOS_TODOS;
         actualizarEstiloChips(chipActivo);
+        actualizarResumenFiltros();
+        guardarFiltrosPersistidos();
+        aplicarFiltros();
+    }
+
+    // Activa el filtro rapido de favoritos desde la fila principal de chips.
+    private void seleccionarFavoritos() {
+        categoriaActual = "Todos";
+        filtroFavoritosActual = FILTRO_FAVORITOS_SOLO;
+        actualizarEstiloChips(chipFavoritos);
+        actualizarResumenFiltros();
         guardarFiltrosPersistidos();
         aplicarFiltros();
     }
@@ -891,6 +924,9 @@ public class HomeActivity extends AppCompatActivity {
                 .create();
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         Button neutral = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
         if (neutral != null) {
@@ -915,6 +951,7 @@ public class HomeActivity extends AppCompatActivity {
     // Actualiza estilo chips con la logica de negocio actual.
     private void actualizarEstiloChips(TextView chipActivo) {
         resetearChip(chipTodos);
+        resetearChip(chipFavoritos);
         resetearChip(chipMusica);
         resetearChip(chipCultura);
         resetearChip(chipEsport);
@@ -1065,6 +1102,7 @@ public class HomeActivity extends AppCompatActivity {
 
     // Gestiona obtener chip categoria actual en este bloque.
     private TextView obtenerChipCategoriaActual() {
+        if (FILTRO_FAVORITOS_SOLO.equals(filtroFavoritosActual)) return chipFavoritos;
         if ("Musica".equalsIgnoreCase(categoriaActual)) return chipMusica;
         if ("Cultura".equalsIgnoreCase(categoriaActual)) return chipCultura;
         if ("Esport".equalsIgnoreCase(categoriaActual)) return chipEsport;

@@ -41,5 +41,20 @@
         <item name="cornerRadius">16dp</item>
     </style>
 
+    <!-- Dialogo de recuperar contrasena: fondo opaco + dim fuerte para evitar distracciones -->
+    <style name="ThemeOverlay.TarracoFests.ResetDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowBackground">@drawable/bg_dialog_festival</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.72</item>
+
+        <item name="colorPrimary">@color/festival_orange</item>
+        <item name="colorSecondary">@color/festival_orange</item>
+        <item name="colorControlActivated">@color/festival_orange</item>
+
+        <item name="buttonBarPositiveButtonStyle">@style/TarracoFests.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/TarracoFests.DialogButton.Negative</item>
+    </style>
+
 
 </resources>

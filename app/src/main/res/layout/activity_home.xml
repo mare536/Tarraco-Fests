@@ -147,6 +147,17 @@
                         android:textColor="@color/home_chip_text_active" />
 
                     <TextView
+                        android:id="@+id/chipFavoritos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/chip_bg"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:text="Favoritos"
+                        android:textColor="@color/home_chip_text_inactive" />
+
+                    <TextView
                         android:id="@+id/chipCultura"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

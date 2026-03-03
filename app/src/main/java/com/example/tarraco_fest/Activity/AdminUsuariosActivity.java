@@ -28,6 +28,7 @@ import com.example.tarraco_fest.Modelo.AdminUser;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.AdminUsersRepository;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -76,6 +77,12 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             public void onToggleRol(AdminUser user) {
                 toggleRol(user);
             }
+
+            // Gestiona on eliminar en este bloque.
+            @Override
+            public void onEliminar(AdminUser user) {
+                confirmarEliminarUsuario(user);
+            }
         });
         rv.setAdapter(adapter);
 
@@ -118,6 +125,8 @@ public class AdminUsuariosActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int safeBottom = Math.max(bars.bottom, ime.bottom);
 
             appBar.setPadding(
                     appBar.getPaddingLeft(),
@@ -127,14 +136,14 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             );
 
             ViewGroup.MarginLayoutParams listaLp = (ViewGroup.MarginLayoutParams) rv.getLayoutParams();
-            listaLp.bottomMargin = baseListaMarginBottom + bars.bottom;
+            listaLp.bottomMargin = baseListaMarginBottom + safeBottom;
             rv.setLayoutParams(listaLp);
 
             rv.setPadding(
                     rv.getPaddingLeft(),
                     rv.getPaddingTop(),
                     rv.getPaddingRight(),
-                    baseRecyclerPaddingBottom + bars.bottom + dpToPx(8)
+                    baseRecyclerPaddingBottom + safeBottom + dpToPx(8)
             );
 
             return insets;
@@ -272,6 +281,46 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_update_error), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    // Muestra confirmacion antes de eliminar un usuario bloqueado.
+    private void confirmarEliminarUsuario(AdminUser user) {
+        if (user == null || user.uid == null || user.uid.trim().isEmpty()) {
+            Toast.makeText(this, getString(R.string.admin_user_delete_error), Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (!user.bloqueado) {
+            Toast.makeText(this, getString(R.string.admin_user_delete_requires_block), Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String nombre = user.nombre == null || user.nombre.trim().isEmpty() ? "-" : user.nombre.trim();
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(getString(R.string.admin_user_delete_confirm_title))
+                .setMessage(getString(R.string.admin_user_delete_confirm_message, nombre))
+                .setNegativeButton(getString(R.string.admin_cancel), null)
+                .setPositiveButton(getString(R.string.admin_user_delete), (d, w) -> eliminarUsuario(user))
+                .show();
+    }
+
+    // Elimina logicamente el usuario bloqueado y recarga la lista.
+    private void eliminarUsuario(AdminUser user) {
+        usersRepository.eliminarUsuarioBloqueado(user.uid, new AdminUsersRepository.ActionCallback() {
+            // Gestiona on ok en este bloque.
+            @Override
+            public void onOk() {
+                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_deleted_ok), Toast.LENGTH_SHORT).show();
+                cargarUsuarios();
+            }
+
+            // Gestiona on error en este bloque.
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_delete_error), Toast.LENGTH_LONG).show();
             }
         });
     }

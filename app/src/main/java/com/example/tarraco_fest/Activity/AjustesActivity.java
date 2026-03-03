@@ -3,10 +3,15 @@ package com.example.tarraco_fest.Activity;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,6 +19,11 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.tarraco_fest.R;
 import com.google.android.material.button.MaterialButton;
@@ -52,6 +62,7 @@ public class AjustesActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ajustes);
+        configurarBordesSistema();
 
         tvNotifStatus = findViewById(R.id.tvSettingsNotifStatus);
         tvLocationStatus = findViewById(R.id.tvSettingsLocationStatus);
@@ -64,6 +75,46 @@ public class AjustesActivity extends AppCompatActivity {
         findViewById(R.id.btnSettingsBack).setOnClickListener(v -> finish());
 
         actualizarEstados();
+    }
+
+    // Aplica edge-to-edge y separa la tarjeta del sistema para evitar solapes visuales.
+    private void configurarBordesSistema() {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!modoOscuro);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
+
+        View root = findViewById(R.id.rootAjustes);
+        View card = findViewById(R.id.cardAjustes);
+        ViewGroup.MarginLayoutParams lpCard = (ViewGroup.MarginLayoutParams) card.getLayoutParams();
+        int baseTop = lpCard.topMargin;
+        int baseBottom = lpCard.bottomMargin;
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) card.getLayoutParams();
+            params.topMargin = baseTop + bars.top + dpToPx(8);
+            params.bottomMargin = baseBottom + bars.bottom + dpToPx(8);
+            card.setLayoutParams(params);
+            return insets;
+        });
+
+        ViewCompat.requestApplyInsets(root);
     }
 
     // Gestiona on resume en este bloque.
@@ -158,5 +209,10 @@ public class AjustesActivity extends AppCompatActivity {
             if (locationOk) abrirAjustesSistema();
             else solicitarUbicacion();
         });
+    }
+
+    // Convierte dp a px para margenes dinamicos segun insets.
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

@@ -4,10 +4,12 @@ import android.app.DatePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.SpannableString;
@@ -20,6 +22,7 @@ import android.text.style.StyleSpan;
 import android.util.Patterns;
 import android.util.Base64;
 import android.view.View;
+import android.view.Window;
 import android.webkit.URLUtil;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -29,7 +32,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.widget.NestedScrollView;
 
 import com.example.tarraco_fest.Modelo.Evento;
@@ -71,6 +76,7 @@ public class DetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+        configurarBordesSistema();
         reminderRepository = new ReminderRepository(this);
         favoritosRepository = new FavoritosRepository();
         aplicarInsetSuperiorToolbar();
@@ -88,6 +94,30 @@ public class DetailActivity extends AppCompatActivity {
         configurarRecordatorios(eventoActual);
         configurarFavoritos(eventoActual);
         cargarEstadoRecordatorio(eventoActual);
+    }
+
+    // Aplica edge-to-edge para aprovechar el hero superior sin mostrar franjas del sistema.
+    private void configurarBordesSistema() {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            // El hero superior usa degradado oscuro, mantenemos iconos claros en status bar.
+            controller.setAppearanceLightStatusBars(false);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
     }
 
     // Aplica inset superior toolbar respetando el estado actual.

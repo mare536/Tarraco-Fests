@@ -61,41 +61,49 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:background="@drawable/bg_admin_action_row"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:padding="8dp">
 
-            <Button
-                android:id="@+id/btnAdminEventoEditar"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:background="@drawable/btn_auth_primary"
-                android:text="@string/admin_edit"
-                android:textAllCaps="false"
-                android:textColor="@color/auth_btn_primary_text"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnAdminEventoActivo"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/btn_auth_secondary"
-                android:text="@string/admin_event_deactivate"
-                android:textAllCaps="false"
-                android:textColor="@color/auth_btn_secondary_text"
-                android:textStyle="bold"
-                app:backgroundTint="@null" />
+                <Button
+                    android:id="@+id/btnAdminEventoEditar"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/btn_auth_primary"
+                    android:minWidth="0dp"
+                    android:text="@string/admin_edit"
+                    android:textAllCaps="false"
+                    android:textColor="@color/auth_btn_primary_text"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <Button
+                    android:id="@+id/btnAdminEventoActivo"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/btn_auth_secondary"
+                    android:minWidth="0dp"
+                    android:text="@string/admin_event_deactivate"
+                    android:textAllCaps="false"
+                    android:textColor="@color/auth_btn_secondary_text"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btnAdminEventoEliminar"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="44dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/btn_admin_delete"
+                android:minWidth="0dp"
                 android:text="@string/admin_event_delete"
                 android:textAllCaps="false"
                 android:textColor="@color/admin_delete_btn_text"

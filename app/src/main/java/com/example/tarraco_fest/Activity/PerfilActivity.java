@@ -1,9 +1,13 @@
 package com.example.tarraco_fest.Activity;
 
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,7 +18,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.tarraco_fest.Modelo.UsuarioPerfil;
@@ -145,6 +151,7 @@ public class PerfilActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_perfil);
+        configurarBordesSistema();
 
         bindViews();
         aplicarInsetsSistema();
@@ -153,6 +160,29 @@ public class PerfilActivity extends AppCompatActivity {
         configurarAcciones();
         mostrarSeccion(SEC_INFO);
         cargarPerfil();
+    }
+
+    // Aplica edge-to-edge para integrar fondo y barras del sistema sin bordes blancos.
+    private void configurarBordesSistema() {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!modoOscuro);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
     }
 
     // Gestiona bind views en este bloque.
@@ -205,9 +235,11 @@ public class PerfilActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(perfilContent, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int safeBottom = Math.max(systemBars.bottom, ime.bottom);
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
             params.topMargin = baseTop + systemBars.top;
-            params.bottomMargin = baseBottom + systemBars.bottom;
+            params.bottomMargin = baseBottom + safeBottom;
             v.setLayoutParams(params);
             return insets;
         });

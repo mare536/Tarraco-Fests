@@ -182,6 +182,8 @@ public class AdminEventosActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int safeBottom = Math.max(bars.bottom, ime.bottom);
 
             appBar.setPadding(
                     appBar.getPaddingLeft(),
@@ -191,14 +193,14 @@ public class AdminEventosActivity extends AppCompatActivity {
             );
 
             ViewGroup.MarginLayoutParams listaLp = (ViewGroup.MarginLayoutParams) rv.getLayoutParams();
-            listaLp.bottomMargin = baseListaMarginBottom + bars.bottom;
+            listaLp.bottomMargin = baseListaMarginBottom + safeBottom;
             rv.setLayoutParams(listaLp);
 
             rv.setPadding(
                     rv.getPaddingLeft(),
                     rv.getPaddingTop(),
                     rv.getPaddingRight(),
-                    baseRecyclerPaddingBottom + bars.bottom + dpToPx(8)
+                    baseRecyclerPaddingBottom + safeBottom + dpToPx(8)
             );
 
             return insets;
@@ -437,6 +439,9 @@ public class AdminEventosActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String titulo = texto(etTitulo);

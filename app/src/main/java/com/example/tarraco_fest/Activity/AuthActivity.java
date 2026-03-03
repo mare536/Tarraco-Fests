@@ -2,6 +2,8 @@ package com.example.tarraco_fest.Activity;
 
 import android.accounts.AccountManager;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -10,6 +12,8 @@ import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -21,6 +25,11 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
@@ -30,6 +39,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -102,6 +112,7 @@ public class AuthActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_auth);
+        configurarBordesSistema();
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
@@ -119,6 +130,7 @@ public class AuthActivity extends AppCompatActivity {
         ImageView bgBlur = findViewById(R.id.imgBgBlur);
         View overlay = findViewById(R.id.overlay);
         View content = findViewById(R.id.authContent);
+        aplicarInsetSuperiorLogin(content);
 
         bgBlur.setAlpha(0f);
         overlay.setAlpha(0f);
@@ -292,11 +304,7 @@ public class AuthActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot == null || snapshot.isEmpty()) {
-                        if (credencialInvalida) {
-                            marcarContrasenaIncorrecta();
-                            return;
-                        }
-                        mostrarOpcionesCuentaNoDetectada(email);
+                        mostrarOpcionesCorreoNoRegistrado(email);
                         return;
                     }
 
@@ -322,11 +330,9 @@ public class AuthActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    if (credencialInvalida) {
-                        marcarContrasenaIncorrecta();
-                    } else {
-                        mostrarOpcionesCuentaNoDetectada(email);
-                    }
+                    etEmail.requestFocus();
+                    shake(etEmail);
+                    setEstado("No se pudo validar el correo ahora. Revisa la conexion e intenta de nuevo.", ESTADO_ERROR, true);
                 });
     }
 
@@ -369,6 +375,21 @@ public class AuthActivity extends AppCompatActivity {
                         "Si no tienes cuenta, puedes crearla ahora.")
                 .setPositiveButton("Anadir contrasena", (d, w) -> iniciarFlujoCrearPassword(email))
                 .setNeutralButton("Crear cuenta", (d, w) -> mostrarDialogRegistroEmail(email))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    // Muestra opciones cuando el correo no corresponde a ninguna cuenta existente.
+    private void mostrarOpcionesCorreoNoRegistrado(String email) {
+        etEmail.requestFocus();
+        shake(etEmail);
+        setEstado("No existe una cuenta con ese correo", ESTADO_ERROR, false);
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle("Correo no registrado")
+                .setMessage("No encontramos una cuenta con ese correo.\n\n" +
+                        "Revisa si esta bien escrito o crea una cuenta nueva.")
+                .setPositiveButton("Crear cuenta", (d, w) -> mostrarDialogRegistroEmail(email))
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
@@ -439,6 +460,9 @@ public class AuthActivity extends AppCompatActivity {
                 .create();
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String email = etEmailReg.getText().toString().trim();
@@ -532,6 +556,7 @@ public class AuthActivity extends AppCompatActivity {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_forgot_password, null);
 
         EditText etEmailRecovery = view.findViewById(R.id.etForgotPasswordEmail);
+        TextInputLayout tilEmailRecovery = view.findViewById(R.id.tilForgotPasswordEmail);
         TextView tvErrorRecovery = view.findViewById(R.id.tvForgotPasswordError);
 
         String emailActual = etEmail.getText() == null ? "" : etEmail.getText().toString().trim();
@@ -540,44 +565,59 @@ public class AuthActivity extends AppCompatActivity {
             etEmailRecovery.setSelection(emailActual.length());
         }
 
-        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle(R.string.auth_reset_dialog_title)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_ResetDialog)
                 .setView(view)
                 .setNegativeButton(R.string.detail_cancel, (d, w) -> d.dismiss())
                 .setPositiveButton(R.string.auth_reset_send, null)
                 .create();
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_dialog_festival);
+            dialog.getWindow().setDimAmount(0.72f);
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        Button btnPositive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button btnNegative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        if (btnPositive != null) btnPositive.setAllCaps(false);
+        if (btnNegative != null) btnNegative.setAllCaps(false);
+
+        if (btnPositive == null) return;
+        btnPositive.setOnClickListener(v -> {
             String email = etEmailRecovery.getText() == null
                     ? ""
                     : etEmailRecovery.getText().toString().trim();
 
+            tilEmailRecovery.setError(null);
             tvErrorRecovery.setVisibility(View.GONE);
 
             if (TextUtils.isEmpty(email)) {
-                tvErrorRecovery.setText(getString(R.string.auth_reset_email_required));
-                tvErrorRecovery.setVisibility(View.VISIBLE);
+                tilEmailRecovery.setError(getString(R.string.auth_reset_email_required));
+                etEmailRecovery.requestFocus();
                 return;
             }
 
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                tvErrorRecovery.setText(getString(R.string.auth_reset_email_invalid));
-                tvErrorRecovery.setVisibility(View.VISIBLE);
+                tilEmailRecovery.setError(getString(R.string.auth_reset_email_invalid));
+                etEmailRecovery.requestFocus();
                 return;
             }
 
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            btnPositive.setEnabled(false);
+            if (btnNegative != null) btnNegative.setEnabled(false);
 
             auth.sendPasswordResetEmail(email)
                     .addOnSuccessListener(unused -> {
+                        etEmail.setText(email);
                         dialog.dismiss();
                         setEstado(getString(R.string.auth_reset_sent), ESTADO_OK, false);
                     })
                     .addOnFailureListener(e -> {
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                        setEstado(getString(R.string.auth_reset_error), ESTADO_ERROR, true);
+                        btnPositive.setEnabled(true);
+                        if (btnNegative != null) btnNegative.setEnabled(true);
+                        tvErrorRecovery.setText(getString(R.string.auth_reset_error));
+                        tvErrorRecovery.setVisibility(View.VISIBLE);
                     });
         });
     }
@@ -717,6 +757,7 @@ public class AuthActivity extends AppCompatActivity {
 
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_dialog_glass);
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
@@ -801,7 +842,9 @@ public class AuthActivity extends AppCompatActivity {
                 .addOnSuccessListener(doc -> {
                     boolean cuentaBloqueada = doc.exists()
                             && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
-                    if (cuentaBloqueada) {
+                    boolean cuentaEliminada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.ELIMINADO));
+                    if (cuentaBloqueada || cuentaEliminada) {
                         manejarCuentaBloqueada();
                         return;
                     }
@@ -847,7 +890,9 @@ public class AuthActivity extends AppCompatActivity {
                 .addOnSuccessListener(doc -> {
                     boolean cuentaBloqueada = doc.exists()
                             && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
-                    if (cuentaBloqueada) {
+                    boolean cuentaEliminada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.ELIMINADO));
+                    if (cuentaBloqueada || cuentaEliminada) {
                         manejarCuentaBloqueada();
                         return;
                     }
@@ -926,5 +971,55 @@ public class AuthActivity extends AppCompatActivity {
                         )
                 )
         );
+    }
+
+    // Aplica inset superior para evitar que el logo se solape con notch/camara.
+    private void aplicarInsetSuperiorLogin(View content) {
+        if (content == null) return;
+
+        final int baseTop = content.getPaddingTop();
+        final int baseBottom = content.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            int extraTop = dpToPx(8);
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    baseTop + bars.top + extraTop,
+                    v.getPaddingRight(),
+                    baseBottom + bars.bottom
+            );
+            return insets;
+        });
+
+        ViewCompat.requestApplyInsets(content);
+    }
+
+    // Aplica edge-to-edge para usar todo el fondo sin franjas blancas en barras del sistema.
+    private void configurarBordesSistema() {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!modoOscuro);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
+    }
+
+    // Convierte dp a px para ajustes finos de layout.
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

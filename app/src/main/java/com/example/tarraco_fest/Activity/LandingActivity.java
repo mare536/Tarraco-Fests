@@ -3,11 +3,15 @@ package com.example.tarraco_fest.Activity;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -15,6 +19,11 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
@@ -34,6 +43,7 @@ public class LandingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landing);
+        configurarBordesSistema();
 
         ImageView bgNormal = findViewById(R.id.imgBgNormal);
         ImageView bgBlur = findViewById(R.id.imgBgBlur);
@@ -56,6 +66,52 @@ public class LandingActivity extends AppCompatActivity {
             animarBlur(bgNormal, bgBlur);
             animarUI(overlay, logo, btns);
         }, 180);
+    }
+
+    // Aplica edge-to-edge y margenes seguros para evitar solapes con notch y barra inferior.
+    private void configurarBordesSistema() {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!modoOscuro);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
+
+        View root = findViewById(R.id.rootLanding);
+        View logo = findViewById(R.id.imgLogo);
+        View btns = findViewById(R.id.btnContainer);
+        ViewGroup.MarginLayoutParams logoLp = (ViewGroup.MarginLayoutParams) logo.getLayoutParams();
+        ViewGroup.MarginLayoutParams btnLp = (ViewGroup.MarginLayoutParams) btns.getLayoutParams();
+        int baseLogoTop = logoLp.topMargin;
+        int baseBtnBottom = btnLp.bottomMargin;
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            ViewGroup.MarginLayoutParams dynamicLogoLp = (ViewGroup.MarginLayoutParams) logo.getLayoutParams();
+            dynamicLogoLp.topMargin = baseLogoTop + bars.top + dpToPx(8);
+            logo.setLayoutParams(dynamicLogoLp);
+
+            ViewGroup.MarginLayoutParams dynamicBtnLp = (ViewGroup.MarginLayoutParams) btns.getLayoutParams();
+            dynamicBtnLp.bottomMargin = baseBtnBottom + bars.bottom + dpToPx(8);
+            btns.setLayoutParams(dynamicBtnLp);
+
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     // Gestiona on start en este bloque.
@@ -135,7 +191,9 @@ public class LandingActivity extends AppCompatActivity {
                 .addOnSuccessListener(doc -> {
                     boolean cuentaBloqueada = doc.exists()
                             && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
-                    if (cuentaBloqueada) {
+                    boolean cuentaEliminada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.ELIMINADO));
+                    if (cuentaBloqueada || cuentaEliminada) {
                         FirebaseAuth.getInstance().signOut();
                         Toast.makeText(this, getString(R.string.auth_account_blocked), Toast.LENGTH_LONG).show();
                         return;
@@ -148,5 +206,10 @@ public class LandingActivity extends AppCompatActivity {
                     FirebaseAuth.getInstance().signOut();
                     Toast.makeText(this, getString(R.string.auth_account_validation_failed), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    // Convierte dp a px para margenes dinamicos.
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

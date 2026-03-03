@@ -46,6 +46,7 @@ public final class FirestoreSchema {
         public static final String BIOGRAFIA = "biografia";
         public static final String ROL = "rol";
         public static final String BLOQUEADO = "bloqueado";
+        public static final String ELIMINADO = "eliminado";
         public static final String CREADO_EN = "creadoEn";
         public static final String UPDATED_AT = "updatedAt";
         public static final String ACEPTA_TERMINOS = "aceptaTerminos";

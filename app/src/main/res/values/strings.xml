@@ -66,14 +66,16 @@
     <string name="event_distance_km">%1$.1f km</string>
     <string name="auth_account_blocked">Cuenta bloqueada. Contacta con soporte.</string>
     <string name="auth_account_validation_failed">No se pudo validar el estado de la cuenta. Intenta de nuevo.</string>
-    <string name="auth_forgot_password">Olvide mi contrasena</string>
-    <string name="auth_reset_dialog_title">Recuperar contrasena</string>
-    <string name="auth_reset_dialog_message">Introduce tu correo y te enviaremos un enlace para cambiar la contrasena.</string>
+    <string name="auth_forgot_password">Olvid&#233; mi contrase&#241;a</string>
+    <string name="auth_reset_dialog_title">Recuperar contrase&#241;a</string>
+    <string name="auth_reset_dialog_message">Introduce tu correo y te enviaremos un enlace para cambiar la contrase&#241;a.</string>
+    <string name="auth_reset_chip">Seguridad</string>
+    <string name="auth_reset_tip">Usa el mismo correo con el que inicias sesion en Tarraco Fests.</string>
     <string name="auth_reset_email_hint">Correo</string>
     <string name="auth_reset_send">Enviar enlace</string>
     <string name="auth_reset_email_required">Introduce un correo</string>
     <string name="auth_reset_email_invalid">Correo no valido</string>
-    <string name="auth_reset_sent">Te enviamos un correo para recuperar la contrasena</string>
+    <string name="auth_reset_sent">Te enviamos un correo para recuperar la contrase&#241;a</string>
     <string name="auth_reset_error">No se pudo enviar el correo de recuperacion</string>
 
     <!-- Perfil -->
@@ -156,6 +158,12 @@
     <string name="admin_user_unblock">Desbloquear</string>
     <string name="admin_user_make_admin">Hacer admin</string>
     <string name="admin_user_make_user">Hacer usuario</string>
+    <string name="admin_user_delete">Eliminar</string>
+    <string name="admin_user_delete_requires_block">Bloquea el usuario antes de eliminarlo</string>
+    <string name="admin_user_delete_confirm_title">Eliminar usuario</string>
+    <string name="admin_user_delete_confirm_message">Se ocultara la cuenta \"%1$s\" del panel y mantendra el acceso bloqueado. Quieres continuar?</string>
+    <string name="admin_user_deleted_ok">Usuario eliminado</string>
+    <string name="admin_user_delete_error">No se pudo eliminar usuario</string>
     <string name="admin_user_updated_ok">Usuario actualizado</string>
     <string name="admin_user_update_error">No se pudo actualizar usuario</string>
     <string name="admin_users_load_error">No se pudo cargar usuarios</string>

@@ -26,6 +26,7 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
     public interface Listener {
         void onToggleBloqueo(AdminUser user);
         void onToggleRol(AdminUser user);
+        void onEliminar(AdminUser user);
     }
 
     private final List<AdminUser> data = new ArrayList<>();
@@ -80,6 +81,14 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
 
         h.btnBloqueo.setOnClickListener(v -> listener.onToggleBloqueo(u));
         h.btnRol.setOnClickListener(v -> listener.onToggleRol(u));
+
+        if (u.bloqueado) {
+            h.btnEliminar.setVisibility(View.VISIBLE);
+            h.btnEliminar.setOnClickListener(v -> listener.onEliminar(u));
+        } else {
+            h.btnEliminar.setVisibility(View.GONE);
+            h.btnEliminar.setOnClickListener(null);
+        }
     }
 
     // Devuelve item count.
@@ -90,7 +99,7 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvNombre, tvEmail, tvRol, tvEstado;
-        Button btnBloqueo, btnRol;
+        Button btnBloqueo, btnRol, btnEliminar;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -100,6 +109,7 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
             tvEstado = itemView.findViewById(R.id.tvAdminUserEstado);
             btnBloqueo = itemView.findViewById(R.id.btnAdminUserBloqueo);
             btnRol = itemView.findViewById(R.id.btnAdminUserRol);
+            btnEliminar = itemView.findViewById(R.id.btnAdminUserEliminar);
         }
     }
 }

@@ -38,6 +38,9 @@ public class AdminUsersRepository {
                 .addOnSuccessListener(qs -> {
                     List<AdminUser> out = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : qs) {
+                        Boolean eliminado = doc.getBoolean(FirestoreSchema.UsuarioFields.ELIMINADO);
+                        if (eliminado != null && eliminado) continue;
+
                         AdminUser u = new AdminUser();
                         u.uid = doc.getId();
                         u.nombre = leer(doc.getString(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO));
@@ -73,6 +76,21 @@ public class AdminUsersRepository {
     public void actualizarRol(String uid, String rol, ActionCallback cb) {
         Map<String, Object> up = new HashMap<>();
         up.put(FirestoreSchema.UsuarioFields.ROL, rol);
+        up.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
+
+        FirebaseFirestore.getInstance()
+                .collection(FirestoreSchema.Collections.USUARIOS)
+                .document(uid)
+                .set(up, SetOptions.merge())
+                .addOnSuccessListener(v -> cb.onOk())
+                .addOnFailureListener(cb::onError);
+    }
+
+    // Elimina de forma logica un usuario bloqueado para ocultarlo del panel y mantener acceso denegado.
+    public void eliminarUsuarioBloqueado(String uid, ActionCallback cb) {
+        Map<String, Object> up = new HashMap<>();
+        up.put(FirestoreSchema.UsuarioFields.BLOQUEADO, true);
+        up.put(FirestoreSchema.UsuarioFields.ELIMINADO, true);
         up.put(FirestoreSchema.UsuarioFields.UPDATED_AT, Timestamp.now());
 
         FirebaseFirestore.getInstance()
