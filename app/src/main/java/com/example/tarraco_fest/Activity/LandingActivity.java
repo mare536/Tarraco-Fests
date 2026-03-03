@@ -19,8 +19,13 @@ import com.example.tarraco_fest.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+/**
+ * Pantalla de entrada de autenticacion.
+ * Presenta acciones para continuar con Google o con correo.
+ */
 public class LandingActivity extends AppCompatActivity {
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +54,7 @@ public class LandingActivity extends AppCompatActivity {
         }, 180);
     }
 
+    // Gestiona on start en este bloque.
     @Override
     protected void onStart() {
         super.onStart();
@@ -66,6 +72,7 @@ public class LandingActivity extends AppCompatActivity {
         finish();
     }
 
+    // Gestiona animar ui en este bloque.
     private void animarUI(View overlay, View logo, View btns) {
         overlay.animate()
                 .alpha(1f)
@@ -87,6 +94,7 @@ public class LandingActivity extends AppCompatActivity {
                 .start();
     }
 
+    // Gestiona animar blur en este bloque.
     private void animarBlur(ImageView bgNormal, ImageView bgBlur) {
         ObjectAnimator fadeBlur = ObjectAnimator.ofFloat(bgBlur, "alpha", 0f, 1f);
         fadeBlur.setDuration(650);
@@ -107,6 +115,7 @@ public class LandingActivity extends AppCompatActivity {
         }
     }
 
+    // Indica si proveedor password.
     private boolean esProveedorPassword(FirebaseUser user) {
         for (com.google.firebase.auth.UserInfo info : user.getProviderData()) {
             if ("password".equals(info.getProviderId())) return true;

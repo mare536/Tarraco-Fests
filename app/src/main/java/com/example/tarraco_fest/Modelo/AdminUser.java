@@ -2,6 +2,10 @@ package com.example.tarraco_fest.Modelo;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 
+/**
+ * Modelo de usuario para vistas de administracion.
+ * Contiene los datos minimos para listar y gestionar permisos.
+ */
 public class AdminUser {
     public String uid = "";
     public String nombre = "";

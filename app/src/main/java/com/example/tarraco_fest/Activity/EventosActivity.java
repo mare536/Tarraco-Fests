@@ -14,11 +14,16 @@ import com.example.tarraco_fest.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pantalla de listado de eventos en formato clasico.
+ * Consume el repositorio y renderiza resultados en RecyclerView.
+ */
 public class EventosActivity extends AppCompatActivity {
 
     private EventosAdapter adapter;
     private final EventosRepository repo = new EventosRepository();
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,6 +33,7 @@ public class EventosActivity extends AppCompatActivity {
         cargarDatos();
     }
 
+    // Configura recycler view segun el contexto actual.
     private void configurarRecyclerView() {
         RecyclerView rv = findViewById(R.id.recyclerViewMain);
         rv.setLayoutManager(new LinearLayoutManager(this));
@@ -37,14 +43,17 @@ public class EventosActivity extends AppCompatActivity {
         rv.setAdapter(adapter);
     }
 
+    // Carga datos desde la fuente correspondiente.
     private void cargarDatos() {
         repo.cargarEventos(new EventosRepository.Callback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk(List<Evento> eventos) {
                 // Usamos el método correcto que creamos en el adaptador
                 adapter.setEventos(eventos);
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(EventosActivity.this, "Error cargando eventos: " + e.getMessage(), Toast.LENGTH_LONG).show();

@@ -2,6 +2,8 @@ package com.example.tarraco_fest.Adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.TextUtils;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,10 @@ import com.example.tarraco_fest.R;
 
 import java.util.List;
 
+/**
+ * Adapter de eventos para el flujo de usuario final.
+ * Encapsula el binding de titulo, fecha, lugar e imagen.
+ */
 public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoViewHolder> {
 
     private List<Evento> listaEventos;
@@ -27,11 +33,13 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         this.context = context;
     }
 
+    // Actualiza eventos con el valor recibido.
     public void setEventos(List<Evento> nuevosEventos) {
         this.listaEventos = nuevosEventos;
         notifyDataSetChanged();
     }
 
+    // Gestiona on create view holder en este bloque.
     @NonNull
     @Override
     public EventoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -39,6 +47,7 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         return new EventoViewHolder(view);
     }
 
+    // Gestiona on bind view holder en este bloque.
     @Override
     public void onBindViewHolder(@NonNull EventoViewHolder holder, int position) {
         Evento evento = listaEventos.get(position);
@@ -62,6 +71,18 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
                     .error(fallbackImage)
                     .centerCrop()
                     .into(holder.imgEvento);
+        } else if (!TextUtils.isEmpty(evento.getImagenBase64())) {
+            try {
+                byte[] bytes = Base64.decode(evento.getImagenBase64(), Base64.DEFAULT);
+                com.bumptech.glide.Glide.with(context)
+                        .load(bytes)
+                        .placeholder(fallbackImage)
+                        .error(fallbackImage)
+                        .centerCrop()
+                        .into(holder.imgEvento);
+            } catch (IllegalArgumentException ex) {
+                holder.imgEvento.setImageResource(fallbackImage);
+            }
         } else {
             holder.imgEvento.setImageResource(fallbackImage);
         }
@@ -73,6 +94,7 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         });
     }
 
+    // Devuelve item count.
     @Override
     public int getItemCount() {
         return listaEventos == null ? 0 : listaEventos.size();

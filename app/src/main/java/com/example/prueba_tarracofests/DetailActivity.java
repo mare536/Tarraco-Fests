@@ -9,7 +9,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.tarraco_fest.R;
 import com.bumptech.glide.Glide;
 
+/**
+ * Pantalla legacy de detalle en el paquete de pruebas iniciales.
+ * Se mantiene como referencia del prototipo original.
+ */
 public class DetailActivity extends AppCompatActivity {
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

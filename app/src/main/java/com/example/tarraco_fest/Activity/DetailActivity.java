@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -15,6 +16,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.StyleSpan;
 import android.util.Patterns;
+import android.util.Base64;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.ImageView;
@@ -41,6 +43,10 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 
+/**
+ * Muestra el detalle completo de un evento seleccionado.
+ * Incluye informacion, enlace de fuente y configuracion de recordatorios.
+ */
 public class DetailActivity extends AppCompatActivity {
 
     private static final long REMINDER_MIN_LEAD_MS = 60L * 1000L;
@@ -52,6 +58,7 @@ public class DetailActivity extends AppCompatActivity {
     private String sourceUrl = "";
     private boolean reminderDisponible = true;
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,6 +80,7 @@ public class DetailActivity extends AppCompatActivity {
         cargarEstadoRecordatorio(eventoActual);
     }
 
+    // Aplica inset superior toolbar respetando el estado actual.
     private void aplicarInsetSuperiorToolbar() {
         View toolbar = findViewById(R.id.detailHeroToolbar);
         if (toolbar == null) return;
@@ -92,6 +100,7 @@ public class DetailActivity extends AppCompatActivity {
         ViewCompat.requestApplyInsets(toolbar);
     }
 
+    // Aplica inset inferior contenido respetando el estado actual.
     private void aplicarInsetInferiorContenido() {
         NestedScrollView scroll = findViewById(R.id.detailScroll);
         View content = findViewById(R.id.detailContent);
@@ -111,6 +120,7 @@ public class DetailActivity extends AppCompatActivity {
         ViewCompat.requestApplyInsets(scroll);
     }
 
+    // Vincula datos con la cuenta autenticada.
     private void vincularDatos(Evento evento) {
         TextView chipCategoria = findViewById(R.id.tvDetailCategoryChip);
         TextView txtTitulo = findViewById(R.id.detailTitle);
@@ -134,6 +144,18 @@ public class DetailActivity extends AppCompatActivity {
                     .error(fallbackImage)
                     .centerCrop()
                     .into(imgView);
+        } else if (!TextUtils.isEmpty(evento.getImagenBase64())) {
+            try {
+                byte[] bytes = Base64.decode(evento.getImagenBase64(), Base64.DEFAULT);
+                com.bumptech.glide.Glide.with(this)
+                        .load(bytes)
+                        .placeholder(fallbackImage)
+                        .error(fallbackImage)
+                        .centerCrop()
+                        .into(imgView);
+            } catch (IllegalArgumentException ex) {
+                imgView.setImageResource(fallbackImage);
+            }
         } else {
             imgView.setImageResource(fallbackImage);
         }
@@ -176,6 +198,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Configura acciones segun el contexto actual.
     private void configurarAcciones(Evento evento) {
         findViewById(R.id.btnDetailBack).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         findViewById(R.id.btnDetailShareTop).setOnClickListener(v -> compartirEvento(evento));
@@ -186,6 +209,7 @@ public class DetailActivity extends AppCompatActivity {
         btnShare.setOnClickListener(v -> compartirEvento(evento));
     }
 
+    // Configura recordatorios segun el contexto actual.
     private void configurarRecordatorios(Evento evento) {
         btnReminder = findViewById(R.id.btnDetailReminder);
         tvReminderStatus = findViewById(R.id.tvDetailReminderStatus);
@@ -227,6 +251,7 @@ public class DetailActivity extends AppCompatActivity {
         btnReminder.setOnClickListener(v -> seleccionarFechaYHoraRecordatorio(evento));
     }
 
+    // Gestiona seleccionar fecha yhora recordatorio en este bloque.
     private void seleccionarFechaYHoraRecordatorio(Evento evento) {
         if (evento.getInicioMillis() <= 0L) {
             Toast.makeText(this, getString(R.string.detail_reminder_invalid_event_date), Toast.LENGTH_LONG).show();
@@ -280,6 +305,7 @@ public class DetailActivity extends AppCompatActivity {
         datePicker.show();
     }
 
+    // Muestra selector hora en la interfaz.
     private void mostrarSelectorHora(Evento evento, Calendar seleccion, long minPermitido, long maxPermitido) {
         MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                 .setTitleText(R.string.detail_reminder_pick_time_title)
@@ -325,6 +351,7 @@ public class DetailActivity extends AppCompatActivity {
         timePicker.show(getSupportFragmentManager(), "reminder_time_picker");
     }
 
+    // Guarda recordatorio y sincroniza cambios.
     private void guardarRecordatorio(Evento evento, long remindAtMillis) {
         reminderRepository.guardarRecordatorio(
                 evento.getId(),
@@ -332,6 +359,7 @@ public class DetailActivity extends AppCompatActivity {
                 evento.getInicioMillis(),
                 remindAtMillis,
                 new ReminderRepository.Callback() {
+                    // Gestiona on ok en este bloque.
                     @Override
                     public void onOk() {
                         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -341,6 +369,7 @@ public class DetailActivity extends AppCompatActivity {
                         mostrarEstadoRecordatorio(remindAtMillis);
                     }
 
+                    // Gestiona on error en este bloque.
                     @Override
                     public void onError(Exception e) {
                         String msg = (e != null && e.getMessage() != null && !e.getMessage().trim().isEmpty())
@@ -352,8 +381,10 @@ public class DetailActivity extends AppCompatActivity {
         );
     }
 
+    // Carga estado recordatorio desde la fuente correspondiente.
     private void cargarEstadoRecordatorio(Evento evento) {
         reminderRepository.obtenerRecordatorio(evento.getId(), new ReminderRepository.ReminderInfoCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk(ReminderRepository.ReminderInfo info) {
                 if (reminderDisponible) {
@@ -361,6 +392,7 @@ public class DetailActivity extends AppCompatActivity {
                 }
             }
 
+            // Gestiona on empty en este bloque.
             @Override
             public void onEmpty() {
                 if (reminderDisponible) {
@@ -368,6 +400,7 @@ public class DetailActivity extends AppCompatActivity {
                 }
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 if (reminderDisponible) {
@@ -377,6 +410,7 @@ public class DetailActivity extends AppCompatActivity {
         });
     }
 
+    // Muestra estado recordatorio en la interfaz.
     private void mostrarEstadoRecordatorio(long remindAtMillis) {
         if (tvReminderStatus == null || btnReminder == null) return;
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -385,12 +419,14 @@ public class DetailActivity extends AppCompatActivity {
         btnReminder.setText(getString(R.string.detail_reminder_edit_button));
     }
 
+    // Muestra estado sin recordatorio en la interfaz.
     private void mostrarEstadoSinRecordatorio() {
         if (tvReminderStatus == null || btnReminder == null) return;
         tvReminderStatus.setText(getString(R.string.detail_reminder_status_none));
         btnReminder.setText(getString(R.string.detail_reminder_button));
     }
 
+    // Gestiona abrir mapa en este bloque.
     private void abrirMapa(Evento evento) {
         String query = safeText(evento.getDireccion(), evento.getUbicacion());
         if (query.isEmpty()) {
@@ -414,6 +450,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona compartir evento en este bloque.
     private void compartirEvento(Evento evento) {
         String titulo = safeText(evento.getTitulo(), "");
         String fecha = safeText(evento.getFecha(), "");
@@ -428,6 +465,7 @@ public class DetailActivity extends AppCompatActivity {
         startActivity(Intent.createChooser(send, getString(R.string.detail_share)));
     }
 
+    // Gestiona abrir enlace en este bloque.
     private void abrirEnlace(String url) {
         String normalizada = normalizarUrl(url);
         if (normalizada.isEmpty()) {
@@ -451,6 +489,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona extraer primer url en este bloque.
     private String extraerPrimerUrl(String texto) {
         if (texto == null || texto.trim().isEmpty()) return "";
         Matcher matcher = Patterns.WEB_URL.matcher(texto);
@@ -461,6 +500,7 @@ public class DetailActivity extends AppCompatActivity {
         return "";
     }
 
+    // Aplica hipervinculo fuente respetando el estado actual.
     private void aplicarHipervinculoFuente(TextView textView, String url) {
         if (textView == null || url == null || url.trim().isEmpty()) return;
 
@@ -472,11 +512,13 @@ public class DetailActivity extends AppCompatActivity {
         SpannableString spannable = new SpannableString(label);
 
         ClickableSpan link = new ClickableSpan() {
+            // Gestiona on click en este bloque.
             @Override
             public void onClick(View widget) {
                 abrirEnlace(urlFinal);
             }
 
+            // Actualiza draw state con la logica de negocio actual.
             @Override
             public void updateDrawState(TextPaint ds) {
                 super.updateDrawState(ds);
@@ -494,6 +536,7 @@ public class DetailActivity extends AppCompatActivity {
         textView.setOnClickListener(v -> abrirEnlace(urlFinal));
     }
 
+    // Gestiona obtener nombre host en este bloque.
     private String obtenerNombreHost(String url) {
         try {
             String normalizada = normalizarUrl(url);
@@ -511,6 +554,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Normaliza url para evitar inconsistencias de comparacion.
     private String normalizarUrl(String raw) {
         if (raw == null) return "";
         String url = raw.trim();
@@ -547,6 +591,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona formatear descripcion para vista en este bloque.
     private CharSequence formatearDescripcionParaVista(String rawDescripcion) {
         String base = safeText(rawDescripcion, getString(R.string.detail_description_fallback));
 
@@ -573,6 +618,7 @@ public class DetailActivity extends AppCompatActivity {
         return sb;
     }
 
+    // Gestiona construir resumen evento en este bloque.
     private CharSequence construirResumenEvento(Evento evento, String categoria) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         String estado = obtenerEstadoEvento(evento);
@@ -586,6 +632,7 @@ public class DetailActivity extends AppCompatActivity {
         return sb;
     }
 
+    // Gestiona append resumen linea en este bloque.
     private void appendResumenLinea(SpannableStringBuilder sb, String etiqueta, String valor) {
         if (sb.length() > 0) sb.append('\n');
         int start = sb.length();
@@ -595,6 +642,7 @@ public class DetailActivity extends AppCompatActivity {
         sb.append(safeText(valor, "-"));
     }
 
+    // Gestiona obtener estado evento en este bloque.
     private String obtenerEstadoEvento(Evento evento) {
         if (evento == null || evento.getInicioMillis() <= 0L) {
             return getString(R.string.detail_status_no_date);
@@ -615,6 +663,7 @@ public class DetailActivity extends AppCompatActivity {
         return getString(R.string.detail_status_upcoming);
     }
 
+    // Aplica negrita etiqueta respetando el estado actual.
     private void aplicarNegritaEtiqueta(SpannableStringBuilder sb, String etiqueta) {
         String texto = sb.toString();
         int desde = 0;
@@ -627,6 +676,7 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona safe text en este bloque.
     private String safeText(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) return fallback;
         return value.trim();

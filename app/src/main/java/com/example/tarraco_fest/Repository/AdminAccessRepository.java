@@ -4,6 +4,10 @@ import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * Repositorio de control de acceso admin.
+ * Valida rol y estado de bloqueo del usuario autenticado.
+ */
 public class AdminAccessRepository {
 
     public interface Callback {
@@ -11,6 +15,7 @@ public class AdminAccessRepository {
         void onError(Exception e);
     }
 
+    // Verifica acceso admin y decide la accion siguiente.
     public void verificarAccesoAdmin(Callback cb) {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {

@@ -1,5 +1,9 @@
 package com.example.tarraco_fest.Data;
 
+/**
+ * Contrato de nombres de colecciones y campos en Firestore.
+ * Se usa para mantener consistencia en todo el proyecto.
+ */
 public final class FirestoreSchema {
 
     private FirestoreSchema() {}
@@ -21,6 +25,8 @@ public final class FirestoreSchema {
         public static final String TITULO = "titulo";
         public static final String INICIO = "inicio";
         public static final String LUGAR_NOMBRE = "lugarNombre";
+        public static final String IMAGEN_URL = "imagenUrl";
+        public static final String IMAGEN_BASE64 = "imagenBase64";
         public static final String ACTIVO = "activo";
         public static final String UPDATED_AT = "updatedAt";
         public static final String CREADO_EN = "creadoEn";

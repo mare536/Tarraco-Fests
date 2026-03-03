@@ -13,12 +13,17 @@ import com.example.tarraco_fest.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Actividad principal legacy del prototipo inicial.
+ * Conservada para referencia historica del flujo original.
+ */
 public class MainActivity extends AppCompatActivity {
     private final List<Evento> listaMaestra = new ArrayList<>();
     private EventoAdapter adapter;
     private String fTiempo = "Todos";
     private String fCat = "Todos";
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // Aplica filtros respetando el estado actual.
     private void aplicarFiltros() {
         if (adapter == null) {
             return;
@@ -84,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.updateList(filtrados);
     }
 
+    // Carga datos masivos desde la fuente correspondiente.
     private void cargarDatosMasivos() {
         listaMaestra.add(new Evento(
                 "Castells Plaza Font",
@@ -147,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
         ));
     }
 
+    // Gestiona bind click en este bloque.
     private void bindClick(String idName, View.OnClickListener listener) {
         int id = getResources().getIdentifier(idName, "id", getPackageName());
         if (id != 0) {

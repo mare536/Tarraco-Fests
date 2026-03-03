@@ -17,6 +17,10 @@ import com.example.tarraco_fest.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Adapter de usuarios en administracion.
+ * Renderiza rol/estado y dispara acciones de bloqueo y cambio de rol.
+ */
 public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH> {
 
     public interface Listener {
@@ -31,12 +35,14 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
         this.listener = listener;
     }
 
+    // Actualiza data con el valor recibido.
     public void setData(List<AdminUser> users) {
         data.clear();
         if (users != null) data.addAll(users);
         notifyDataSetChanged();
     }
 
+    // Gestiona on create view holder en este bloque.
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -44,6 +50,7 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
         return new VH(v);
     }
 
+    // Gestiona on bind view holder en este bloque.
     @Override
     public void onBindViewHolder(@NonNull VH h, int pos) {
         AdminUser u = data.get(pos);
@@ -75,6 +82,7 @@ public class AdminUsersAdapter extends RecyclerView.Adapter<AdminUsersAdapter.VH
         h.btnRol.setOnClickListener(v -> listener.onToggleRol(u));
     }
 
+    // Devuelve item count.
     @Override
     public int getItemCount() {
         return data.size();

@@ -14,6 +14,10 @@ import com.bumptech.glide.Glide;
 
 import java.util.List;
 
+/**
+ * Adapter legacy del prototipo inicial para listar eventos.
+ * Mantiene el binding basico de tarjeta y click.
+ */
 public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.ViewHolder> {
     private List<Evento> lista;
     private OnItemClickListener listener;
@@ -25,6 +29,7 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.ViewHolder
         this.listener = listener;
     }
 
+    // Gestiona on create view holder en este bloque.
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup p, int viewType) {
@@ -32,6 +37,7 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.ViewHolder
         return new ViewHolder(v);
     }
 
+    // Gestiona on bind view holder en este bloque.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
         Evento e = lista.get(pos);
@@ -44,6 +50,7 @@ public class EventoAdapter extends RecyclerView.Adapter<EventoAdapter.ViewHolder
     @Override
     public int getItemCount() { return lista.size(); }
 
+    // Actualiza list con la logica de negocio actual.
     public void updateList(List<Evento> nuevaLista) {
         this.lista = nuevaLista;
         notifyDataSetChanged();

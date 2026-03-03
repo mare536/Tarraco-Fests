@@ -11,10 +11,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 
+/**
+ * Entrada principal del modulo admin.
+ * Valida permisos y redirige a gestion de usuarios o eventos.
+ */
 public class AdminPanelActivity extends AppCompatActivity {
 
     private final AdminAccessRepository accessRepository = new AdminAccessRepository();
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,6 +35,7 @@ public class AdminPanelActivity extends AppCompatActivity {
         tvEstado.setText(getString(R.string.admin_checking_access));
 
         accessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
+            // Gestiona on result en este bloque.
             @Override
             public void onResult(boolean isAdmin) {
                 if (!isAdmin) {
@@ -42,6 +48,7 @@ public class AdminPanelActivity extends AppCompatActivity {
                 btnEventos.setEnabled(true);
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminPanelActivity.this, getString(R.string.admin_access_error), Toast.LENGTH_LONG).show();

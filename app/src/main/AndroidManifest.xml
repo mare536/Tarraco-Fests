@@ -26,7 +26,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".Activity.AuthActivity"/>
+        <activity
+            android:name=".Activity.AuthActivity"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".Activity.HomeActivity" />
         <activity android:name=".Activity.EventosActivity" />
         <activity android:name=".Activity.PerfilActivity" />

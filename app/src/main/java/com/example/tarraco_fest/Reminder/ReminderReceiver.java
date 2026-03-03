@@ -17,10 +17,15 @@ import androidx.core.content.ContextCompat;
 import com.example.tarraco_fest.Activity.HomeActivity;
 import com.example.tarraco_fest.R;
 
+/**
+ * BroadcastReceiver que publica la notificacion cuando vence un recordatorio.
+ * Lee los extras del intent y arma la notificacion local.
+ */
 public class ReminderReceiver extends BroadcastReceiver {
 
     private static final String CHANNEL_ID = "tarraco_reminders";
 
+    // Gestiona on receive en este bloque.
     @Override
     public void onReceive(Context context, Intent intent) {
         if (context == null || intent == null) return;
@@ -68,6 +73,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .notify(Math.abs(eventId.hashCode()), builder.build());
     }
 
+    // Gestiona ensure channel en este bloque.
     private void ensureChannel(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
 

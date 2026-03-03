@@ -33,6 +33,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Repositorio principal de eventos para Home y listados.
+ * Combina fuente remota, cache local y normalizacion de datos.
+ */
 public class EventosRepository {
 
     private static final String TARRAGONA_API_CSV_URL = "https://opendatafiles.tarragona.cat/00302.csv";
@@ -52,6 +56,7 @@ public class EventosRepository {
         void onError(Exception e);
     }
 
+    // Carga eventos desde la fuente correspondiente.
     public void cargarEventos(Callback cb) {
         Query query = FirebaseFirestore.getInstance()
                 .collection(FirestoreSchema.Collections.EVENTOS)
@@ -77,6 +82,7 @@ public class EventosRepository {
                 });
     }
 
+    // Gestiona invalidar cache api en este bloque.
     public static void invalidarCacheApi() {
         synchronized (API_CACHE_LOCK) {
             apiCache.clear();
@@ -84,6 +90,7 @@ public class EventosRepository {
         }
     }
 
+    // Mapea eventos firestore al modelo usado por la app.
     private List<Evento> mapearEventosFirestore(Iterable<QueryDocumentSnapshot> docs) {
         List<Evento> list = new ArrayList<>();
 
@@ -100,6 +107,7 @@ public class EventosRepository {
             e.setCiudad(d.getString("ciudad"));
             e.setDireccion(d.getString("direccion"));
             e.setImagenUrl(d.getString("imagenUrl"));
+            e.setImagenBase64(d.getString(FirestoreSchema.EventoFields.IMAGEN_BASE64));
             e.setLatitud(leerDouble(d, "latitud", "latitudEvento", "lat", "latitude"));
             e.setLongitud(leerDouble(d, "longitud", "longitudEvento", "lng", "lon", "longitude"));
 
@@ -132,6 +140,7 @@ public class EventosRepository {
         return list;
     }
 
+    // Carga eventos api asincrono desde la fuente correspondiente.
     private void cargarEventosApiAsincrono(List<Evento> base, Callback cb, Exception fallbackError) {
         IO_EXECUTOR.execute(() -> {
             try {
@@ -149,6 +158,7 @@ public class EventosRepository {
         });
     }
 
+    // Carga eventos api con cache desde la fuente correspondiente.
     private List<Evento> cargarEventosApiConCache() throws IOException {
         synchronized (API_CACHE_LOCK) {
             long now = System.currentTimeMillis();
@@ -166,6 +176,7 @@ public class EventosRepository {
         }
     }
 
+    // Gestiona descargar eventos desde csv en este bloque.
     private List<Evento> descargarEventosDesdeCsv() throws IOException {
         HttpURLConnection conn = null;
         BufferedReader reader = null;
@@ -223,6 +234,7 @@ public class EventosRepository {
         }
     }
 
+    // Mapea fila api al modelo usado por la app.
     private Evento mapearFilaApi(List<String> row, Map<String, Integer> idx) {
         String titulo = valorCampo(row, idx, "TITOL");
         String uid = valorCampo(row, idx, "UID");
@@ -278,6 +290,7 @@ public class EventosRepository {
         return e;
     }
 
+    // Gestiona construir descripcion api en este bloque.
     private String construirDescripcionApi(String titulo, String adreca, String categorias, long inicioMillis) {
         String t = titulo == null ? "" : titulo.trim();
         String lugar = adreca == null ? "" : adreca.trim();
@@ -303,6 +316,7 @@ public class EventosRepository {
         return sb.toString();
     }
 
+    // Normaliza url publica para evitar inconsistencias de comparacion.
     private String normalizarUrlPublica(String rawUrl) {
         if (rawUrl == null) return "";
         String url = rawUrl.trim();
@@ -328,6 +342,7 @@ public class EventosRepository {
         }
     }
 
+    // Gestiona fusionar eventos en este bloque.
     private List<Evento> fusionarEventos(List<Evento> firestoreEventos, List<Evento> apiEventos) {
         LinkedHashMap<String, Evento> map = new LinkedHashMap<>();
 
@@ -343,6 +358,7 @@ public class EventosRepository {
         return out;
     }
 
+    // Gestiona clave evento en este bloque.
     private String claveEvento(Evento e) {
         if (e == null) return "";
         String titulo = safeLower(e.getTitulo());
@@ -351,16 +367,19 @@ public class EventosRepository {
         return titulo + "|" + safeLower(e.getFecha());
     }
 
+    // Gestiona ordenar millis en este bloque.
     private long ordenarMillis(Evento e) {
         if (e == null || e.getInicioMillis() <= 0L) return Long.MAX_VALUE;
         return e.getInicioMillis();
     }
 
+    // Gestiona formatear fecha en este bloque.
     private String formatearFecha(long millis) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy - HH:mm", Locale.getDefault());
         return sdf.format(new Date(millis));
     }
 
+    // Gestiona parsear fecha api millis en este bloque.
     private long parsearFechaApiMillis(String raw) {
         if (raw == null || raw.trim().isEmpty()) return 0L;
 
@@ -382,6 +401,7 @@ public class EventosRepository {
         return 0L;
     }
 
+    // Gestiona inferir categoria id en este bloque.
     private String inferirCategoriaId(String categoriesRaw) {
         String n = normalizar(categoriesRaw);
         if (n.contains("music") || n.contains("concert")) return "musica";
@@ -397,6 +417,7 @@ public class EventosRepository {
         return "cultura";
     }
 
+    // Gestiona obtener imagen predefinida en este bloque.
     private int obtenerImagenPredefinida(String categoriaId) {
         String n = normalizar(categoriaId);
         if (n.contains("music")) return R.drawable.card_musica;
@@ -409,12 +430,14 @@ public class EventosRepository {
         return R.drawable.card_festival;
     }
 
+    // Normaliza el flujo para evitar inconsistencias de comparacion.
     private String normalizar(String raw) {
         String base = raw == null ? "" : raw.toLowerCase(Locale.ROOT);
         String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
         return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 
+    // Gestiona construir indice cabeceras en este bloque.
     private Map<String, Integer> construirIndiceCabeceras(List<String> headers) {
         Map<String, Integer> map = new HashMap<>();
         for (int i = 0; i < headers.size(); i++) {
@@ -432,6 +455,7 @@ public class EventosRepository {
         return map;
     }
 
+    // Gestiona valor campo en este bloque.
     private String valorCampo(List<String> row, Map<String, Integer> idx, String key) {
         Integer i = idx.get(key);
         if (i == null) return "";
@@ -440,6 +464,7 @@ public class EventosRepository {
         return raw == null ? "" : raw.trim();
     }
 
+    // Convierte csv line al formato interno necesario.
     private List<String> parseCsvLine(String line) {
         List<String> out = new ArrayList<>();
         if (line == null) return out;
@@ -469,14 +494,17 @@ public class EventosRepository {
         return out;
     }
 
+    // Gestiona safe lower en este bloque.
     private String safeLower(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
+    // Gestiona raw or empty en este bloque.
     private String rawOrEmpty(String value) {
         return value == null ? "" : value;
     }
 
+    // Gestiona parsear double en este bloque.
     private Double parsearDouble(String raw) {
         if (raw == null) return null;
         String clean = raw.trim().replace("\"", "").replace(",", ".");
@@ -488,6 +516,7 @@ public class EventosRepository {
         }
     }
 
+    // Gestiona leer double en este bloque.
     private Double leerDouble(QueryDocumentSnapshot d, String... keys) {
         if (d == null || keys == null) return null;
         for (String key : keys) {
@@ -504,10 +533,12 @@ public class EventosRepository {
         return null;
     }
 
+    // Gestiona publicar ok en este bloque.
     private void publicarOk(Callback cb, List<Evento> data) {
         MAIN_HANDLER.post(() -> cb.onOk(data));
     }
 
+    // Gestiona publicar error en este bloque.
     private void publicarError(Callback cb, Exception e) {
         MAIN_HANDLER.post(() -> cb.onError(e));
     }

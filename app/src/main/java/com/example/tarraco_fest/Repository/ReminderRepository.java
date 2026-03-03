@@ -13,6 +13,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Repositorio de persistencia de recordatorios de eventos.
+ * Guarda estado y mantiene sincronizada la programacion local.
+ */
 public class ReminderRepository {
 
     private final Context appContext;
@@ -42,6 +46,7 @@ public class ReminderRepository {
         void onError(Exception e);
     }
 
+    // Guarda recordatorio y sincroniza cambios.
     public void guardarRecordatorio(String eventId, String eventTitle, long inicioMillis, long remindAtMillis, Callback cb) {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {
@@ -107,6 +112,7 @@ public class ReminderRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Gestiona obtener recordatorio en este bloque.
     public void obtenerRecordatorio(String eventId, ReminderInfoCallback cb) {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {

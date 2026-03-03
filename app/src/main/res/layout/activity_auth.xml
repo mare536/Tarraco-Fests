@@ -60,8 +60,8 @@
 
         <ImageView
             android:id="@+id/imgLogoAuth"
-            android:layout_width="142dp"
-            android:layout_height="142dp"
+            android:layout_width="@dimen/auth_logo_size"
+            android:layout_height="@dimen/auth_logo_size"
             android:layout_gravity="center_horizontal"
             android:contentDescription="Logo"
             android:src="@drawable/logo" />

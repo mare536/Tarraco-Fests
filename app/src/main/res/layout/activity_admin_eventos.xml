@@ -1,247 +1,227 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootAdminEventos"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
 
     <ImageView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
         android:scaleType="centerCrop"
-        android:src="@drawable/bg_landing"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:src="@drawable/bg_landing" />
 
     <ImageView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
         android:scaleType="centerCrop"
-        android:src="@drawable/bg_landing_blur"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:src="@drawable/bg_landing_blur" />
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardAdminEventosTop"
-        android:layout_width="0dp"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarAdminEventos"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="@color/landing_card_surface"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/dialog_glass_stroke"
-        app:strokeWidth="1dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="@android:color/transparent"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:elevation="0dp">
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAdminEventosTop"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_glass_chip"
-                android:paddingStart="10dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="4dp"
-                android:text="@string/admin_panel_chip"
-                android:textAllCaps="true"
-                android:textColor="@color/dialog_text"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/admin_events_title"
-                android:textColor="@color/dialog_text"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/admin_events_subtitle"
-                android:textColor="@color/dialog_hint"
-                android:textSize="13sp" />
-
-            <EditText
-                android:id="@+id/etAdminEventosBuscar"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_home_filter_input"
-                android:hint="@string/admin_events_search_hint"
-                android:imeOptions="actionDone"
-                android:inputType="textCapSentences"
-                android:maxLines="1"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:textColor="@color/dialog_text"
-                android:textColorHint="@color/dialog_hint"
-                android:textSize="14sp" />
-
-            <RadioGroup
-                android:id="@+id/rgAdminEventosEstado"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="horizontal">
-
-                <RadioButton
-                    android:id="@+id/rbAdminEventosEstadoTodos"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_filter_option"
-                    android:buttonTint="@color/home_filter_radio_tint"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="8dp"
-                    android:text="@string/admin_filter_all"
-                    android:textColor="@color/home_filter_option_text"
-                    android:textSize="12sp" />
-
-                <RadioButton
-                    android:id="@+id/rbAdminEventosEstadoActivos"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_filter_option"
-                    android:buttonTint="@color/home_filter_radio_tint"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="8dp"
-                    android:text="@string/admin_filter_active"
-                    android:textColor="@color/home_filter_option_text"
-                    android:textSize="12sp" />
-
-                <RadioButton
-                    android:id="@+id/rbAdminEventosEstadoInactivos"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_filter_option"
-                    android:buttonTint="@color/home_filter_radio_tint"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="8dp"
-                    android:text="@string/admin_filter_inactive"
-                    android:textColor="@color/home_filter_option_text"
-                    android:textSize="12sp" />
-            </RadioGroup>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAdminEventosCrear"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/btn_auth_primary"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/admin_events_create"
-                android:textAllCaps="false"
-                android:textColor="@color/auth_btn_primary_text"
-                android:textStyle="bold"
-                app:backgroundTint="@null"
-                app:icon="@drawable/ic_drawer_edit"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp"
-                app:iconTint="@color/auth_btn_primary_text" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@color/landing_card_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:layout_scrollFlags="scroll|enterAlways|snap"
+            app:strokeColor="@color/dialog_glass_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_chip"
+                    android:paddingStart="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/admin_panel_chip"
+                    android:textAllCaps="true"
+                    android:textColor="@color/dialog_text"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/admin_events_title"
+                    android:textColor="@color/dialog_text"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/admin_events_subtitle"
+                    android:textColor="@color/dialog_hint"
+                    android:textSize="13sp" />
+
+                <EditText
+                    android:id="@+id/etAdminEventosBuscar"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_home_filter_input"
+                    android:hint="@string/admin_events_search_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/dialog_text"
+                    android:textColorHint="@color/dialog_hint"
+                    android:textSize="14sp" />
+
+                <RadioGroup
+                    android:id="@+id/rgAdminEventosEstado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbAdminEventosEstadoTodos"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_home_filter_option"
+                        android:buttonTint="@color/home_filter_radio_tint"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/admin_filter_all"
+                        android:textColor="@color/home_filter_option_text"
+                        android:textSize="12sp" />
+
+                    <RadioButton
+                        android:id="@+id/rbAdminEventosEstadoActivos"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_home_filter_option"
+                        android:buttonTint="@color/home_filter_radio_tint"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/admin_filter_active"
+                        android:textColor="@color/home_filter_option_text"
+                        android:textSize="12sp" />
+
+                    <RadioButton
+                        android:id="@+id/rbAdminEventosEstadoInactivos"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_home_filter_option"
+                        android:buttonTint="@color/home_filter_radio_tint"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/admin_filter_inactive"
+                        android:textColor="@color/home_filter_option_text"
+                        android:textSize="12sp" />
+                </RadioGroup>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAdminEventosRecargar"
-                    android:layout_width="0dp"
+                    android:id="@+id/btnAdminEventosCrear"
+                    android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/btn_auth_secondary"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/btn_auth_primary"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="@string/admin_refresh"
+                    android:text="@string/admin_events_create"
                     android:textAllCaps="false"
-                    android:textColor="@color/auth_btn_secondary_text"
+                    android:textColor="@color/auth_btn_primary_text"
                     android:textStyle="bold"
                     app:backgroundTint="@null"
-                    app:icon="@android:drawable/ic_popup_sync"
+                    app:icon="@drawable/ic_drawer_edit"
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
-                    app:iconTint="@color/auth_btn_secondary_text" />
+                    app:iconTint="@color/auth_btn_primary_text" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAdminEventosVolver"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/btn_auth_secondary"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/admin_back"
-                    android:textAllCaps="false"
-                    android:textColor="@color/auth_btn_secondary_text"
-                    android:textStyle="bold"
-                    app:backgroundTint="@null"
-                    app:icon="@drawable/ic_detail_back"
-                    app:iconGravity="textStart"
-                    app:iconPadding="8dp"
-                    app:iconTint="@color/auth_btn_secondary_text" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAdminEventosRecargar"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/btn_auth_secondary"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/admin_refresh"
+                        android:textAllCaps="false"
+                        android:textColor="@color/auth_btn_secondary_text"
+                        android:textStyle="bold"
+                        app:backgroundTint="@null"
+                        app:icon="@android:drawable/ic_popup_sync"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:iconTint="@color/auth_btn_secondary_text" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAdminEventosVolver"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/btn_auth_secondary"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/admin_back"
+                        android:textAllCaps="false"
+                        android:textColor="@color/auth_btn_secondary_text"
+                        android:textStyle="bold"
+                        app:backgroundTint="@null"
+                        app:icon="@drawable/ic_detail_back"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:iconTint="@color/auth_btn_secondary_text" />
+                </LinearLayout>
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.appbar.AppBarLayout>
 
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvAdminEventos"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_marginStart="16dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="14dp"
-        app:cardBackgroundColor="@color/landing_card_surface"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/dialog_glass_stroke"
-        app:strokeWidth="1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardAdminEventosTop">
+        android:background="@drawable/bg_admin_list_container"
+        android:clipToPadding="false"
+        android:padding="12dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvAdminEventos"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="12dp" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/bg_bottom_scrim" />
-    </com.google.android.material.card.MaterialCardView>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

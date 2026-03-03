@@ -44,6 +44,7 @@ public class UsuarioRepository {
         this.db = db;
     }
 
+    // Carga perfil actual desde la fuente correspondiente.
     public void cargarPerfilActual(PerfilCallback cb) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -72,6 +73,7 @@ public class UsuarioRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Guarda informacion general y sincroniza cambios.
     public void guardarInformacionGeneral(UsuarioPerfil perfil, ActionCallback cb) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -110,6 +112,7 @@ public class UsuarioRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Vincula password con la cuenta autenticada.
     public void vincularPassword(String password, ActionCallback cb) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -143,6 +146,7 @@ public class UsuarioRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Sincroniza metodos autenticacion entre estado local y remoto.
     public void sincronizarMetodosAutenticacion(ActionCallback cb) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -163,6 +167,7 @@ public class UsuarioRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Mapea perfil al modelo usado por la app.
     private UsuarioPerfil mapearPerfil(FirebaseUser user, Map<String, Object> data) {
         UsuarioPerfil p = new UsuarioPerfil();
 
@@ -205,6 +210,7 @@ public class UsuarioRepository {
         return p;
     }
 
+    // Crea datos iniciales con los datos disponibles.
     private Map<String, Object> crearDatosIniciales(FirebaseUser user) {
         Map<String, Object> data = new HashMap<>();
         data.put(FirestoreSchema.UsuarioFields.NOMBRE_MOSTRADO,
@@ -219,6 +225,7 @@ public class UsuarioRepository {
         return data;
     }
 
+    // Gestiona resolver metodos vinculados en este bloque.
     private List<String> resolverMetodosVinculados(FirebaseUser user) {
         List<String> out = new ArrayList<>();
         if (user == null) return out;
@@ -237,6 +244,7 @@ public class UsuarioRepository {
         return out;
     }
 
+    // Gestiona leer metodos vinculados en este bloque.
     private List<String> leerMetodosVinculados(Object raw, FirebaseUser user) {
         List<String> out = new ArrayList<>();
         if (raw instanceof List<?>) {
@@ -255,6 +263,7 @@ public class UsuarioRepository {
         return out;
     }
 
+    // Indica si proveedor password esta disponible.
     private boolean tieneProveedorPassword(FirebaseUser user) {
         if (user == null) return false;
         for (UserInfo info : user.getProviderData()) {
@@ -263,10 +272,12 @@ public class UsuarioRepository {
         return false;
     }
 
+    // Gestiona leer texto en este bloque.
     private String leerTexto(Object value) {
         return value instanceof String ? ((String) value).trim() : "";
     }
 
+    // Gestiona limpiar en este bloque.
     private String limpiar(String value) {
         return value == null ? "" : value.trim();
     }

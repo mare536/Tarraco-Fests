@@ -125,6 +125,37 @@ La validacion en cliente mejora UX, pero no protege por si sola. Para produccion
 - Reglas Firestore que permitan escrituras de `usuarios` y `eventos` solo a admins.
 - Opcional: asignar custom claims (`admin`) desde backend para endurecer permisos.
 
+### 8.1 Endurecimiento implementado: subida de imagenes solo admin
+
+Se ha agregado `storage.rules` para que solo usuarios con:
+
+- `usuarios/{uid}.rol == "admin"`
+- `usuarios/{uid}.bloqueado != true`
+
+puedan crear/editar/eliminar archivos en `eventos/**` (imagenes de eventos).
+
+Restricciones adicionales:
+
+- Solo `contentType` de imagen (`image/*`).
+- Limite de tamano: `< 10 MB`.
+- El resto del bucket queda denegado por defecto.
+
+Archivos agregados:
+
+- `storage.rules`
+- `firebase.json` (apunta a `storage.rules`)
+
+Despliegue:
+
+1. Iniciar sesion con Firebase CLI (`firebase login`).
+2. Seleccionar proyecto (`firebase use <project-id>`).
+3. Desplegar reglas de Storage:
+   - `firebase deploy --only storage`
+
+Nota: este control depende del campo `rol` en Firestore. Si las reglas de Firestore
+permiten que un usuario normal se autoasigne `rol = admin`, podria escalar permisos.
+Para cerrar ese vector, se recomienda endurecer tambien las reglas de Firestore.
+
 ## 9) Extensiones previstas
 
 - Paginacion real de listas de usuarios/eventos.

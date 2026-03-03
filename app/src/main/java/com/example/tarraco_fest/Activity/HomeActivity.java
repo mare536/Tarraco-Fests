@@ -51,6 +51,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla principal tras login.
+ * Gestiona filtros, navegacion lateral y acceso al resto de modulos.
+ */
 public class HomeActivity extends AppCompatActivity {
 
     private static final String PREF_PERMISOS = "permisos_app";
@@ -123,6 +127,7 @@ public class HomeActivity extends AppCompatActivity {
                 actualizarResumenFiltros();
             });
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -140,6 +145,7 @@ public class HomeActivity extends AppCompatActivity {
         refrescarUbicacionUsuario();
     }
 
+    // Gestiona on resume en este bloque.
     @Override
     protected void onResume() {
         super.onResume();
@@ -150,6 +156,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Configura status bar segun el contexto actual.
     private void configurarStatusBar() {
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.home_status_bar_fill));
         WindowInsetsControllerCompat controller =
@@ -159,6 +166,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Configura drawer segun el contexto actual.
     private void configurarDrawer() {
         drawerLayout = findViewById(R.id.drawerHome);
         navigationView = findViewById(R.id.navHome);
@@ -178,6 +186,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         adminAccessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
+            // Gestiona on result en este bloque.
             @Override
             public void onResult(boolean isAdmin) {
                 MenuItem adminItem = navigationView.getMenu().findItem(R.id.nav_home_admin);
@@ -186,6 +195,7 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 ocultarItemAdmin();
@@ -193,6 +203,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            // Gestiona handle on back pressed en este bloque.
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -205,6 +216,7 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    // Aplica inset superior menu respetando el estado actual.
     private void aplicarInsetSuperiorMenu() {
         if (btnHomeMenu == null) return;
 
@@ -224,6 +236,7 @@ public class HomeActivity extends AppCompatActivity {
         ViewCompat.requestApplyInsets(btnHomeMenu);
     }
 
+    // Gestiona ocultar item admin en este bloque.
     private void ocultarItemAdmin() {
         MenuItem adminItem = navigationView.getMenu().findItem(R.id.nav_home_admin);
         if (adminItem != null) {
@@ -231,6 +244,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona manejar click drawer en este bloque.
     private boolean manejarClickDrawer(int itemId) {
         if (itemId == R.id.nav_home_events) {
             actualizarSeleccionDrawerActual();
@@ -255,11 +269,13 @@ public class HomeActivity extends AppCompatActivity {
         return false;
     }
 
+    // Actualiza seleccion drawer actual con la logica de negocio actual.
     private void actualizarSeleccionDrawerActual() {
         if (navigationView == null) return;
         navigationView.setCheckedItem(R.id.nav_home_events);
     }
 
+    // Gestiona solicitar permisos iniciales en este bloque.
     private void solicitarPermisosIniciales() {
         if (debeSolicitarNotificaciones()) {
             mostrarDialogoPermisoNotificaciones();
@@ -270,6 +286,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona debe solicitar notificaciones en este bloque.
     private boolean debeSolicitarNotificaciones() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -277,6 +294,7 @@ public class HomeActivity extends AppCompatActivity {
         return !permisosPrefs.getBoolean(KEY_NOTIF_SOLICITADO, false);
     }
 
+    // Gestiona debe solicitar ubicacion en este bloque.
     private boolean debeSolicitarUbicacion() {
         boolean fineOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
@@ -286,6 +304,7 @@ public class HomeActivity extends AppCompatActivity {
         return !permisosPrefs.getBoolean(KEY_UBI_SOLICITADO, false);
     }
 
+    // Indica si permiso ubicacion esta disponible.
     private boolean tienePermisoUbicacion() {
         boolean fineOk = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
@@ -294,6 +313,7 @@ public class HomeActivity extends AppCompatActivity {
         return fineOk || coarseOk;
     }
 
+    // Gestiona refrescar ubicacion usuario en este bloque.
     private boolean refrescarUbicacionUsuario() {
         if (!tienePermisoUbicacion()) {
             hasUserLocation = false;
@@ -331,6 +351,7 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
+    // Muestra dialogo permiso notificaciones en la interfaz.
     private void mostrarDialogoPermisoNotificaciones() {
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
                 .setTitle(R.string.permissions_notif_title)
@@ -346,6 +367,7 @@ public class HomeActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Muestra dialogo permiso ubicacion en la interfaz.
     private void mostrarDialogoPermisoUbicacion() {
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
                 .setTitle(R.string.permissions_location_title)
@@ -363,6 +385,7 @@ public class HomeActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Gestiona cerrar sesion en este bloque.
     private void cerrarSesion() {
         FirebaseAuth.getInstance().signOut();
 
@@ -372,13 +395,35 @@ public class HomeActivity extends AppCompatActivity {
         finish();
     }
 
+    // Configura recycler view segun el contexto actual.
     private void configurarRecyclerView() {
         RecyclerView rv = findViewById(R.id.recyclerViewMain);
         rv.setLayoutManager(new LinearLayoutManager(this));
         adapter = new EventosAdapter(new ArrayList<>(), this);
         rv.setAdapter(adapter);
+        aplicarInsetInferiorLista(rv);
     }
 
+    // Aplica un espacio seguro inferior para que el ultimo item no quede bajo la barra del sistema.
+    private void aplicarInsetInferiorLista(RecyclerView rv) {
+        if (rv == null) return;
+
+        final int baseStart = ViewCompat.getPaddingStart(rv);
+        final int baseTop = rv.getPaddingTop();
+        final int baseEnd = ViewCompat.getPaddingEnd(rv);
+        final int baseBottom = rv.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(rv, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            int extraBottom = dpToPx(16);
+            ViewCompat.setPaddingRelative(v, baseStart, baseTop, baseEnd, baseBottom + bars.bottom + extraBottom);
+            return insets;
+        });
+
+        ViewCompat.requestApplyInsets(rv);
+    }
+
+    // Configura buscador yfiltros segun el contexto actual.
     private void configurarBuscadorYFiltros() {
         EditText etBuscador = findViewById(R.id.etBuscador);
         chipTodos = findViewById(R.id.chipTodos);
@@ -393,16 +438,19 @@ public class HomeActivity extends AppCompatActivity {
         tvClearFilters = findViewById(R.id.tvClearFilters);
 
         etBuscador.addTextChangedListener(new TextWatcher() {
+            // Gestiona before text changed en este bloque.
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
+            // Gestiona on text changed en este bloque.
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 textoBusqueda = s.toString().trim().toLowerCase(Locale.ROOT);
                 aplicarFiltros();
             }
 
+            // Gestiona after text changed en este bloque.
             @Override
             public void afterTextChanged(Editable s) {
             }
@@ -429,8 +477,10 @@ public class HomeActivity extends AppCompatActivity {
         actualizarResumenFiltros();
     }
 
+    // Carga datos desde firebase desde la fuente correspondiente.
     private void cargarDatosDesdeFirebase() {
         repo.cargarEventos(new EventosRepository.Callback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk(List<Evento> eventos) {
                 loadedAtLeastOnce = true;
@@ -438,6 +488,7 @@ public class HomeActivity extends AppCompatActivity {
                 aplicarFiltros();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 loadedAtLeastOnce = true;
@@ -446,6 +497,7 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona seleccionar categoria en este bloque.
     private void seleccionarCategoria(String categoria, TextView chipActivo) {
         categoriaActual = categoria;
         actualizarEstiloChips(chipActivo);
@@ -453,6 +505,7 @@ public class HomeActivity extends AppCompatActivity {
         aplicarFiltros();
     }
 
+    // Gestiona limpiar filtros en este bloque.
     private void limpiarFiltros() {
         categoriaActual = "Todos";
         filtroFechaActual = FILTRO_FECHA_TODAS;
@@ -468,6 +521,7 @@ public class HomeActivity extends AppCompatActivity {
         aplicarFiltros();
     }
 
+    // Aplica filtros respetando el estado actual.
     private void aplicarFiltros() {
         if (FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual) && !hasUserLocation) {
             filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
@@ -522,6 +576,7 @@ public class HomeActivity extends AppCompatActivity {
         adapter.setEventos(listaFiltrada);
     }
 
+    // Gestiona abrir dialogo filtros en este bloque.
     private void abrirDialogoFiltros() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_home_filters, null);
 
@@ -661,6 +716,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Actualiza estilo chips con la logica de negocio actual.
     private void actualizarEstiloChips(TextView chipActivo) {
         resetearChip(chipTodos);
         resetearChip(chipMusica);
@@ -672,6 +728,7 @@ public class HomeActivity extends AppCompatActivity {
         activarChip(chipActivo);
     }
 
+    // Gestiona activar chip en este bloque.
     private void activarChip(TextView chip) {
         if (chip == null) return;
         chip.setTextColor(ContextCompat.getColor(this, R.color.home_chip_text_active));
@@ -679,12 +736,14 @@ public class HomeActivity extends AppCompatActivity {
                 ContextCompat.getColor(this, R.color.home_chip_active_bg)));
     }
 
+    // Gestiona resetear chip en este bloque.
     private void resetearChip(TextView chip) {
         if (chip == null) return;
         chip.setTextColor(ContextCompat.getColor(this, R.color.home_chip_text_inactive));
         chip.setBackgroundTintList(null);
     }
 
+    // Gestiona coincide filtro fecha en este bloque.
     private boolean coincideFiltroFecha(Evento e) {
         if (FILTRO_FECHA_TODAS.equals(filtroFechaActual)) return true;
         if (e == null || e.getInicioMillis() <= 0L) return false;
@@ -711,6 +770,7 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
+    // Gestiona coincide filtro precio en este bloque.
     private boolean coincideFiltroPrecio(double precio) {
         if (FILTRO_PRECIO_TODOS.equals(filtroPrecioActual)) return true;
         if (FILTRO_PRECIO_GRATIS.equals(filtroPrecioActual)) return precio <= 0.009d;
@@ -718,6 +778,7 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
+    // Gestiona coincide filtro horario en este bloque.
     private boolean coincideFiltroHorario(Evento e) {
         if (FILTRO_HORARIO_TODOS.equals(filtroHorarioActual)) return true;
         if (e == null || e.getInicioMillis() <= 0L) return false;
@@ -738,12 +799,14 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
+    // Gestiona coincide filtro distancia en este bloque.
     private boolean coincideFiltroDistancia(Double distanciaKm) {
         if (FILTRO_DISTANCIA_TODAS.equals(filtroDistanciaActual)) return true;
         if (!FILTRO_DISTANCIA_CERCA.equals(filtroDistanciaActual)) return true;
         return distanciaKm != null && distanciaKm <= DISTANCIA_CERCA_KM;
     }
 
+    // Gestiona calcular distancia evento km en este bloque.
     private Double calcularDistanciaEventoKm(Evento e) {
         if (!hasUserLocation || e == null || !e.tieneCoordenadas()) return null;
         Double lat = e.getLatitud();
@@ -755,6 +818,7 @@ public class HomeActivity extends AppCompatActivity {
         return result[0] / 1000d;
     }
 
+    // Actualiza resumen filtros con la logica de negocio actual.
     private void actualizarResumenFiltros() {
         List<String> partes = new ArrayList<>();
         if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
@@ -799,6 +863,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Gestiona obtener chip categoria actual en este bloque.
     private TextView obtenerChipCategoriaActual() {
         if ("Musica".equalsIgnoreCase(categoriaActual)) return chipMusica;
         if ("Cultura".equalsIgnoreCase(categoriaActual)) return chipCultura;
@@ -808,6 +873,7 @@ public class HomeActivity extends AppCompatActivity {
         return chipTodos;
     }
 
+    // Carga filtros persistidos desde la fuente correspondiente.
     private void cargarFiltrosPersistidos() {
         if (filtrosPrefs == null) return;
 
@@ -824,6 +890,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // Guarda filtros persistidos y sincroniza cambios.
     private void guardarFiltrosPersistidos() {
         if (filtrosPrefs == null) return;
 
@@ -837,16 +904,19 @@ public class HomeActivity extends AppCompatActivity {
                 .apply();
     }
 
+    // Normaliza texto para evitar inconsistencias de comparacion.
     private String normalizarTexto(String value) {
         String base = safeLower(value).trim();
         String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
         return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 
+    // Gestiona safe lower en este bloque.
     private String safeLower(String value) {
         return value == null ? "" : value.toLowerCase(Locale.ROOT);
     }
 
+    // Gestiona dp to px en este bloque.
     private int dpToPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
     }

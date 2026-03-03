@@ -1,5 +1,6 @@
 package com.example.tarraco_fest.Activity;
 
+import android.accounts.AccountManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -46,6 +47,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Pantalla de autenticacion principal (Google y correo + contrasena).
+ * Contiene la logica de inicio de sesion y vinculacion de password para cuentas Google.
+ */
 public class AuthActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
@@ -82,16 +87,14 @@ public class AuthActivity extends AppCompatActivity {
                         return;
                     }
 
-                    AuthCredential cred = GoogleAuthProvider.getCredential(account.getIdToken(), null);
-                    auth.signInWithCredential(cred)
-                            .addOnSuccessListener(r -> onLoginOkGoogle())
-                            .addOnFailureListener(e -> setEstado("Google error: " + e.getMessage(), ESTADO_ERROR, true));
+                    autenticarConCuentaGoogle(account, false);
 
                 } catch (ApiException e) {
                     setEstado("Google error (status): " + e.getStatusCode(), ESTADO_ERROR, true);
                 }
             });
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,6 +151,7 @@ public class AuthActivity extends AppCompatActivity {
         if (autoGoogle) loginGoogle();
     }
 
+    // Gestiona on start en este bloque.
     @Override
     protected void onStart() {
         super.onStart();
@@ -219,6 +223,7 @@ public class AuthActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> manejarErrorLoginEmail(e, email));
     }
 
+    // Gestiona manejar error login email en este bloque.
     private void manejarErrorLoginEmail(Exception e, String email) {
         String code = null;
         if (e instanceof FirebaseAuthException) code = ((FirebaseAuthException) e).getErrorCode();
@@ -246,6 +251,7 @@ public class AuthActivity extends AppCompatActivity {
         setEstado("Login error: " + e.getMessage(), ESTADO_ERROR, true);
     }
 
+    // Gestiona resolver caso password google ono se puede saber en este bloque.
     private void resolverCasoPasswordGoogleONoSePuedeSaber(String email, boolean credencialInvalida) {
         auth.fetchSignInMethodsForEmail(email)
                 .addOnSuccessListener(res -> {
@@ -273,6 +279,7 @@ public class AuthActivity extends AppCompatActivity {
                 .addOnFailureListener(x -> resolverCasoConFirestore(email, credencialInvalida));
     }
 
+    // Gestiona resolver caso con firestore en este bloque.
     private void resolverCasoConFirestore(String email, boolean credencialInvalida) {
         db.collection(FirestoreSchema.Collections.USUARIOS)
                 .whereEqualTo(FirestoreSchema.UsuarioFields.EMAIL, email)
@@ -318,6 +325,7 @@ public class AuthActivity extends AppCompatActivity {
                 });
     }
 
+    // Indica si metodo vinculado esta disponible.
     private boolean tieneMetodoVinculado(DocumentSnapshot doc, String metodo) {
         Object raw = doc.get(FirestoreSchema.UsuarioFields.METODOS_VINCULADOS);
         if (!(raw instanceof List<?>)) return false;
@@ -328,6 +336,7 @@ public class AuthActivity extends AppCompatActivity {
         return false;
     }
 
+    // Muestra opciones cuenta google en la interfaz.
     private void mostrarOpcionesCuentaGoogle(String email) {
         etEmail.requestFocus();
         shake(etEmail);
@@ -343,6 +352,7 @@ public class AuthActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Muestra opciones cuenta no detectada en la interfaz.
     private void mostrarOpcionesCuentaNoDetectada(String email) {
         etEmail.requestFocus();
         shake(etEmail);
@@ -358,6 +368,7 @@ public class AuthActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Gestiona marcar contrasena incorrecta en este bloque.
     private void marcarContrasenaIncorrecta() {
         etPassword.requestFocus();
         shake(etPassword);
@@ -393,6 +404,7 @@ public class AuthActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Indica si proveedor google.
     private boolean esProveedorGoogle(FirebaseUser u) {
         if (u == null) return false;
         for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
@@ -491,6 +503,7 @@ public class AuthActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona preparar login tras registro en este bloque.
     private void prepararLoginTrasRegistro(String email) {
         etEmail.setText(email);
         etPassword.setText("");
@@ -509,6 +522,7 @@ public class AuthActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Gestiona reenviar verificacion en este bloque.
     private void reenviarVerificacion(String email, String pass) {
         setEstado("Reenviando verificacion...", ESTADO_INFO, false);
 
@@ -532,10 +546,71 @@ public class AuthActivity extends AppCompatActivity {
     // ===================== GOOGLE LOGIN =====================
 
     private void loginGoogle() {
+        int totalGoogleAccounts = contarCuentasGoogleEnDispositivo();
+
+        // Si hay varias cuentas, forzamos selector para que no se quede pegada la ultima.
+        if (totalGoogleAccounts > 1) {
+            lanzarGoogleConSelectorForzado();
+            return;
+        }
+
+        // Si solo hay una cuenta, intentamos entrada dinamica sin UI.
+        if (totalGoogleAccounts == 1) {
+            setEstado("Comprobando cuenta Google...", ESTADO_INFO, false);
+            googleClient.silentSignIn()
+                    .addOnSuccessListener(account -> autenticarConCuentaGoogle(account, true))
+                    .addOnFailureListener(e -> lanzarGoogleNormal());
+            return;
+        }
+
+        // Si no se puede detectar con fiabilidad, abrimos selector para evitar errores de cuenta.
+        lanzarGoogleConSelectorForzado();
+    }
+
+    // Gestiona lanzar google normal en este bloque.
+    private void lanzarGoogleNormal() {
         Intent intent = googleClient.getSignInIntent();
         googleLauncher.launch(intent);
     }
 
+    // Gestiona lanzar google con selector forzado en este bloque.
+    private void lanzarGoogleConSelectorForzado() {
+        googleClient.signOut()
+                .addOnCompleteListener(task -> lanzarGoogleNormal());
+    }
+
+    // Gestiona contar cuentas google en dispositivo en este bloque.
+    private int contarCuentasGoogleEnDispositivo() {
+        try {
+            return AccountManager.get(this).getAccountsByType("com.google").length;
+        } catch (SecurityException e) {
+            return -1;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    // Gestiona autenticar con cuenta google en este bloque.
+    private void autenticarConCuentaGoogle(GoogleSignInAccount account, boolean fallbackToPickerOnError) {
+        if (account == null) {
+            setEstado("Google cancelado", ESTADO_INFO, false);
+            return;
+        }
+
+        AuthCredential cred = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+        auth.signInWithCredential(cred)
+                .addOnSuccessListener(r -> onLoginOkGoogle())
+                .addOnFailureListener(e -> {
+                    if (fallbackToPickerOnError) {
+                        // Fallback: si el token silencioso no sirve, abrimos selector.
+                        lanzarGoogleConSelectorForzado();
+                        return;
+                    }
+                    setEstado("Google error: " + e.getMessage(), ESTADO_ERROR, true);
+                });
+    }
+
+    // Gestiona on login ok google en este bloque.
     private void onLoginOkGoogle() {
         FirebaseUser u = auth.getCurrentUser();
 
@@ -605,6 +680,7 @@ public class AuthActivity extends AppCompatActivity {
         });
     }
 
+    // Vincula password al usuario actual con la cuenta autenticada.
     private void linkPasswordAlUsuarioActual(String email, String password, AlertDialog dialog) {
         FirebaseUser u = auth.getCurrentUser();
         if (u == null) {
@@ -698,12 +774,14 @@ public class AuthActivity extends AppCompatActivity {
         finish();
     }
 
+    // Gestiona limpiar feedback login en este bloque.
     private void limpiarFeedbackLogin() {
         if (tvEstado != null) tvEstado.setVisibility(View.GONE);
         if (etEmail != null) etEmail.setError(null);
         if (etPassword != null) etPassword.setError(null);
     }
 
+    // Indica si proveedor password.
     private boolean esProveedorPassword(FirebaseUser u) {
         if (u == null) return false;
         for (com.google.firebase.auth.UserInfo info : u.getProviderData()) {
@@ -712,6 +790,7 @@ public class AuthActivity extends AppCompatActivity {
         return false;
     }
 
+    // Actualiza estado con el valor recibido.
     private void setEstado(String msg, int tipo, boolean showToast) {
         Log.e("AUTH_UI", msg);
         if (tvEstado == null) return;
@@ -734,6 +813,7 @@ public class AuthActivity extends AppCompatActivity {
         tvEstado.animate().alpha(1f).setDuration(180).start();
     }
 
+    // Gestiona shake en este bloque.
     private void shake(View v) {
         v.animate().cancel();
         v.setTranslationX(0f);

@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Repositorio de administracion de usuarios.
+ * Carga usuarios y aplica cambios de rol/bloqueo.
+ */
 public class AdminUsersRepository {
 
     public interface ListCallback {
@@ -24,6 +28,7 @@ public class AdminUsersRepository {
         void onError(Exception e);
     }
 
+    // Carga usuarios desde la fuente correspondiente.
     public void cargarUsuarios(ListCallback cb) {
         FirebaseFirestore.getInstance()
                 .collection(FirestoreSchema.Collections.USUARIOS)
@@ -50,6 +55,7 @@ public class AdminUsersRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Actualiza bloqueo con la logica de negocio actual.
     public void actualizarBloqueo(String uid, boolean bloqueado, ActionCallback cb) {
         Map<String, Object> up = new HashMap<>();
         up.put(FirestoreSchema.UsuarioFields.BLOQUEADO, bloqueado);
@@ -63,6 +69,7 @@ public class AdminUsersRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Actualiza rol con la logica de negocio actual.
     public void actualizarRol(String uid, String rol, ActionCallback cb) {
         Map<String, Object> up = new HashMap<>();
         up.put(FirestoreSchema.UsuarioFields.ROL, rol);
@@ -76,6 +83,7 @@ public class AdminUsersRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Gestiona leer en este bloque.
     private String leer(String value) {
         return value == null ? "" : value.trim();
     }

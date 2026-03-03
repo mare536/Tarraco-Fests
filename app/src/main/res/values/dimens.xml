@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="landing_logo_size">160dp</dimen>
+    <dimen name="auth_logo_size">142dp</dimen>
+    <dimen name="home_header_height">200dp</dimen>
+    <dimen name="detail_hero_height">300dp</dimen>
+</resources>

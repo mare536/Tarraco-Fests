@@ -18,6 +18,10 @@ import androidx.core.content.ContextCompat;
 import com.example.tarraco_fest.R;
 import com.google.android.material.button.MaterialButton;
 
+/**
+ * Pantalla de ajustes generales de la aplicacion.
+ * Centraliza opciones de preferencia visibles para el usuario.
+ */
 public class AjustesActivity extends AppCompatActivity {
 
     private TextView tvNotifStatus;
@@ -43,6 +47,7 @@ public class AjustesActivity extends AppCompatActivity {
                 }
             });
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,12 +66,14 @@ public class AjustesActivity extends AppCompatActivity {
         actualizarEstados();
     }
 
+    // Gestiona on resume en este bloque.
     @Override
     protected void onResume() {
         super.onResume();
         actualizarEstados();
     }
 
+    // Gestiona solicitar notificaciones en este bloque.
     private void solicitarNotificaciones() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             Toast.makeText(this, getString(R.string.settings_notifications_not_required), Toast.LENGTH_SHORT).show();
@@ -79,6 +86,7 @@ public class AjustesActivity extends AppCompatActivity {
         notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
     }
 
+    // Gestiona solicitar ubicacion en este bloque.
     private void solicitarUbicacion() {
         if (tienePermisoUbicacion()) {
             Toast.makeText(this, getString(R.string.settings_already_granted), Toast.LENGTH_SHORT).show();
@@ -90,6 +98,7 @@ public class AjustesActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona abrir ajustes sistema en este bloque.
     private void abrirAjustesSistema() {
         Intent intent = new Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -98,12 +107,14 @@ public class AjustesActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    // Indica si permiso notificaciones esta disponible.
     private boolean tienePermisoNotificaciones() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
         return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    // Indica si permiso ubicacion esta disponible.
     private boolean tienePermisoUbicacion() {
         boolean fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
@@ -112,6 +123,7 @@ public class AjustesActivity extends AppCompatActivity {
         return fine || coarse;
     }
 
+    // Actualiza estados con la logica de negocio actual.
     private void actualizarEstados() {
         boolean notifOk = tienePermisoNotificaciones();
         boolean locationOk = tienePermisoUbicacion();

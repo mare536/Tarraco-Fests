@@ -8,6 +8,7 @@ import android.app.Application;
  */
 public class TarracoFestApp extends Application {
 
+    // Gestiona on create en este bloque.
     @Override
     public void onCreate() {
         super.onCreate();

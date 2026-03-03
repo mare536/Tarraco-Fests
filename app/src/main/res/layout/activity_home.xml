@@ -15,25 +15,28 @@
         android:background="@color/background_light">
 
         <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarHome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            app:elevation="0dp">
+            app:elevation="0dp"
+            app:liftOnScroll="true"
+            app:liftOnScrollTargetViewId="@id/recyclerViewMain">
 
             <com.google.android.material.appbar.CollapsingToolbarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent">
+                android:background="@android:color/transparent"
+                app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:layout_scrollFlags="scroll|enterAlways">
+                    android:layout_height="wrap_content">
 
                     <View
                         android:id="@+id/headerBackground"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="@dimen/home_header_height"
                         android:background="@drawable/header_bg"
                         app:layout_constraintTop_toTopOf="parent" />
 
@@ -123,7 +126,8 @@
                 android:paddingTop="12dp"
                 android:paddingEnd="16dp"
                 android:paddingBottom="12dp"
-                android:scrollbars="none">
+                android:scrollbars="none"
+                app:layout_scrollFlags="scroll|enterAlways">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -204,7 +208,8 @@
                 android:orientation="vertical"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:paddingBottom="12dp">
+                android:paddingBottom="12dp"
+                app:layout_scrollFlags="scroll|enterAlways">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardFiltersSummary"

@@ -2,6 +2,10 @@ package com.example.prueba_tarracofests;
 
 import java.io.Serializable;
 
+/**
+ * Modelo legacy de evento del prototipo inicial.
+ * Serializable para pasar datos entre activities del paquete de pruebas.
+ */
 public class Evento implements Serializable {
     public String titulo, fecha, descripcion, categoria, imgUrl, periodo, ubicacion, hora;
 

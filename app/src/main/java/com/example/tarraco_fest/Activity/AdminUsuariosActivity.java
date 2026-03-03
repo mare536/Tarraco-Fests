@@ -1,13 +1,24 @@
 package com.example.tarraco_fest.Activity;
 
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla para gestionar usuarios del sistema.
+ * Permite cambiar rol y bloquear/desbloquear cuentas.
+ */
 public class AdminUsuariosActivity extends AppCompatActivity {
 
     private static final String FILTRO_TODOS = "todos";
@@ -39,6 +54,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
     private String filtroRolActual = FILTRO_TODOS;
     private String filtroEstadoActual = FILTRO_TODOS;
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,13 +62,16 @@ public class AdminUsuariosActivity extends AppCompatActivity {
 
         RecyclerView rv = findViewById(R.id.rvAdminUsuarios);
         rv.setLayoutManager(new LinearLayoutManager(this));
+        configurarBordesSistema(rv);
 
         adapter = new AdminUsersAdapter(new AdminUsersAdapter.Listener() {
+            // Gestiona on toggle bloqueo en este bloque.
             @Override
             public void onToggleBloqueo(AdminUser user) {
                 toggleBloqueo(user);
             }
 
+            // Gestiona on toggle rol en este bloque.
             @Override
             public void onToggleRol(AdminUser user) {
                 toggleRol(user);
@@ -67,6 +86,68 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         validarAccesoYCargar();
     }
 
+    // Aplica edge-to-edge con insets para mantener diseño limpio en todos los moviles.
+    private void configurarBordesSistema(RecyclerView rv) {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        boolean modoOscuro =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!modoOscuro);
+            controller.setAppearanceLightNavigationBars(!modoOscuro);
+        }
+
+        View root = findViewById(R.id.rootAdminUsuarios);
+        View appBar = findViewById(R.id.appBarAdminUsuarios);
+
+        int baseAppBarPaddingTop = appBar.getPaddingTop();
+        int baseRecyclerPaddingBottom = rv.getPaddingBottom();
+        ViewGroup.MarginLayoutParams lpLista = (ViewGroup.MarginLayoutParams) rv.getLayoutParams();
+        int baseListaMarginBottom = lpLista.bottomMargin;
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            appBar.setPadding(
+                    appBar.getPaddingLeft(),
+                    baseAppBarPaddingTop + bars.top,
+                    appBar.getPaddingRight(),
+                    appBar.getPaddingBottom()
+            );
+
+            ViewGroup.MarginLayoutParams listaLp = (ViewGroup.MarginLayoutParams) rv.getLayoutParams();
+            listaLp.bottomMargin = baseListaMarginBottom + bars.bottom;
+            rv.setLayoutParams(listaLp);
+
+            rv.setPadding(
+                    rv.getPaddingLeft(),
+                    rv.getPaddingTop(),
+                    rv.getPaddingRight(),
+                    baseRecyclerPaddingBottom + bars.bottom + dpToPx(8)
+            );
+
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+    }
+
+    // Convierte dp a px para margenes/padding adaptativos.
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    // Configura buscador yfiltros segun el contexto actual.
     private void configurarBuscadorYFiltros() {
         EditText etBuscar = findViewById(R.id.etAdminUsuariosBuscar);
         RadioGroup rgRol = findViewById(R.id.rgAdminUsersRol);
@@ -79,6 +160,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
+            // Gestiona on text changed en este bloque.
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 busquedaNormalizada = normalizar(s == null ? "" : s.toString());
@@ -112,8 +194,10 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Valida acceso ycargar antes de continuar el flujo.
     private void validarAccesoYCargar() {
         accessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
+            // Gestiona on result en este bloque.
             @Override
             public void onResult(boolean isAdmin) {
                 if (!isAdmin) {
@@ -124,6 +208,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
                 cargarUsuarios();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_access_error), Toast.LENGTH_LONG).show();
@@ -132,8 +217,10 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Carga usuarios desde la fuente correspondiente.
     private void cargarUsuarios() {
         usersRepository.cargarUsuarios(new AdminUsersRepository.ListCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk(List<AdminUser> data) {
                 users.clear();
@@ -141,6 +228,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
                 aplicarFiltrosLocales();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_users_load_error), Toast.LENGTH_LONG).show();
@@ -148,14 +236,17 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Alterna el estado de bloqueo.
     private void toggleBloqueo(AdminUser user) {
         usersRepository.actualizarBloqueo(user.uid, !user.bloqueado, new AdminUsersRepository.ActionCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk() {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_updated_ok), Toast.LENGTH_SHORT).show();
                 cargarUsuarios();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_update_error), Toast.LENGTH_LONG).show();
@@ -163,18 +254,21 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Alterna el estado de rol.
     private void toggleRol(AdminUser user) {
         String nuevoRol = FirestoreSchema.UserRoles.ADMIN.equalsIgnoreCase(user.rol)
                 ? FirestoreSchema.UserRoles.USUARIO
                 : FirestoreSchema.UserRoles.ADMIN;
 
         usersRepository.actualizarRol(user.uid, nuevoRol, new AdminUsersRepository.ActionCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk() {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_updated_ok), Toast.LENGTH_SHORT).show();
                 cargarUsuarios();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_update_error), Toast.LENGTH_LONG).show();
@@ -182,6 +276,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Aplica filtros locales respetando el estado actual.
     private void aplicarFiltrosLocales() {
         List<AdminUser> filtrados = new ArrayList<>();
 
@@ -209,6 +304,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         adapter.setData(filtrados);
     }
 
+    // Normaliza el flujo para evitar inconsistencias de comparacion.
     private String normalizar(String value) {
         if (value == null) return "";
         String base = value.trim().toLowerCase(Locale.ROOT);

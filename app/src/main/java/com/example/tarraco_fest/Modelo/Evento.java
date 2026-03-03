@@ -4,6 +4,10 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Modelo de dominio para eventos mostrados al usuario final.
+ * Incluye datos de contenido, visual y metadatos de fuente.
+ */
 public class Evento implements Serializable {
 
     private String id;
@@ -16,6 +20,7 @@ public class Evento implements Serializable {
     private List<String> palabrasClave;
     private String titulo;
     private String imagenUrl;
+    private String imagenBase64;
 
     private String fecha;
     private long inicioMillis;
@@ -42,6 +47,7 @@ public class Evento implements Serializable {
     public double getPrecio() { return precio; }
     public int getImagenResId() { return imagenResId; }
     public String getImagenUrl() { return imagenUrl; }
+    public String getImagenBase64() { return imagenBase64; }
     public Double getLatitud() { return latitud; }
     public Double getLongitud() { return longitud; }
     public Double getDistanciaKm() { return distanciaKm; }
@@ -60,19 +66,23 @@ public class Evento implements Serializable {
     public void setPrecio(double precio) { this.precio = precio; }
     public void setImagenResId(int imagenResId) { this.imagenResId = imagenResId; }
     public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
+    public void setImagenBase64(String imagenBase64) { this.imagenBase64 = imagenBase64; }
     public void setLatitud(Double latitud) { this.latitud = latitud; }
     public void setLongitud(Double longitud) { this.longitud = longitud; }
     public void setDistanciaKm(Double distanciaKm) { this.distanciaKm = distanciaKm; }
 
+    // Indica si coordenadas esta disponible.
     public boolean tieneCoordenadas() {
         return latitud != null && longitud != null;
     }
 
+    // Devuelve ubicacion.
     public String getUbicacion() {
         return (lugarNombre != null ? lugarNombre : "")
                 + (ciudad != null ? " - " + ciudad : "");
     }
 
+    // Devuelve categoria ui.
     public String getCategoriaUI() {
         if (categoriaId == null) return "Todos";
 

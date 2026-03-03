@@ -24,15 +24,22 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 
+/**
+ * Pantalla de perfil de usuario organizada por secciones.
+ * Permite editar informacion personal y gestionar metodos de acceso.
+ */
 public class PerfilActivity extends AppCompatActivity {
 
     private static final int SEC_INFO = 0;
@@ -77,8 +84,10 @@ public class PerfilActivity extends AppCompatActivity {
     private final ActivityResultLauncher<Intent> googleLinkLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 try {
+                    btnVincularGoogle.setEnabled(true);
+
                     if (result.getData() == null) {
-                        Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.profile_google_link_cancelled), Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -100,24 +109,38 @@ public class PerfilActivity extends AppCompatActivity {
                     AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
                     user.linkWithCredential(credential)
                             .addOnSuccessListener(r -> usuarioRepository.sincronizarMetodosAutenticacion(new UsuarioRepository.ActionCallback() {
+                                // Gestiona on ok en este bloque.
                                 @Override
                                 public void onOk() {
                                     Toast.makeText(PerfilActivity.this, getString(R.string.profile_google_link_ok), Toast.LENGTH_SHORT).show();
                                     cargarPerfil();
                                 }
 
+                                // Gestiona on error en este bloque.
                                 @Override
                                 public void onError(Exception e) {
                                     Toast.makeText(PerfilActivity.this, getString(R.string.profile_google_link_error), Toast.LENGTH_LONG).show();
                                 }
                             }))
-                            .addOnFailureListener(e -> Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_LONG).show());
+                            .addOnFailureListener(e -> {
+                                if (e instanceof FirebaseAuthUserCollisionException) {
+                                    Toast.makeText(this, getString(R.string.profile_google_link_collision), Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                                Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_LONG).show();
+                            });
 
                 } catch (ApiException e) {
+                    if (e.getStatusCode() == CommonStatusCodes.CANCELED
+                            || e.getStatusCode() == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+                        Toast.makeText(this, getString(R.string.profile_google_link_cancelled), Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     Toast.makeText(this, getString(R.string.profile_google_link_error), Toast.LENGTH_SHORT).show();
                 }
             });
 
+    // Gestiona on create en este bloque.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -132,6 +155,7 @@ public class PerfilActivity extends AppCompatActivity {
         cargarPerfil();
     }
 
+    // Gestiona bind views en este bloque.
     private void bindViews() {
         drawerLayout = findViewById(R.id.drawerPerfil);
         navigationView = findViewById(R.id.navPerfil);
@@ -164,6 +188,7 @@ public class PerfilActivity extends AppCompatActivity {
         btnCambiarPassword = findViewById(R.id.btnCambiarPassword);
     }
 
+    // Configura google segun el contexto actual.
     private void configurarGoogle() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -172,6 +197,7 @@ public class PerfilActivity extends AppCompatActivity {
         googleClient = GoogleSignIn.getClient(this, gso);
     }
 
+    // Aplica insets sistema respetando el estado actual.
     private void aplicarInsetsSistema() {
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) perfilContent.getLayoutParams();
         final int baseTop = lp.topMargin;
@@ -189,6 +215,7 @@ public class PerfilActivity extends AppCompatActivity {
         ViewCompat.requestApplyInsets(perfilContent);
     }
 
+    // Configura drawer segun el contexto actual.
     private void configurarDrawer() {
         findViewById(R.id.btnPerfilMenu).setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
 
@@ -200,6 +227,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            // Gestiona handle on back pressed en este bloque.
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -212,6 +240,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona manejar click drawer en este bloque.
     private boolean manejarClickDrawer(int itemId) {
         if (itemId == R.id.nav_inicio) {
             volverAInicio();
@@ -239,6 +268,7 @@ public class PerfilActivity extends AppCompatActivity {
         return false;
     }
 
+    // Configura acciones segun el contexto actual.
     private void configurarAcciones() {
         btnGuardarNombre.setOnClickListener(v -> guardarCambiosPerfil());
         btnVincularGoogle.setOnClickListener(v -> vincularGoogle());
@@ -246,14 +276,17 @@ public class PerfilActivity extends AppCompatActivity {
         btnCambiarPassword.setOnClickListener(v -> cambiarPassword());
     }
 
+    // Carga perfil desde la fuente correspondiente.
     private void cargarPerfil() {
         usuarioRepository.cargarPerfilActual(new UsuarioRepository.PerfilCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk(UsuarioPerfil perfil) {
                 perfilActual = perfil;
                 renderizarPerfil(perfil);
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 Toast.makeText(PerfilActivity.this, getString(R.string.profile_load_error), Toast.LENGTH_LONG).show();
@@ -261,6 +294,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona renderizar perfil en este bloque.
     private void renderizarPerfil(UsuarioPerfil perfil) {
         String noEstablecida = getString(R.string.profile_not_set);
 
@@ -306,16 +340,22 @@ public class PerfilActivity extends AppCompatActivity {
         etPass2.setText("");
     }
 
+    // Vincula google con la cuenta autenticada.
     private void vincularGoogle() {
         if (perfilActual != null && perfilActual.tieneMetodoGoogle()) {
             Toast.makeText(this, getString(R.string.profile_google_linked_button), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Intent intent = googleClient.getSignInIntent();
-        googleLinkLauncher.launch(intent);
+        btnVincularGoogle.setEnabled(false);
+        // Forzamos selector de cuenta para evitar que Google reutilice la ultima cuenta automaticamente.
+        googleClient.signOut().addOnCompleteListener(task -> {
+            Intent intent = googleClient.getSignInIntent();
+            googleLinkLauncher.launch(intent);
+        });
     }
 
+    // Guarda cambios perfil y sincroniza cambios.
     private void guardarCambiosPerfil() {
         if (perfilActual == null) {
             Toast.makeText(this, getString(R.string.profile_load_error), Toast.LENGTH_SHORT).show();
@@ -346,6 +386,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         btnGuardarNombre.setEnabled(false);
         usuarioRepository.guardarInformacionGeneral(perfilActual, new UsuarioRepository.ActionCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk() {
                 btnGuardarNombre.setEnabled(true);
@@ -353,6 +394,7 @@ public class PerfilActivity extends AppCompatActivity {
                 cargarPerfil();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 btnGuardarNombre.setEnabled(true);
@@ -361,6 +403,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
     }
 
+    // Vincula password con la cuenta autenticada.
     private void vincularPassword() {
         if (perfilActual != null && perfilActual.tieneMetodoEmail()) {
             Toast.makeText(this, getString(R.string.profile_password_already_linked), Toast.LENGTH_SHORT).show();
@@ -388,6 +431,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         btnVincularPassword.setEnabled(false);
         usuarioRepository.vincularPassword(pass1, new UsuarioRepository.ActionCallback() {
+            // Gestiona on ok en este bloque.
             @Override
             public void onOk() {
                 btnVincularPassword.setEnabled(true);
@@ -397,6 +441,7 @@ public class PerfilActivity extends AppCompatActivity {
                 cargarPerfil();
             }
 
+            // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
                 btnVincularPassword.setEnabled(true);
@@ -405,6 +450,7 @@ public class PerfilActivity extends AppCompatActivity {
         });
     }
 
+    // Gestiona cambiar password en este bloque.
     private void cambiarPassword() {
         String email = perfilActual != null ? perfilActual.getEmail() : "";
         if (TextUtils.isEmpty(email)) {
@@ -431,12 +477,14 @@ public class PerfilActivity extends AppCompatActivity {
                 });
     }
 
+    // Muestra seccion en la interfaz.
     private void mostrarSeccion(int seccion) {
         sectionInfoGeneral.setVisibility(seccion == SEC_INFO ? android.view.View.VISIBLE : android.view.View.GONE);
         sectionSeguridad.setVisibility(seccion == SEC_SEGURIDAD ? android.view.View.VISIBLE : android.view.View.GONE);
         sectionEditarDatos.setVisibility(seccion == SEC_EDITAR ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
+    // Vuelve a ainicio manteniendo consistencia de navegacion.
     private void volverAInicio() {
         Intent intent = new Intent(this, HomeActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -444,6 +492,7 @@ public class PerfilActivity extends AppCompatActivity {
         finish();
     }
 
+    // Gestiona cerrar sesion en este bloque.
     private void cerrarSesion() {
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(this, LandingActivity.class);
@@ -452,10 +501,12 @@ public class PerfilActivity extends AppCompatActivity {
         finish();
     }
 
+    // Gestiona valor ono establecida en este bloque.
     private String valorONoEstablecida(String valor, String fallback) {
         return TextUtils.isEmpty(valor == null ? "" : valor.trim()) ? fallback : valor.trim();
     }
 
+    // Gestiona obtener metodo acceso en este bloque.
     private String obtenerMetodoAcceso(UsuarioPerfil perfil, String fallback) {
         boolean tieneGoogle = perfil.tieneMetodoGoogle();
         boolean tieneEmail = perfil.tieneMetodoEmail();
@@ -466,15 +517,18 @@ public class PerfilActivity extends AppCompatActivity {
         return fallback;
     }
 
+    // Indica si nombre predeterminado.
     private boolean esNombrePredeterminado(String nombre) {
         return !TextUtils.isEmpty(nombre) && "Usuario".equalsIgnoreCase(nombre.trim());
     }
 
+    // Gestiona texto en este bloque.
     private String texto(TextInputEditText et) {
         if (et == null || et.getText() == null) return "";
         return et.getText().toString().trim();
     }
 
+    // Indica si telefono valido.
     private boolean esTelefonoValido(String telefono) {
         return telefono.matches("^[0-9+()\\-\\s]{6,20}$");
     }

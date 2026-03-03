@@ -6,6 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
+/**
+ * Utilidad para programar/cancelar alarmas de recordatorio con AlarmManager.
+ * Se usa desde detalle de evento y repositorio de recordatorios.
+ */
 public final class ReminderScheduler {
 
     public static final String EXTRA_EVENT_ID = "extra_event_id";

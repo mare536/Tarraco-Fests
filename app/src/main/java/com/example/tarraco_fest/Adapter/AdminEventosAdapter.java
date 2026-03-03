@@ -19,6 +19,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Adapter de eventos en el panel admin.
+ * Pinta estado del evento y propaga acciones de editar/activar.
+ */
 public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapter.VH> {
 
     public interface Listener {
@@ -34,12 +38,14 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
         this.listener = listener;
     }
 
+    // Actualiza data con el valor recibido.
     public void setData(List<AdminEvento> eventos) {
         data.clear();
         if (eventos != null) data.addAll(eventos);
         notifyDataSetChanged();
     }
 
+    // Gestiona on create view holder en este bloque.
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -47,6 +53,7 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
         return new VH(v);
     }
 
+    // Gestiona on bind view holder en este bloque.
     @Override
     public void onBindViewHolder(@NonNull VH h, int pos) {
         AdminEvento e = data.get(pos);
@@ -85,6 +92,7 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
         h.btnToggleActivo.setOnClickListener(v -> listener.onToggleActivo(e));
     }
 
+    // Devuelve item count.
     @Override
     public int getItemCount() {
         return data.size();
