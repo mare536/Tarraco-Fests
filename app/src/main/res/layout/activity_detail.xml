@@ -204,6 +204,22 @@
                     android:textColor="@color/detail_meta_text"
                     android:textSize="13sp" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDetailFavorite"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/btn_detail_secondary"
+                    android:text="@string/detail_favorite_add"
+                    android:textAllCaps="false"
+                    android:textColor="@color/detail_action_secondary_text"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null"
+                    app:icon="@drawable/ic_favorite_border"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconTint="@color/detail_action_secondary_text" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

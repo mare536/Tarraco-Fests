@@ -1,6 +1,7 @@
 package com.example.tarraco_fest.Activity;
 
 import android.content.res.Configuration;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -44,6 +46,7 @@ import com.example.tarraco_fest.Repository.EventosRepository;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 import com.google.firebase.Timestamp;
@@ -64,10 +67,17 @@ import java.util.TimeZone;
  */
 public class AdminEventosActivity extends AppCompatActivity {
     private static final String TAG = "AdminEventosActivity";
+    private static final String PREF_SYNC_FLAGS = "sync_flags";
+    private static final String KEY_EVENTOS_UPDATED_AT = "eventos_updated_at";
 
     private static final String FILTRO_TODOS = "todos";
     private static final String FILTRO_ACTIVOS = "activos";
     private static final String FILTRO_INACTIVOS = "inactivos";
+    private static final String CATEGORIA_CULTURA = "cultura";
+    private static final String CATEGORIA_MUSICA = "musica";
+    private static final String CATEGORIA_ESPORT = "esport";
+    private static final String CATEGORIA_FAMILIAR = "familiar";
+    private static final String CATEGORIA_GASTRONOMIA = "gastronomia";
 
     private final AdminAccessRepository accessRepository = new AdminAccessRepository();
     private final AdminEventosRepository eventosRepository = new AdminEventosRepository();
@@ -81,11 +91,13 @@ public class AdminEventosActivity extends AppCompatActivity {
     private Uri imagenSeleccionadaUri;
     private ImageView ivImagenDialog;
     private TextView tvImagenEstadoDialog;
+    private boolean imagenPersonalizadaEnDialogo = false;
 
     private final ActivityResultLauncher<String> pickerImagenLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) return;
                 imagenSeleccionadaUri = uri;
+                imagenPersonalizadaEnDialogo = true;
                 if (ivImagenDialog != null) {
                     Glide.with(this)
                             .load(uri)
@@ -120,6 +132,12 @@ public class AdminEventosActivity extends AppCompatActivity {
             @Override
             public void onToggleActivo(AdminEvento evento) {
                 toggleActivo(evento);
+            }
+
+            // Gestiona on eliminar en este bloque.
+            @Override
+            public void onEliminar(AdminEvento evento) {
+                confirmarEliminarEvento(evento);
             }
         });
         rv.setAdapter(adapter);
@@ -297,6 +315,7 @@ public class AdminEventosActivity extends AppCompatActivity {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_admin_evento, null);
         EditText etTitulo = view.findViewById(R.id.etAdminEventoTitulo);
         EditText etLugar = view.findViewById(R.id.etAdminEventoLugar);
+        MaterialAutoCompleteTextView actCategoria = view.findViewById(R.id.actAdminEventoCategoria);
         EditText etFecha = view.findViewById(R.id.etAdminEventoFecha);
         EditText etHora = view.findViewById(R.id.etAdminEventoHora);
         TextInputLayout tilFecha = view.findViewById(R.id.tilAdminEventoFecha);
@@ -310,8 +329,25 @@ public class AdminEventosActivity extends AppCompatActivity {
         Calendar calendarioInicio = Calendar.getInstance();
         boolean[] fechaSeleccionada = {false};
         boolean[] horaSeleccionada = {false};
+        String[] categoriaSeleccionada = {CATEGORIA_CULTURA};
+
+        ArrayAdapter<String> categoriaAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_list_item_1,
+                obtenerCategoriasUi()
+        );
+        actCategoria.setAdapter(categoriaAdapter);
+        actCategoria.setOnClickListener(v -> actCategoria.showDropDown());
+        actCategoria.setOnItemClickListener((parent, itemView, position, id) -> {
+            String categoriaUi = (String) parent.getItemAtPosition(position);
+            categoriaSeleccionada[0] = categoriaIdDesdeUi(categoriaUi);
+            if (!imagenPersonalizadaEnDialogo) {
+                aplicarImagenPredeterminada(categoriaSeleccionada[0], ivImagen, tvImagenEstado);
+            }
+        });
 
         imagenSeleccionadaUri = null;
+        imagenPersonalizadaEnDialogo = false;
         ivImagenDialog = ivImagen;
         tvImagenEstadoDialog = tvImagenEstado;
         btnSeleccionarImagen.setOnClickListener(v -> pickerImagenLauncher.launch("image/*"));
@@ -319,6 +355,8 @@ public class AdminEventosActivity extends AppCompatActivity {
         if (original != null) {
             etTitulo.setText(original.titulo);
             etLugar.setText(original.lugarNombre);
+            categoriaSeleccionada[0] = normalizarCategoriaId(original.categoriaId);
+            actCategoria.setText(categoriaUiDesdeId(categoriaSeleccionada[0]), false);
             if (original.inicio != null) {
                 calendarioInicio.setTime(original.inicio.toDate());
                 fechaSeleccionada[0] = true;
@@ -326,6 +364,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             }
             cbActivo.setChecked(original.activo);
             if (!TextUtils.isEmpty(original.imagenUrl)) {
+                imagenPersonalizadaEnDialogo = true;
                 Glide.with(this)
                         .load(original.imagenUrl)
                         .placeholder(R.drawable.card_festival)
@@ -336,6 +375,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             } else if (!TextUtils.isEmpty(original.imagenBase64)) {
                 byte[] bytes = decodeBase64Image(original.imagenBase64);
                 if (bytes != null) {
+                    imagenPersonalizadaEnDialogo = true;
                     Glide.with(this)
                             .load(bytes)
                             .placeholder(R.drawable.card_festival)
@@ -344,17 +384,18 @@ public class AdminEventosActivity extends AppCompatActivity {
                             .into(ivImagen);
                     tvImagenEstado.setText(getString(R.string.admin_event_image_current));
                 } else {
-                    ivImagen.setImageResource(R.drawable.card_festival);
-                    tvImagenEstado.setText(getString(R.string.admin_event_image_none));
+                    imagenPersonalizadaEnDialogo = false;
+                    aplicarImagenPredeterminada(categoriaSeleccionada[0], ivImagen, tvImagenEstado);
                 }
             } else {
-                ivImagen.setImageResource(R.drawable.card_festival);
-                tvImagenEstado.setText(getString(R.string.admin_event_image_none));
+                imagenPersonalizadaEnDialogo = false;
+                aplicarImagenPredeterminada(categoriaSeleccionada[0], ivImagen, tvImagenEstado);
             }
         } else {
             cbActivo.setChecked(true);
-            ivImagen.setImageResource(R.drawable.card_festival);
-            tvImagenEstado.setText(getString(R.string.admin_event_image_none));
+            categoriaSeleccionada[0] = CATEGORIA_CULTURA;
+            actCategoria.setText(categoriaUiDesdeId(categoriaSeleccionada[0]), false);
+            aplicarImagenPredeterminada(categoriaSeleccionada[0], ivImagen, tvImagenEstado);
             calendarioInicio.set(Calendar.SECOND, 0);
             calendarioInicio.set(Calendar.MILLISECOND, 0);
         }
@@ -390,6 +431,7 @@ public class AdminEventosActivity extends AppCompatActivity {
 
         dialog.setOnDismissListener(d -> {
             imagenSeleccionadaUri = null;
+            imagenPersonalizadaEnDialogo = false;
             ivImagenDialog = null;
             tvImagenEstadoDialog = null;
         });
@@ -419,9 +461,14 @@ public class AdminEventosActivity extends AppCompatActivity {
 
             AdminEvento evento = (original == null) ? new AdminEvento() : original;
             evento.titulo = titulo;
+            evento.categoriaId = categoriaIdDesdeUi(texto(actCategoria));
             evento.lugarNombre = lugar;
             evento.inicio = inicio;
             evento.activo = cbActivo.isChecked();
+            if (!imagenPersonalizadaEnDialogo) {
+                evento.imagenUrl = "";
+                evento.imagenBase64 = "";
+            }
             guardarEventoConImagen(evento, original == null, dialog);
         });
     }
@@ -621,6 +668,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             @Override
             public void onOk() {
                 EventosRepository.invalidarCacheApi();
+                marcarEventosActualizados();
                 Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
                 cargarEventos();
@@ -648,6 +696,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             @Override
             public void onOk() {
                 EventosRepository.invalidarCacheApi();
+                marcarEventosActualizados();
                 Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                 cargarEventos();
             }
@@ -658,6 +707,108 @@ public class AdminEventosActivity extends AppCompatActivity {
                 Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_save_error), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    // Muestra confirmacion antes de eliminar un evento inactivo.
+    private void confirmarEliminarEvento(AdminEvento evento) {
+        if (evento == null || evento.id == null || evento.id.trim().isEmpty()) {
+            Toast.makeText(this, getString(R.string.admin_event_delete_error), Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String titulo = TextUtils.isEmpty(evento.titulo) ? "-" : evento.titulo;
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(getString(R.string.admin_event_delete_confirm_title))
+                .setMessage(getString(R.string.admin_event_delete_confirm_message, titulo))
+                .setNegativeButton(getString(R.string.admin_cancel), null)
+                .setPositiveButton(getString(R.string.admin_event_delete), (d, w) -> eliminarEvento(evento))
+                .show();
+    }
+
+    // Elimina el evento y refresca la lista local.
+    private void eliminarEvento(AdminEvento evento) {
+        eventosRepository.eliminarEvento(evento.id, new AdminEventosRepository.ActionCallback() {
+            @Override
+            public void onOk() {
+                EventosRepository.invalidarCacheApi();
+                marcarEventosActualizados();
+                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_deleted_ok), Toast.LENGTH_SHORT).show();
+                cargarEventos();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_delete_error), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    // Marca en almacenamiento local que hubo cambios de eventos para forzar refresco en Home.
+    private void marcarEventosActualizados() {
+        SharedPreferences prefs = getSharedPreferences(PREF_SYNC_FLAGS, MODE_PRIVATE);
+        prefs.edit().putLong(KEY_EVENTOS_UPDATED_AT, System.currentTimeMillis()).apply();
+    }
+
+    // Devuelve las categorias visibles para el selector del formulario admin.
+    private String[] obtenerCategoriasUi() {
+        return new String[]{
+                getString(R.string.admin_event_category_cultura),
+                getString(R.string.admin_event_category_musica),
+                getString(R.string.admin_event_category_esport),
+                getString(R.string.admin_event_category_familiar),
+                getString(R.string.admin_event_category_gastronomia)
+        };
+    }
+
+    // Mapea texto visible de categoria a id interno persistido en Firestore.
+    private String categoriaIdDesdeUi(String categoriaUi) {
+        String normalized = normalizar(categoriaUi);
+        if (normalized.contains("music")) return CATEGORIA_MUSICA;
+        if (normalized.contains("esport") || normalized.contains("sport") || normalized.contains("deport")) {
+            return CATEGORIA_ESPORT;
+        }
+        if (normalized.contains("famil")) return CATEGORIA_FAMILIAR;
+        if (normalized.contains("gastronom")) return CATEGORIA_GASTRONOMIA;
+        return CATEGORIA_CULTURA;
+    }
+
+    // Mapea id interno de categoria al texto visible para el formulario.
+    private String categoriaUiDesdeId(String categoriaId) {
+        String normalized = normalizarCategoriaId(categoriaId);
+        if (CATEGORIA_MUSICA.equals(normalized)) return getString(R.string.admin_event_category_musica);
+        if (CATEGORIA_ESPORT.equals(normalized)) return getString(R.string.admin_event_category_esport);
+        if (CATEGORIA_FAMILIAR.equals(normalized)) return getString(R.string.admin_event_category_familiar);
+        if (CATEGORIA_GASTRONOMIA.equals(normalized)) return getString(R.string.admin_event_category_gastronomia);
+        return getString(R.string.admin_event_category_cultura);
+    }
+
+    // Normaliza categoria interna para evitar nulos o valores incompletos.
+    private String normalizarCategoriaId(String categoriaId) {
+        String normalized = normalizar(categoriaId);
+        if (normalized.contains("music")) return CATEGORIA_MUSICA;
+        if (normalized.contains("esport") || normalized.contains("sport") || normalized.contains("deport")) {
+            return CATEGORIA_ESPORT;
+        }
+        if (normalized.contains("famil")) return CATEGORIA_FAMILIAR;
+        if (normalized.contains("gastronom")) return CATEGORIA_GASTRONOMIA;
+        return CATEGORIA_CULTURA;
+    }
+
+    // Asigna imagen predeterminada de categoria cuando no existe imagen personalizada.
+    private void aplicarImagenPredeterminada(String categoriaId, ImageView imageView, TextView estadoView) {
+        imageView.setImageResource(obtenerImagenPredeterminadaCategoria(categoriaId));
+        estadoView.setText(getString(R.string.admin_event_image_default_by_category));
+    }
+
+    // Resuelve drawable predeterminado de tarjeta segun categoria.
+    private int obtenerImagenPredeterminadaCategoria(String categoriaId) {
+        String normalized = normalizarCategoriaId(categoriaId);
+        if (CATEGORIA_MUSICA.equals(normalized)) return R.drawable.card_musica;
+        if (CATEGORIA_ESPORT.equals(normalized)) return R.drawable.card_esport;
+        if (CATEGORIA_FAMILIAR.equals(normalized)) return R.drawable.card_familiar;
+        if (CATEGORIA_GASTRONOMIA.equals(normalized)) return R.drawable.card_gastronomia;
+        return R.drawable.card_cultura;
     }
 
     // Gestiona texto en este bloque.

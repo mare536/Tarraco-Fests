@@ -88,6 +88,20 @@
                 android:textColor="@color/auth_btn_secondary_text"
                 android:textStyle="bold"
                 app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/btnAdminEventoEliminar"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn_admin_delete"
+                android:text="@string/admin_event_delete"
+                android:textAllCaps="false"
+                android:textColor="@color/admin_delete_btn_text"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:backgroundTint="@null" />
         </LinearLayout>
 
     </LinearLayout>

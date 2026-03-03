@@ -29,6 +29,7 @@ public class Evento implements Serializable {
     private Double latitud;
     private Double longitud;
     private Double distanciaKm;
+    private boolean favorito;
 
     public Evento() {
     }
@@ -51,6 +52,7 @@ public class Evento implements Serializable {
     public Double getLatitud() { return latitud; }
     public Double getLongitud() { return longitud; }
     public Double getDistanciaKm() { return distanciaKm; }
+    public boolean isFavorito() { return favorito; }
 
     public void setId(String id) { this.id = id; }
     public void setActivo(boolean activo) { this.activo = activo; }
@@ -70,6 +72,7 @@ public class Evento implements Serializable {
     public void setLatitud(Double latitud) { this.latitud = latitud; }
     public void setLongitud(Double longitud) { this.longitud = longitud; }
     public void setDistanciaKm(Double distanciaKm) { this.distanciaKm = distanciaKm; }
+    public void setFavorito(boolean favorito) { this.favorito = favorito; }
 
     // Indica si coordenadas esta disponible.
     public boolean tieneCoordenadas() {

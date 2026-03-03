@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape>
+            <solid android:color="@color/admin_delete_btn_bg_disabled" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/admin_delete_btn_stroke_disabled" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+
+    <item android:state_pressed="true">
+        <shape>
+            <solid android:color="@color/admin_delete_btn_bg_pressed" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/admin_delete_btn_stroke" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+
+    <item>
+        <shape>
+            <solid android:color="@color/admin_delete_btn_bg" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/admin_delete_btn_stroke" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</selector>

@@ -102,7 +102,7 @@ public class EventosRepository {
             e.setId(d.getId());
             e.setTitulo(d.getString(FirestoreSchema.EventoFields.TITULO));
             e.setDescripcion(d.getString("descripcion"));
-            e.setCategoriaId(d.getString("categoriaId"));
+            e.setCategoriaId(d.getString(FirestoreSchema.EventoFields.CATEGORIA_ID));
             e.setLugarNombre(d.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE));
             e.setCiudad(d.getString("ciudad"));
             e.setDireccion(d.getString("direccion"));

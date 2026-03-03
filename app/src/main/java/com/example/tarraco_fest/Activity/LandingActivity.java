@@ -12,12 +12,16 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Source;
 
 /**
  * Pantalla de entrada de autenticacion.
@@ -68,8 +72,7 @@ public class LandingActivity extends AppCompatActivity {
             return;
         }
 
-        startActivity(new Intent(this, HomeActivity.class));
-        finish();
+        validarCuentaNoBloqueada(user);
     }
 
     // Gestiona animar ui en este bloque.
@@ -121,5 +124,29 @@ public class LandingActivity extends AppCompatActivity {
             if ("password".equals(info.getProviderId())) return true;
         }
         return false;
+    }
+
+    // Valida que la cuenta no este bloqueada antes de abrir Home.
+    private void validarCuentaNoBloqueada(FirebaseUser user) {
+        FirebaseFirestore.getInstance()
+                .collection(FirestoreSchema.Collections.USUARIOS)
+                .document(user.getUid())
+                .get(Source.SERVER)
+                .addOnSuccessListener(doc -> {
+                    boolean cuentaBloqueada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
+                    if (cuentaBloqueada) {
+                        FirebaseAuth.getInstance().signOut();
+                        Toast.makeText(this, getString(R.string.auth_account_blocked), Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    FirebaseAuth.getInstance().signOut();
+                    Toast.makeText(this, getString(R.string.auth_account_validation_failed), Toast.LENGTH_LONG).show();
+                });
     }
 }

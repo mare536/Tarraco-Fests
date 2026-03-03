@@ -54,6 +54,9 @@
     <string name="home_filter_section_time">Franja horaria</string>
     <string name="home_filter_section_proximity">Ubicacion</string>
     <string name="home_filter_section_zone">Calle o zona</string>
+    <string name="home_filter_section_saved">Guardados</string>
+    <string name="home_filter_saved_all">Guardados: todos</string>
+    <string name="home_filter_saved_only">Solo favoritos</string>
     <string name="home_filter_summary_default">Filtros</string>
     <string name="home_filter_zone_prefix">Zona: %1$s</string>
     <string name="home_sync_updating">Actualizando agenda...</string>
@@ -61,6 +64,17 @@
     <string name="home_sync_no_changes">Sin cambios nuevos</string>
     <string name="home_sync_error">No se pudo actualizar ahora</string>
     <string name="event_distance_km">%1$.1f km</string>
+    <string name="auth_account_blocked">Cuenta bloqueada. Contacta con soporte.</string>
+    <string name="auth_account_validation_failed">No se pudo validar el estado de la cuenta. Intenta de nuevo.</string>
+    <string name="auth_forgot_password">Olvide mi contrasena</string>
+    <string name="auth_reset_dialog_title">Recuperar contrasena</string>
+    <string name="auth_reset_dialog_message">Introduce tu correo y te enviaremos un enlace para cambiar la contrasena.</string>
+    <string name="auth_reset_email_hint">Correo</string>
+    <string name="auth_reset_send">Enviar enlace</string>
+    <string name="auth_reset_email_required">Introduce un correo</string>
+    <string name="auth_reset_email_invalid">Correo no valido</string>
+    <string name="auth_reset_sent">Te enviamos un correo para recuperar la contrasena</string>
+    <string name="auth_reset_error">No se pudo enviar el correo de recuperacion</string>
 
     <!-- Perfil -->
     <string name="profile_nav_header_title">Tarraco Fests</string>
@@ -155,6 +169,12 @@
     <string name="admin_event_edit_title">Editar evento</string>
     <string name="admin_event_title_hint">Titulo</string>
     <string name="admin_event_place_hint">Lugar</string>
+    <string name="admin_event_category_hint">Categoria</string>
+    <string name="admin_event_category_cultura">Cultura</string>
+    <string name="admin_event_category_musica">Musica</string>
+    <string name="admin_event_category_esport">Esport</string>
+    <string name="admin_event_category_familiar">Familiar</string>
+    <string name="admin_event_category_gastronomia">Gastronomia</string>
     <string name="admin_event_date_hint">Fecha (yyyy-MM-dd HH:mm)</string>
     <string name="admin_event_form_section">Datos del evento</string>
     <string name="admin_event_form_subtitle">Completa la informacion principal del evento.</string>
@@ -171,6 +191,7 @@
     <string name="admin_event_image_selected">Imagen nueva seleccionada</string>
     <string name="admin_event_image_current">Usando imagen actual</string>
     <string name="admin_event_image_none">Sin imagen seleccionada</string>
+    <string name="admin_event_image_default_by_category">Sin imagen propia: se aplicara la predeterminada de la categoria</string>
     <string name="admin_event_image_uploading">Procesando imagen...</string>
     <string name="admin_event_image_upload_error">No se pudo subir la imagen</string>
     <string name="admin_event_image_upload_no_permission">Sin permiso para subir imagen. Verifica rol admin y reglas de Storage publicadas.</string>
@@ -191,6 +212,11 @@
     <string name="admin_event_inactive">Estado: inactivo</string>
     <string name="admin_event_activate">Activar</string>
     <string name="admin_event_deactivate">Desactivar</string>
+    <string name="admin_event_delete">Eliminar</string>
+    <string name="admin_event_delete_confirm_title">Eliminar evento</string>
+    <string name="admin_event_delete_confirm_message">Esta accion eliminara el evento \"%1$s\" de forma permanente. Quieres continuar?</string>
+    <string name="admin_event_deleted_ok">Evento eliminado</string>
+    <string name="admin_event_delete_error">No se pudo eliminar el evento</string>
     <string name="admin_event_place_fmt">Lugar: %1$s</string>
     <string name="admin_event_date_fmt">Fecha: %1$s</string>
     <string name="admin_filter_all">Todos</string>
@@ -247,6 +273,12 @@
     <string name="detail_reminder_status_none">Aun no tienes recordatorio activo</string>
     <string name="detail_reminder_status_active">Recordatorio activo para %1$s</string>
     <string name="detail_reminder_edit_button">Editar recordatorio</string>
+    <string name="detail_favorite_add">Guardar en favoritos</string>
+    <string name="detail_favorite_remove">Quitar de favoritos</string>
+    <string name="detail_favorite_added">Evento guardado en favoritos</string>
+    <string name="detail_favorite_removed">Evento quitado de favoritos</string>
+    <string name="detail_favorite_error">No se pudo actualizar favoritos</string>
+    <string name="detail_favorite_login_required">Inicia sesion para usar favoritos</string>
     <string name="detail_share_text">Evento: %1$s\nFecha: %2$s\nLugar: %3$s</string>
     <string name="detail_map_error">No hay app de mapas disponible</string>
 </resources>

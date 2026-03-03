@@ -43,6 +43,7 @@ import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.EventosRepository;
+import com.example.tarraco_fest.Repository.FavoritosRepository;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -52,9 +53,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Pantalla principal tras login.
@@ -64,14 +67,18 @@ public class HomeActivity extends AppCompatActivity {
 
     private static final String PREF_PERMISOS = "permisos_app";
     private static final String PREF_HOME_FILTERS = "home_filters";
+    private static final String PREF_SYNC_FLAGS = "sync_flags";
     private static final String KEY_NOTIF_SOLICITADO = "notif_solicitado";
     private static final String KEY_UBI_SOLICITADO = "ubi_solicitado";
+    private static final String KEY_EVENTOS_UPDATED_AT = "eventos_updated_at";
+    private static final String KEY_FAVORITOS_UPDATED_AT = "favoritos_updated_at";
     private static final String KEY_FILTER_CATEGORIA = "filter_categoria";
     private static final String KEY_FILTER_FECHA = "filter_fecha";
     private static final String KEY_FILTER_PRECIO = "filter_precio";
     private static final String KEY_FILTER_HORARIO = "filter_horario";
     private static final String KEY_FILTER_DISTANCIA = "filter_distancia";
     private static final String KEY_FILTER_ZONA = "filter_zona";
+    private static final String KEY_FILTER_FAVORITOS = "filter_favoritos";
     private static final String FILTRO_FECHA_TODAS = "fecha_todas";
     private static final String FILTRO_FECHA_HOY = "fecha_hoy";
     private static final String FILTRO_FECHA_SEMANA = "fecha_semana";
@@ -85,12 +92,15 @@ public class HomeActivity extends AppCompatActivity {
     private static final String FILTRO_HORARIO_NOCHE = "horario_noche";
     private static final String FILTRO_DISTANCIA_TODAS = "distancia_todas";
     private static final String FILTRO_DISTANCIA_CERCA = "distancia_cerca";
+    private static final String FILTRO_FAVORITOS_TODOS = "favoritos_todos";
+    private static final String FILTRO_FAVORITOS_SOLO = "favoritos_solo";
     private static final double DISTANCIA_CERCA_KM = 5.0d;
     private static final long AUTO_REFRESH_MIN_INTERVAL_MS = 180_000L;
     private static final long SYNC_HINT_HIDE_DELAY_MS = 1_500L;
 
     private EventosAdapter adapter;
     private final EventosRepository repo = new EventosRepository();
+    private final FavoritosRepository favoritosRepository = new FavoritosRepository();
     private final AdminAccessRepository adminAccessRepository = new AdminAccessRepository();
 
     private List<Evento> listaCompleta = new ArrayList<>();
@@ -100,8 +110,10 @@ public class HomeActivity extends AppCompatActivity {
     private String filtroPrecioActual = FILTRO_PRECIO_TODOS;
     private String filtroHorarioActual = FILTRO_HORARIO_TODOS;
     private String filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+    private String filtroFavoritosActual = FILTRO_FAVORITOS_TODOS;
     private String filtroZonaTexto = "";
     private String filtroZonaNormalizada = "";
+    private final Set<String> favoritosIds = new HashSet<>();
     private double userLat = 0d;
     private double userLng = 0d;
     private boolean hasUserLocation = false;
@@ -122,9 +134,12 @@ public class HomeActivity extends AppCompatActivity {
     private androidx.appcompat.widget.AppCompatImageButton btnHomeMenu;
     private SharedPreferences permisosPrefs;
     private SharedPreferences filtrosPrefs;
+    private SharedPreferences syncPrefs;
     private boolean loadedAtLeastOnce = false;
     private long lastDataRefreshAt = 0L;
     private String lastDataSignature = "";
+    private long lastSeenEventosUpdatedAt = 0L;
+    private long lastSeenFavoritosUpdatedAt = 0L;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideSyncHintRunnable = () -> {
         if (tvDataSyncHint == null) return;
@@ -157,12 +172,16 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
         permisosPrefs = getSharedPreferences(PREF_PERMISOS, MODE_PRIVATE);
         filtrosPrefs = getSharedPreferences(PREF_HOME_FILTERS, MODE_PRIVATE);
+        syncPrefs = getSharedPreferences(PREF_SYNC_FLAGS, MODE_PRIVATE);
+        lastSeenEventosUpdatedAt = syncPrefs.getLong(KEY_EVENTOS_UPDATED_AT, 0L);
+        lastSeenFavoritosUpdatedAt = syncPrefs.getLong(KEY_FAVORITOS_UPDATED_AT, 0L);
 
         configurarStatusBar();
         configurarDrawer();
         cargarFiltrosPersistidos();
         configurarRecyclerView();
         configurarBuscadorYFiltros();
+        cargarFavoritosUsuario(false);
         cargarDatosDesdeFirebase(false);
         solicitarPermisosIniciales();
         refrescarUbicacionUsuario();
@@ -174,7 +193,12 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
         refrescarUbicacionUsuario();
         actualizarSeleccionDrawerActual();
-        if (loadedAtLeastOnce && debeActualizarEnResume()) {
+        boolean hayCambiosPendientes = hayActualizacionEventosPendiente();
+        boolean hayFavoritosPendientes = hayActualizacionFavoritosPendiente();
+        if (loadedAtLeastOnce && hayFavoritosPendientes) {
+            cargarFavoritosUsuario(false);
+        }
+        if (loadedAtLeastOnce && (hayCambiosPendientes || debeActualizarEnResume())) {
             cargarDatosDesdeFirebase(true);
         }
     }
@@ -530,8 +554,9 @@ public class HomeActivity extends AppCompatActivity {
                 if (hayCambios || listaCompleta.isEmpty()) {
                     listaCompleta = new ArrayList<>(safeEventos);
                     lastDataSignature = nuevaFirma;
-                    aplicarFiltros();
                 }
+                sincronizarFavoritosEnLista();
+                aplicarFiltros();
 
                 if (showSyncFeedback && hadDataBeforeRequest) {
                     mostrarEstadoSincronizacion(
@@ -539,6 +564,7 @@ public class HomeActivity extends AppCompatActivity {
                             true
                     );
                 }
+                marcarActualizacionEventosConsumida();
             }
 
             // Gestiona on error en este bloque.
@@ -557,6 +583,64 @@ public class HomeActivity extends AppCompatActivity {
     private boolean debeActualizarEnResume() {
         long elapsed = System.currentTimeMillis() - lastDataRefreshAt;
         return elapsed >= AUTO_REFRESH_MIN_INTERVAL_MS;
+    }
+
+    // Indica si existe una actualizacion de eventos hecha por admin pendiente de consumir en Home.
+    private boolean hayActualizacionEventosPendiente() {
+        if (syncPrefs == null) return false;
+        long changedAt = syncPrefs.getLong(KEY_EVENTOS_UPDATED_AT, 0L);
+        return changedAt > lastSeenEventosUpdatedAt;
+    }
+
+    // Marca la actualizacion admin como ya reflejada en Home tras una carga satisfactoria.
+    private void marcarActualizacionEventosConsumida() {
+        if (syncPrefs == null) return;
+        lastSeenEventosUpdatedAt = syncPrefs.getLong(KEY_EVENTOS_UPDATED_AT, 0L);
+    }
+
+    // Carga favoritos del usuario y sincroniza el estado en la lista actual.
+    private void cargarFavoritosUsuario(boolean showErrorToast) {
+        favoritosRepository.cargarFavoritosIds(new FavoritosRepository.FavoritosIdsCallback() {
+            @Override
+            public void onOk(Set<String> favoritos) {
+                favoritosIds.clear();
+                if (favoritos != null) {
+                    favoritosIds.addAll(favoritos);
+                }
+                sincronizarFavoritosEnLista();
+                aplicarFiltros();
+                marcarActualizacionFavoritosConsumida();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (showErrorToast) {
+                    Toast.makeText(HomeActivity.this, getString(R.string.detail_favorite_error), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    // Propaga el estado favorito a cada evento para permitir filtros y detalle coherentes.
+    private void sincronizarFavoritosEnLista() {
+        for (Evento evento : listaCompleta) {
+            if (evento == null) continue;
+            String id = evento.getId();
+            evento.setFavorito(id != null && favoritosIds.contains(id));
+        }
+    }
+
+    // Indica si hay cambios de favoritos pendientes de reflejar en Home.
+    private boolean hayActualizacionFavoritosPendiente() {
+        if (syncPrefs == null) return false;
+        long changedAt = syncPrefs.getLong(KEY_FAVORITOS_UPDATED_AT, 0L);
+        return changedAt > lastSeenFavoritosUpdatedAt;
+    }
+
+    // Marca el estado de favoritos como consumido tras refrescar Home.
+    private void marcarActualizacionFavoritosConsumida() {
+        if (syncPrefs == null) return;
+        lastSeenFavoritosUpdatedAt = syncPrefs.getLong(KEY_FAVORITOS_UPDATED_AT, 0L);
     }
 
     // Muestra un hint temporal para hacer explicita la sincronizacion de datos.
@@ -608,6 +692,7 @@ public class HomeActivity extends AppCompatActivity {
         filtroPrecioActual = FILTRO_PRECIO_TODOS;
         filtroHorarioActual = FILTRO_HORARIO_TODOS;
         filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+        filtroFavoritosActual = FILTRO_FAVORITOS_TODOS;
         filtroZonaTexto = "";
         filtroZonaNormalizada = "";
 
@@ -652,12 +737,13 @@ public class HomeActivity extends AppCompatActivity {
             boolean coincidePrecio = coincideFiltroPrecio(e.getPrecio());
             boolean coincideHorario = coincideFiltroHorario(e);
             boolean coincideDistancia = coincideFiltroDistancia(distanciaKm);
+            boolean coincideFavoritos = FILTRO_FAVORITOS_TODOS.equals(filtroFavoritosActual) || e.isFavorito();
             boolean coincideZona = filtroZonaNormalizada.isEmpty()
                     || normalizarTexto(e.getDireccion()).contains(filtroZonaNormalizada)
                     || normalizarTexto(e.getLugarNombre()).contains(filtroZonaNormalizada);
 
             if (coincideTexto && coincideCategoria && coincideFecha && coincidePrecio
-                    && coincideHorario && coincideDistancia && coincideZona) {
+                    && coincideHorario && coincideDistancia && coincideFavoritos && coincideZona) {
                 listaFiltrada.add(e);
             }
         }
@@ -680,6 +766,7 @@ public class HomeActivity extends AppCompatActivity {
         RadioGroup rgPrecio = dialogView.findViewById(R.id.rgFiltroPrecio);
         RadioGroup rgHorario = dialogView.findViewById(R.id.rgFiltroHorario);
         RadioGroup rgDistancia = dialogView.findViewById(R.id.rgFiltroDistancia);
+        RadioGroup rgFavoritos = dialogView.findViewById(R.id.rgFiltroFavoritos);
         EditText etZona = dialogView.findViewById(R.id.etDialogFiltroZona);
 
         if (FILTRO_FECHA_HOY.equals(filtroFechaActual)) {
@@ -714,6 +801,12 @@ public class HomeActivity extends AppCompatActivity {
             rgDistancia.check(R.id.rbFiltroDistanciaCerca);
         } else {
             rgDistancia.check(R.id.rbFiltroDistanciaTodas);
+        }
+
+        if (FILTRO_FAVORITOS_SOLO.equals(filtroFavoritosActual)) {
+            rgFavoritos.check(R.id.rbFiltroFavoritosSolo);
+        } else {
+            rgFavoritos.check(R.id.rbFiltroFavoritosTodos);
         }
 
         etZona.setText(filtroZonaTexto);
@@ -779,6 +872,13 @@ public class HomeActivity extends AppCompatActivity {
                         }
                     } else {
                         filtroDistanciaActual = FILTRO_DISTANCIA_TODAS;
+                    }
+
+                    int favoritosId = rgFavoritos.getCheckedRadioButtonId();
+                    if (favoritosId == R.id.rbFiltroFavoritosSolo) {
+                        filtroFavoritosActual = FILTRO_FAVORITOS_SOLO;
+                    } else {
+                        filtroFavoritosActual = FILTRO_FAVORITOS_TODOS;
                     }
 
                     filtroZonaTexto = etZona.getText() == null ? "" : etZona.getText().toString().trim();
@@ -943,6 +1043,10 @@ public class HomeActivity extends AppCompatActivity {
             partes.add(getString(R.string.home_filter_distance_near_short));
         }
 
+        if (FILTRO_FAVORITOS_SOLO.equals(filtroFavoritosActual)) {
+            partes.add(getString(R.string.home_filter_saved_only));
+        }
+
         if (!filtroZonaTexto.isEmpty()) {
             partes.add(getString(R.string.home_filter_zone_prefix, filtroZonaTexto));
         }
@@ -978,6 +1082,7 @@ public class HomeActivity extends AppCompatActivity {
         filtroPrecioActual = filtrosPrefs.getString(KEY_FILTER_PRECIO, FILTRO_PRECIO_TODOS);
         filtroHorarioActual = filtrosPrefs.getString(KEY_FILTER_HORARIO, FILTRO_HORARIO_TODOS);
         filtroDistanciaActual = filtrosPrefs.getString(KEY_FILTER_DISTANCIA, FILTRO_DISTANCIA_TODAS);
+        filtroFavoritosActual = filtrosPrefs.getString(KEY_FILTER_FAVORITOS, FILTRO_FAVORITOS_TODOS);
         filtroZonaTexto = filtrosPrefs.getString(KEY_FILTER_ZONA, "");
         filtroZonaNormalizada = normalizarTexto(filtroZonaTexto);
 
@@ -996,6 +1101,7 @@ public class HomeActivity extends AppCompatActivity {
                 .putString(KEY_FILTER_PRECIO, filtroPrecioActual)
                 .putString(KEY_FILTER_HORARIO, filtroHorarioActual)
                 .putString(KEY_FILTER_DISTANCIA, filtroDistanciaActual)
+                .putString(KEY_FILTER_FAVORITOS, filtroFavoritosActual)
                 .putString(KEY_FILTER_ZONA, filtroZonaTexto)
                 .apply();
     }

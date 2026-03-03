@@ -4,8 +4,10 @@ import android.accounts.AccountManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -41,6 +43,7 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -110,6 +113,7 @@ public class AuthActivity extends AppCompatActivity {
         Button btnLogin = findViewById(R.id.btnLogin);
         Button btnRegister = findViewById(R.id.btnRegister);
         Button btnGoogle = findViewById(R.id.btnGoogle);
+        TextView tvForgotPassword = findViewById(R.id.tvForgotPassword);
 
         ImageView bgNormal = findViewById(R.id.imgBgNormal);
         ImageView bgBlur = findViewById(R.id.imgBgBlur);
@@ -135,6 +139,7 @@ public class AuthActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> loginEmail());
         btnRegister.setOnClickListener(v -> mostrarDialogRegistroEmail(null));
         btnGoogle.setOnClickListener(v -> loginGoogle());
+        tvForgotPassword.setOnClickListener(v -> mostrarDialogRecuperarPassword());
 
         etEmail.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -168,7 +173,7 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        goHome();
+        validarCuentaNoBloqueada(u, this::goHome);
     }
 
     // ===================== LOGIN EMAIL =====================
@@ -522,6 +527,61 @@ public class AuthActivity extends AppCompatActivity {
                 .show();
     }
 
+    // Muestra dialogo para recuperar contrasena por email.
+    private void mostrarDialogRecuperarPassword() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_forgot_password, null);
+
+        EditText etEmailRecovery = view.findViewById(R.id.etForgotPasswordEmail);
+        TextView tvErrorRecovery = view.findViewById(R.id.tvForgotPasswordError);
+
+        String emailActual = etEmail.getText() == null ? "" : etEmail.getText().toString().trim();
+        if (!emailActual.isEmpty()) {
+            etEmailRecovery.setText(emailActual);
+            etEmailRecovery.setSelection(emailActual.length());
+        }
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(R.string.auth_reset_dialog_title)
+                .setView(view)
+                .setNegativeButton(R.string.detail_cancel, (d, w) -> d.dismiss())
+                .setPositiveButton(R.string.auth_reset_send, null)
+                .create();
+
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String email = etEmailRecovery.getText() == null
+                    ? ""
+                    : etEmailRecovery.getText().toString().trim();
+
+            tvErrorRecovery.setVisibility(View.GONE);
+
+            if (TextUtils.isEmpty(email)) {
+                tvErrorRecovery.setText(getString(R.string.auth_reset_email_required));
+                tvErrorRecovery.setVisibility(View.VISIBLE);
+                return;
+            }
+
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                tvErrorRecovery.setText(getString(R.string.auth_reset_email_invalid));
+                tvErrorRecovery.setVisibility(View.VISIBLE);
+                return;
+            }
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+
+            auth.sendPasswordResetEmail(email)
+                    .addOnSuccessListener(unused -> {
+                        dialog.dismiss();
+                        setEstado(getString(R.string.auth_reset_sent), ESTADO_OK, false);
+                    })
+                    .addOnFailureListener(e -> {
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        setEstado(getString(R.string.auth_reset_error), ESTADO_ERROR, true);
+                    });
+        });
+    }
+
     // Gestiona reenviar verificacion en este bloque.
     private void reenviarVerificacion(String email, String pass) {
         setEstado("Reenviando verificacion...", ESTADO_INFO, false);
@@ -737,8 +797,15 @@ public class AuthActivity extends AppCompatActivity {
 
         String uid = u.getUid();
 
-        db.collection(FirestoreSchema.Collections.USUARIOS).document(uid).get()
+        db.collection(FirestoreSchema.Collections.USUARIOS).document(uid).get(Source.SERVER)
                 .addOnSuccessListener(doc -> {
+                    boolean cuentaBloqueada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
+                    if (cuentaBloqueada) {
+                        manejarCuentaBloqueada();
+                        return;
+                    }
+
                     if (!doc.exists()) {
                         data.put(FirestoreSchema.UsuarioFields.ROL, FirestoreSchema.UserRoles.USUARIO);
                         data.put(FirestoreSchema.UsuarioFields.BLOQUEADO, false);
@@ -764,7 +831,40 @@ public class AuthActivity extends AppCompatActivity {
                             })
                             .addOnFailureListener(e -> setEstado("Firestore usuarios error: " + e.getMessage(), ESTADO_ERROR, true));
                 })
-                .addOnFailureListener(e -> setEstado("Error leyendo usuarios: " + e.getMessage(), ESTADO_ERROR, true));
+                .addOnFailureListener(e -> {
+                    auth.signOut();
+                    setEstado("Error validando cuenta: " + e.getMessage(), ESTADO_ERROR, true);
+                });
+    }
+
+    // Valida cuenta no bloqueada antes de entrar en la app.
+    private void validarCuentaNoBloqueada(FirebaseUser user, Runnable onAllowed) {
+        if (user == null) return;
+
+        db.collection(FirestoreSchema.Collections.USUARIOS)
+                .document(user.getUid())
+                .get(Source.SERVER)
+                .addOnSuccessListener(doc -> {
+                    boolean cuentaBloqueada = doc.exists()
+                            && Boolean.TRUE.equals(doc.getBoolean(FirestoreSchema.UsuarioFields.BLOQUEADO));
+                    if (cuentaBloqueada) {
+                        manejarCuentaBloqueada();
+                        return;
+                    }
+                    onAllowed.run();
+                })
+                .addOnFailureListener(e -> {
+                    auth.signOut();
+                    setEstado(getString(R.string.auth_account_validation_failed), ESTADO_ERROR, true);
+                });
+    }
+
+    // Gestiona bloqueo de cuenta cerrando la sesion activa.
+    private void manejarCuentaBloqueada() {
+        pendingLinkEmail = null;
+        pendingLinkPassword = false;
+        auth.signOut();
+        setEstado(getString(R.string.auth_account_blocked), ESTADO_ERROR, true);
     }
 
     // ===================== UTIL =====================

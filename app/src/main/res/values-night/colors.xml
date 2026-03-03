@@ -35,6 +35,14 @@
     <color name="auth_btn_secondary_stroke_disabled">#33FFFFFF</color>
     <color name="auth_btn_secondary_text">#FFFFFFFF</color>
 
+    <!-- Boton destructivo admin -->
+    <color name="admin_delete_btn_bg">#33FF6B63</color>
+    <color name="admin_delete_btn_bg_pressed">#4DFF6B63</color>
+    <color name="admin_delete_btn_bg_disabled">#1FFF6B63</color>
+    <color name="admin_delete_btn_stroke">#FFFF8A80</color>
+    <color name="admin_delete_btn_stroke_disabled">#805A3E3C</color>
+    <color name="admin_delete_btn_text">#FFFFC7C3</color>
+
     <!-- Boton Google -->
     <color name="google_btn_bg">#FFFFFFFF</color>
     <color name="google_btn_bg_pressed">#FFF2F2F2</color>

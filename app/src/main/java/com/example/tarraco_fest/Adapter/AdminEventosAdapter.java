@@ -28,6 +28,7 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
     public interface Listener {
         void onEditar(AdminEvento evento);
         void onToggleActivo(AdminEvento evento);
+        void onEliminar(AdminEvento evento);
     }
 
     private final List<AdminEvento> data = new ArrayList<>();
@@ -90,6 +91,14 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
 
         h.btnEditar.setOnClickListener(v -> listener.onEditar(e));
         h.btnToggleActivo.setOnClickListener(v -> listener.onToggleActivo(e));
+
+        if (e.activo) {
+            h.btnEliminar.setVisibility(View.GONE);
+            h.btnEliminar.setOnClickListener(null);
+        } else {
+            h.btnEliminar.setVisibility(View.VISIBLE);
+            h.btnEliminar.setOnClickListener(v -> listener.onEliminar(e));
+        }
     }
 
     // Devuelve item count.
@@ -100,7 +109,7 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvTitulo, tvFecha, tvLugar, tvEstado;
-        Button btnEditar, btnToggleActivo;
+        Button btnEditar, btnToggleActivo, btnEliminar;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -110,6 +119,7 @@ public class AdminEventosAdapter extends RecyclerView.Adapter<AdminEventosAdapte
             tvEstado = itemView.findViewById(R.id.tvAdminEventoEstado);
             btnEditar = itemView.findViewById(R.id.btnAdminEventoEditar);
             btnToggleActivo = itemView.findViewById(R.id.btnAdminEventoActivo);
+            btnEliminar = itemView.findViewById(R.id.btnAdminEventoEliminar);
         }
     }
 }

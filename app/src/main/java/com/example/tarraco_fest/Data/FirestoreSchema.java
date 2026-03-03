@@ -17,12 +17,14 @@ public final class FirestoreSchema {
 
     public static final class Subcollections {
         public static final String RECORDATORIOS = "recordatorios";
+        public static final String FAVORITOS = "favoritos";
 
         private Subcollections() {}
     }
 
     public static final class EventoFields {
         public static final String TITULO = "titulo";
+        public static final String CATEGORIA_ID = "categoriaId";
         public static final String INICIO = "inicio";
         public static final String LUGAR_NOMBRE = "lugarNombre";
         public static final String IMAGEN_URL = "imagenUrl";
@@ -79,5 +81,14 @@ public final class FirestoreSchema {
         public static final String CREATED_AT = "createdAt";
 
         private RecordatorioFields() {}
+    }
+
+    public static final class FavoritoFields {
+        public static final String EVENT_ID = "eventId";
+        public static final String EVENT_TITLE = "eventTitle";
+        public static final String CREATED_AT = "createdAt";
+        public static final String UPDATED_AT = "updatedAt";
+
+        private FavoritoFields() {}
     }
 }

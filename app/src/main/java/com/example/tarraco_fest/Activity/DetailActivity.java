@@ -3,6 +3,8 @@ package com.example.tarraco_fest.Activity;
 import android.app.DatePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -32,6 +34,7 @@ import androidx.core.widget.NestedScrollView;
 
 import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
+import com.example.tarraco_fest.Repository.FavoritosRepository;
 import com.example.tarraco_fest.Repository.ReminderRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -50,13 +53,18 @@ import java.util.regex.Matcher;
 public class DetailActivity extends AppCompatActivity {
 
     private static final long REMINDER_MIN_LEAD_MS = 60L * 1000L;
+    private static final String PREF_SYNC_FLAGS = "sync_flags";
+    private static final String KEY_FAVORITOS_UPDATED_AT = "favoritos_updated_at";
 
     private ReminderRepository reminderRepository;
+    private FavoritosRepository favoritosRepository;
     private Evento eventoActual;
     private MaterialButton btnReminder;
+    private MaterialButton btnFavorite;
     private TextView tvReminderStatus;
     private String sourceUrl = "";
     private boolean reminderDisponible = true;
+    private boolean favoritoActivo = false;
 
     // Gestiona on create en este bloque.
     @Override
@@ -64,6 +72,7 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
         reminderRepository = new ReminderRepository(this);
+        favoritosRepository = new FavoritosRepository();
         aplicarInsetSuperiorToolbar();
         aplicarInsetInferiorContenido();
 
@@ -77,6 +86,7 @@ public class DetailActivity extends AppCompatActivity {
         vincularDatos(eventoActual);
         configurarAcciones(eventoActual);
         configurarRecordatorios(eventoActual);
+        configurarFavoritos(eventoActual);
         cargarEstadoRecordatorio(eventoActual);
     }
 
@@ -249,6 +259,110 @@ public class DetailActivity extends AppCompatActivity {
         btnReminder.setAlpha(1f);
         mostrarEstadoSinRecordatorio();
         btnReminder.setOnClickListener(v -> seleccionarFechaYHoraRecordatorio(evento));
+    }
+
+    // Configura favoritos por usuario y sincroniza estado visual en la pantalla.
+    private void configurarFavoritos(Evento evento) {
+        btnFavorite = findViewById(R.id.btnDetailFavorite);
+        if (btnFavorite == null) return;
+
+        favoritoActivo = evento != null && evento.isFavorito();
+        renderizarEstadoFavorito();
+
+        btnFavorite.setOnClickListener(v -> toggleFavorito(evento));
+        cargarEstadoFavorito(evento);
+    }
+
+    // Carga estado favorito del evento para el usuario actual.
+    private void cargarEstadoFavorito(Evento evento) {
+        if (evento == null || evento.getId() == null || evento.getId().trim().isEmpty()) {
+            if (btnFavorite != null) btnFavorite.setEnabled(false);
+            return;
+        }
+
+        favoritosRepository.cargarFavoritosIds(new FavoritosRepository.FavoritosIdsCallback() {
+            @Override
+            public void onOk(java.util.Set<String> favoritosIds) {
+                boolean marcado = favoritosIds != null && favoritosIds.contains(evento.getId());
+                favoritoActivo = marcado;
+                evento.setFavorito(marcado);
+                renderizarEstadoFavorito();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                renderizarEstadoFavorito();
+            }
+        });
+    }
+
+    // Alterna favorito para el evento actual del usuario autenticado.
+    private void toggleFavorito(Evento evento) {
+        if (evento == null || evento.getId() == null || evento.getId().trim().isEmpty()) {
+            Toast.makeText(this, getString(R.string.detail_favorite_error), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean nuevoEstado = !favoritoActivo;
+        btnFavorite.setEnabled(false);
+
+        FavoritosRepository.Callback cb = new FavoritosRepository.Callback() {
+            @Override
+            public void onOk() {
+                favoritoActivo = nuevoEstado;
+                evento.setFavorito(nuevoEstado);
+                renderizarEstadoFavorito();
+                btnFavorite.setEnabled(true);
+                Toast.makeText(
+                        DetailActivity.this,
+                        getString(nuevoEstado ? R.string.detail_favorite_added : R.string.detail_favorite_removed),
+                        Toast.LENGTH_SHORT
+                ).show();
+                marcarFavoritosActualizados();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                btnFavorite.setEnabled(true);
+                String msg = (e != null && e.getMessage() != null && e.getMessage().contains("No hay usuario autenticado"))
+                        ? getString(R.string.detail_favorite_login_required)
+                        : getString(R.string.detail_favorite_error);
+                Toast.makeText(DetailActivity.this, msg, Toast.LENGTH_LONG).show();
+            }
+        };
+
+        if (nuevoEstado) {
+            favoritosRepository.marcarFavorito(evento.getId(), evento.getTitulo(), cb);
+        } else {
+            favoritosRepository.quitarFavorito(evento.getId(), cb);
+        }
+    }
+
+    // Refresca aspecto del boton favorito segun estado actual.
+    private void renderizarEstadoFavorito() {
+        if (btnFavorite == null) return;
+
+        if (favoritoActivo) {
+            btnFavorite.setBackgroundResource(R.drawable.btn_auth_primary);
+            btnFavorite.setText(getString(R.string.detail_favorite_remove));
+            btnFavorite.setTextColor(ContextCompat.getColor(this, R.color.auth_btn_primary_text));
+            btnFavorite.setIconResource(R.drawable.ic_favorite_filled);
+            btnFavorite.setIconTint(ColorStateList.valueOf(
+                    ContextCompat.getColor(this, R.color.auth_btn_primary_text)));
+        } else {
+            btnFavorite.setBackgroundResource(R.drawable.btn_detail_secondary);
+            btnFavorite.setText(getString(R.string.detail_favorite_add));
+            btnFavorite.setTextColor(ContextCompat.getColor(this, R.color.detail_action_secondary_text));
+            btnFavorite.setIconResource(R.drawable.ic_favorite_border);
+            btnFavorite.setIconTint(ColorStateList.valueOf(
+                    ContextCompat.getColor(this, R.color.detail_action_secondary_text)));
+        }
+    }
+
+    // Marca favoritos actualizados para que Home refresque al volver.
+    private void marcarFavoritosActualizados() {
+        SharedPreferences prefs = getSharedPreferences(PREF_SYNC_FLAGS, MODE_PRIVATE);
+        prefs.edit().putLong(KEY_FAVORITOS_UPDATED_AT, System.currentTimeMillis()).apply();
     }
 
     // Gestiona seleccionar fecha yhora recordatorio en este bloque.

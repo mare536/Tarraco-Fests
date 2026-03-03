@@ -78,6 +78,10 @@ public class AdminEventosRepository {
                         AdminEvento e = new AdminEvento();
                         e.id = doc.getId();
                         e.titulo = leer(doc.getString(FirestoreSchema.EventoFields.TITULO));
+                        e.categoriaId = leer(doc.getString(FirestoreSchema.EventoFields.CATEGORIA_ID));
+                        if (TextUtils.isEmpty(e.categoriaId)) {
+                            e.categoriaId = "cultura";
+                        }
                         e.lugarNombre = leer(doc.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE));
                         e.imagenUrl = leer(doc.getString(FirestoreSchema.EventoFields.IMAGEN_URL));
                         e.imagenBase64 = leer(doc.getString(FirestoreSchema.EventoFields.IMAGEN_BASE64));
@@ -136,10 +140,26 @@ public class AdminEventosRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    // Elimina evento de forma permanente en Firestore.
+    public void eliminarEvento(String eventId, ActionCallback cb) {
+        if (eventId == null || eventId.trim().isEmpty()) {
+            cb.onError(new IllegalArgumentException("Id de evento no valido"));
+            return;
+        }
+
+        FirebaseFirestore.getInstance()
+                .collection(FirestoreSchema.Collections.EVENTOS)
+                .document(eventId)
+                .delete()
+                .addOnSuccessListener(v -> cb.onOk())
+                .addOnFailureListener(cb::onError);
+    }
+
     // Gestiona to firestore en este bloque.
     private Map<String, Object> toFirestore(AdminEvento e) {
         Map<String, Object> data = new HashMap<>();
         data.put(FirestoreSchema.EventoFields.TITULO, leer(e.titulo));
+        data.put(FirestoreSchema.EventoFields.CATEGORIA_ID, leer(e.categoriaId));
         data.put(FirestoreSchema.EventoFields.LUGAR_NOMBRE, leer(e.lugarNombre));
         data.put(FirestoreSchema.EventoFields.IMAGEN_URL, leer(e.imagenUrl));
         data.put(FirestoreSchema.EventoFields.IMAGEN_BASE64, leer(e.imagenBase64));
