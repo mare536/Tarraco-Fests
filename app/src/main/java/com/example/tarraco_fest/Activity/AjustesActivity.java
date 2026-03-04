@@ -9,14 +9,18 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -27,6 +31,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.tarraco_fest.R;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
  * Pantalla de ajustes generales de la aplicacion.
@@ -134,7 +139,13 @@ public class AjustesActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.settings_already_granted), Toast.LENGTH_SHORT).show();
             return;
         }
-        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+
+        mostrarDialogoPermisoPremium(
+                R.drawable.ic_permission_notifications,
+                R.string.permissions_notif_title,
+                R.string.permissions_notif_message,
+                () -> notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        );
     }
 
     // Gestiona solicitar ubicacion en este bloque.
@@ -143,10 +154,16 @@ public class AjustesActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.settings_already_granted), Toast.LENGTH_SHORT).show();
             return;
         }
-        locationPermissionLauncher.launch(new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        });
+
+        mostrarDialogoPermisoPremium(
+                R.drawable.ic_permission_location,
+                R.string.permissions_location_title,
+                R.string.permissions_location_message,
+                () -> locationPermissionLauncher.launch(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                })
+        );
     }
 
     // Gestiona abrir ajustes sistema en este bloque.
@@ -156,6 +173,43 @@ public class AjustesActivity extends AppCompatActivity {
                 Uri.fromParts("package", getPackageName(), null)
         );
         startActivity(intent);
+    }
+
+    // Muestra dialogo premium reutilizable para solicitudes de permisos.
+    private void mostrarDialogoPermisoPremium(
+            int iconRes,
+            @StringRes int titleRes,
+            @StringRes int messageRes,
+            Runnable onPrimary
+    ) {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_permission_premium, null);
+        ImageView ivIcon = view.findViewById(R.id.ivPermissionIcon);
+        TextView tvTitle = view.findViewById(R.id.tvPermissionTitle);
+        TextView tvMessage = view.findViewById(R.id.tvPermissionMessage);
+        MaterialButton btnPrimary = view.findViewById(R.id.btnPermissionPrimary);
+        MaterialButton btnSecondary = view.findViewById(R.id.btnPermissionSecondary);
+
+        ivIcon.setImageResource(iconRes);
+        tvTitle.setText(titleRes);
+        tvMessage.setText(messageRes);
+        btnPrimary.setText(R.string.permissions_allow);
+        btnSecondary.setText(R.string.permissions_not_now);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setView(view)
+                .create();
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_dialog_glass);
+            dialog.getWindow().setDimAmount(0.72f);
+        }
+
+        btnPrimary.setOnClickListener(v -> {
+            dialog.dismiss();
+            onPrimary.run();
+        });
+        btnSecondary.setOnClickListener(v -> dialog.dismiss());
     }
 
     // Indica si permiso notificaciones esta disponible.

@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -52,6 +53,7 @@ import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.example.tarraco_fest.ViewModel.HomeViewModel;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
@@ -607,36 +609,83 @@ public class HomeActivity extends AppCompatActivity {
 
     // Muestra dialogo permiso notificaciones en la interfaz.
     private void mostrarDialogoPermisoNotificaciones() {
-        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle(R.string.permissions_notif_title)
-                .setMessage(R.string.permissions_notif_message)
-                .setPositiveButton(R.string.permissions_allow, (d, w) -> {
+        mostrarDialogoPermisoPremium(
+                R.drawable.ic_permission_notifications,
+                R.string.permissions_notif_title,
+                R.string.permissions_notif_message,
+                R.string.permissions_allow,
+                R.string.permissions_not_now,
+                () -> {
                     permisosPrefs.edit().putBoolean(KEY_NOTIF_SOLICITADO, true).apply();
                     notificacionesPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
-                })
-                .setNegativeButton(R.string.permissions_not_now, (d, w) -> {
+                },
+                () -> {
                     permisosPrefs.edit().putBoolean(KEY_NOTIF_SOLICITADO, true).apply();
                     solicitarPermisosIniciales();
-                })
-                .show();
+                }
+        );
     }
 
     // Muestra dialogo permiso ubicacion en la interfaz.
     private void mostrarDialogoPermisoUbicacion() {
-        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle(R.string.permissions_location_title)
-                .setMessage(R.string.permissions_location_message)
-                .setPositiveButton(R.string.permissions_allow, (d, w) -> {
+        mostrarDialogoPermisoPremium(
+                R.drawable.ic_permission_location,
+                R.string.permissions_location_title,
+                R.string.permissions_location_message,
+                R.string.permissions_allow,
+                R.string.permissions_not_now,
+                () -> {
                     permisosPrefs.edit().putBoolean(KEY_UBI_SOLICITADO, true).apply();
                     ubicacionPermissionLauncher.launch(new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
                     });
-                })
-                .setNegativeButton(R.string.permissions_not_now, (d, w) -> {
-                    permisosPrefs.edit().putBoolean(KEY_UBI_SOLICITADO, true).apply();
-                })
-                .show();
+                },
+                () -> permisosPrefs.edit().putBoolean(KEY_UBI_SOLICITADO, true).apply()
+        );
+    }
+
+    // Muestra dialogo premium reutilizable para permisos.
+    private void mostrarDialogoPermisoPremium(
+            int iconRes,
+            @StringRes int titleRes,
+            @StringRes int messageRes,
+            @StringRes int primaryActionRes,
+            @StringRes int secondaryActionRes,
+            Runnable onPrimary,
+            Runnable onSecondary
+    ) {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_permission_premium, null);
+        ImageView ivIcon = view.findViewById(R.id.ivPermissionIcon);
+        TextView tvTitle = view.findViewById(R.id.tvPermissionTitle);
+        TextView tvMessage = view.findViewById(R.id.tvPermissionMessage);
+        MaterialButton btnPrimary = view.findViewById(R.id.btnPermissionPrimary);
+        MaterialButton btnSecondary = view.findViewById(R.id.btnPermissionSecondary);
+
+        ivIcon.setImageResource(iconRes);
+        tvTitle.setText(titleRes);
+        tvMessage.setText(messageRes);
+        btnPrimary.setText(primaryActionRes);
+        btnSecondary.setText(secondaryActionRes);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setView(view)
+                .create();
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_dialog_glass);
+            dialog.getWindow().setDimAmount(0.72f);
+        }
+
+        btnPrimary.setOnClickListener(v -> {
+            dialog.dismiss();
+            onPrimary.run();
+        });
+        btnSecondary.setOnClickListener(v -> {
+            dialog.dismiss();
+            onSecondary.run();
+        });
     }
 
     // Gestiona cerrar sesion en este bloque.
