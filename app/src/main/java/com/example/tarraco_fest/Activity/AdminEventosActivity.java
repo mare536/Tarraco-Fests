@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -443,7 +444,8 @@ public class AdminEventosActivity extends AppCompatActivity {
             dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        Button btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        btnGuardar.setOnClickListener(v -> {
             String titulo = texto(etTitulo);
             String lugar = texto(etLugar);
 
@@ -470,11 +472,21 @@ public class AdminEventosActivity extends AppCompatActivity {
             evento.lugarNombre = lugar;
             evento.inicio = inicio;
             evento.activo = cbActivo.isChecked();
+            evento.descripcion = construirDescripcionBaseEvento(evento);
             if (!imagenPersonalizadaEnDialogo) {
                 evento.imagenUrl = "";
                 evento.imagenBase64 = "";
             }
-            guardarEventoConImagen(evento, original == null, dialog);
+
+            btnGuardar.setEnabled(false);
+            eventosRepository.generarI18nEvento(evento.titulo, evento.descripcion, new AdminEventosRepository.EventI18nCallback() {
+                @Override
+                public void onOk(Map<String, String> tituloI18n, Map<String, String> descripcionI18n) {
+                    evento.tituloI18n = tituloI18n;
+                    evento.descripcionI18n = descripcionI18n;
+                    guardarEventoConImagen(evento, original == null, dialog);
+                }
+            });
         });
     }
 
@@ -625,6 +637,27 @@ public class AdminEventosActivity extends AppCompatActivity {
         }
 
         guardarEventoEnFirestore(evento, crear, dialog, btnGuardar);
+    }
+
+    // Construye una descripcion base legible para detalle y traduccion automatica.
+    private String construirDescripcionBaseEvento(AdminEvento evento) {
+        if (evento == null) return "";
+
+        String titulo = textoSeguro(evento.titulo);
+        String lugar = textoSeguro(evento.lugarNombre);
+        String categoria = categoriaUiDesdeId(evento.categoriaId);
+        String fecha = "";
+        if (evento.inicio != null) {
+            fecha = dateFormat.format(evento.inicio.toDate()) + " " + timeFormat.format(evento.inicio.toDate());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (!titulo.isEmpty()) sb.append(titulo).append(". ");
+        sb.append("Evento de la agenda de Tarragona.");
+        if (!fecha.isEmpty()) sb.append(" Fecha: ").append(fecha).append(".");
+        if (!lugar.isEmpty()) sb.append(" Lugar: ").append(lugar).append(".");
+        if (!TextUtils.isEmpty(categoria)) sb.append(" Categoria: ").append(categoria).append(".");
+        return sb.toString().trim();
     }
 
     // Extrae StorageException aunque venga envuelta en otras excepciones.
@@ -819,6 +852,10 @@ public class AdminEventosActivity extends AppCompatActivity {
     // Gestiona texto en este bloque.
     private String texto(EditText et) {
         return et.getText() == null ? "" : et.getText().toString().trim();
+    }
+
+    private String textoSeguro(String value) {
+        return value == null ? "" : value.trim();
     }
 
     // Normaliza el flujo para evitar inconsistencias de comparacion.

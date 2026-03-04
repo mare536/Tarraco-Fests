@@ -24,6 +24,9 @@ public final class FirestoreSchema {
 
     public static final class EventoFields {
         public static final String TITULO = "titulo";
+        public static final String TITULO_I18N = "tituloI18n";
+        public static final String DESCRIPCION = "descripcion";
+        public static final String DESCRIPCION_I18N = "descripcionI18n";
         public static final String CATEGORIA_ID = "categoriaId";
         public static final String INICIO = "inicio";
         public static final String LUGAR_NOMBRE = "lugarNombre";

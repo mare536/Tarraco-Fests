@@ -282,3 +282,34 @@ Estructura central:
 ## 13) Paquete legacy
 
 El paquete `com.example.prueba_tarracofests` se conserva como prototipo historico y no corresponde al flujo principal actual.
+
+## 14) Soporte multilenguaje
+
+Idiomas soportados:
+
+- Castellano (`es`)
+- Catalan (`ca`)
+- Ingles (`en`)
+- Japones (`ja`)
+
+Archivos de recursos:
+
+- Base: `app/src/main/res/values/strings.xml` (castellano)
+- Ingles: `app/src/main/res/values-en/strings.xml`
+- Catalan: `app/src/main/res/values-ca/strings.xml`
+- Japones: `app/src/main/res/values-ja/strings.xml`
+
+Configuracion Android:
+
+- `app/src/main/res/xml/locales_config.xml`
+- `app/src/main/AndroidManifest.xml` con `android:localeConfig="@xml/locales_config"`
+
+### Traduccion automatica de eventos (admin)
+
+- Al crear/editar un evento desde admin, el sistema genera automaticamente versiones de `titulo` y `descripcion` para:
+  - `es`, `ca`, `en`, `ja`
+- Se guarda en Firestore en:
+  - `tituloI18n`
+  - `descripcionI18n`
+- En lectura (Home/Detalle) se aplica fallback:
+  - idioma actual de la app -> `es` -> campo base (`titulo`/`descripcion`)

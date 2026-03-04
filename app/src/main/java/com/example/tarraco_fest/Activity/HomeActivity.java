@@ -29,8 +29,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -138,6 +140,7 @@ public class HomeActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private androidx.appcompat.widget.AppCompatImageButton btnHomeMenu;
+    private androidx.appcompat.widget.AppCompatImageButton btnHomeLanguage;
     private SharedPreferences permisosPrefs;
     private SharedPreferences filtrosPrefs;
     private SharedPreferences syncPrefs;
@@ -311,9 +314,13 @@ public class HomeActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawerHome);
         navigationView = findViewById(R.id.navHome);
         btnHomeMenu = findViewById(R.id.btnHomeMenu);
+        btnHomeLanguage = findViewById(R.id.btnHomeLanguage);
 
         btnHomeMenu.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
-        aplicarInsetSuperiorMenu();
+        if (btnHomeLanguage != null) {
+            btnHomeLanguage.setOnClickListener(v -> mostrarSelectorIdioma());
+        }
+        aplicarInsetSuperiorCabecera();
         actualizarSeleccionDrawerActual();
         ocultarItemAdmin();
 
@@ -356,15 +363,21 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    // Aplica inset superior menu respetando el estado actual.
-    private void aplicarInsetSuperiorMenu() {
-        if (btnHomeMenu == null) return;
+    // Aplica inset superior a los controles del encabezado (menu + idioma).
+    private void aplicarInsetSuperiorCabecera() {
+        aplicarInsetTopConMargen(btnHomeMenu);
+        aplicarInsetTopConMargen(btnHomeLanguage);
+    }
+
+    // Suma el inset del sistema al margen superior base de la vista.
+    private void aplicarInsetTopConMargen(View target) {
+        if (target == null) return;
 
         final android.view.ViewGroup.MarginLayoutParams lp =
-                (android.view.ViewGroup.MarginLayoutParams) btnHomeMenu.getLayoutParams();
+                (android.view.ViewGroup.MarginLayoutParams) target.getLayoutParams();
         final int baseTop = lp.topMargin;
 
-        ViewCompat.setOnApplyWindowInsetsListener(btnHomeMenu, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(target, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             android.view.ViewGroup.MarginLayoutParams params =
                     (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
@@ -373,7 +386,7 @@ public class HomeActivity extends AppCompatActivity {
             return insets;
         });
 
-        ViewCompat.requestApplyInsets(btnHomeMenu);
+        ViewCompat.requestApplyInsets(target);
     }
 
     // Gestiona ocultar item admin en este bloque.
@@ -413,6 +426,54 @@ public class HomeActivity extends AppCompatActivity {
     private void actualizarSeleccionDrawerActual() {
         if (navigationView == null) return;
         navigationView.setCheckedItem(R.id.nav_home_events);
+    }
+
+    // Muestra selector de idioma y aplica locale de la app al instante.
+    private void mostrarSelectorIdioma() {
+        final String[] tags = new String[]{"es", "ca", "en", "ja"};
+        final String[] labels = new String[]{
+                getString(R.string.home_language_option_es),
+                getString(R.string.home_language_option_ca),
+                getString(R.string.home_language_option_en),
+                getString(R.string.home_language_option_ja)
+        };
+
+        int actual = indiceIdiomaActual(tags);
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(R.string.home_language_dialog_title)
+                .setSingleChoiceItems(labels, actual, (dialog, which) -> {
+                    aplicarIdioma(tags[which]);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.detail_cancel, null)
+                .show();
+    }
+
+    // Resuelve indice del idioma activo para preseleccionarlo en el dialogo.
+    private int indiceIdiomaActual(String[] tags) {
+        String actual = obtenerIdiomaActivo();
+        for (int i = 0; i < tags.length; i++) {
+            if (actual.startsWith(tags[i])) return i;
+        }
+        return 0;
+    }
+
+    // Devuelve codigo de idioma activo priorizando locale de AppCompat.
+    private String obtenerIdiomaActivo() {
+        LocaleListCompat locales = AppCompatDelegate.getApplicationLocales();
+        Locale locale = locales.isEmpty() ? Locale.getDefault() : locales.get(0);
+        if (locale == null || locale.getLanguage() == null || locale.getLanguage().trim().isEmpty()) {
+            return "es";
+        }
+        return locale.getLanguage().trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Aplica idioma seleccionado y evita recreaciones innecesarias.
+    private void aplicarIdioma(String langTag) {
+        if (langTag == null || langTag.trim().isEmpty()) return;
+        String actual = obtenerIdiomaActivo();
+        if (actual.startsWith(langTag)) return;
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langTag));
     }
 
     // Gestiona solicitar permisos iniciales en este bloque.

@@ -3,6 +3,9 @@ package com.example.tarraco_fest.Repository;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
+
 import com.example.tarraco_fest.BuildConfig;
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.Evento;
@@ -100,8 +103,12 @@ public class EventosRepository {
 
             Evento e = new Evento();
             e.setId(d.getId());
-            e.setTitulo(d.getString(FirestoreSchema.EventoFields.TITULO));
-            e.setDescripcion(d.getString("descripcion"));
+            String tituloBase = d.getString(FirestoreSchema.EventoFields.TITULO);
+            String descripcionBase = d.getString(FirestoreSchema.EventoFields.DESCRIPCION);
+            Map<String, String> tituloI18n = leerMapaString(d.get(FirestoreSchema.EventoFields.TITULO_I18N));
+            Map<String, String> descripcionI18n = leerMapaString(d.get(FirestoreSchema.EventoFields.DESCRIPCION_I18N));
+            e.setTitulo(resolverTextoI18n(tituloBase, tituloI18n));
+            e.setDescripcion(resolverTextoI18n(descripcionBase, descripcionI18n));
             e.setCategoriaId(d.getString(FirestoreSchema.EventoFields.CATEGORIA_ID));
             e.setLugarNombre(d.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE));
             e.setCiudad(d.getString("ciudad"));
@@ -531,6 +538,53 @@ public class EventosRepository {
             }
         }
         return null;
+    }
+
+    // Lee mapa i18n desde Firestore y conserva solo claves/valores string no vacios.
+    private Map<String, String> leerMapaString(Object raw) {
+        Map<String, String> out = new HashMap<>();
+        if (!(raw instanceof Map<?, ?>)) return out;
+
+        Map<?, ?> map = (Map<?, ?>) raw;
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String) || !(entry.getValue() instanceof String)) continue;
+            String k = safeLower((String) entry.getKey());
+            String v = ((String) entry.getValue()).trim();
+            if (k.isEmpty() || v.isEmpty()) continue;
+            out.put(k, v);
+        }
+        return out;
+    }
+
+    // Resuelve texto segun idioma actual de la app con fallback: idioma actual -> es -> base.
+    private String resolverTextoI18n(String base, Map<String, String> map) {
+        String fallback = base == null ? "" : base.trim();
+        if (map == null || map.isEmpty()) return fallback;
+
+        String lang = idiomaAppActual();
+        if (!lang.isEmpty()) {
+            String exact = map.get(lang);
+            if (exact != null && !exact.trim().isEmpty()) return exact.trim();
+        }
+
+        String es = map.get("es");
+        if (es != null && !es.trim().isEmpty()) return es.trim();
+
+        return fallback;
+    }
+
+    // Lee idioma actual configurado en AppCompat (si no existe, usa Locale del sistema).
+    private String idiomaAppActual() {
+        try {
+            LocaleListCompat locales = AppCompatDelegate.getApplicationLocales();
+            Locale locale = locales.isEmpty() ? Locale.getDefault() : locales.get(0);
+            if (locale == null) return "";
+            String lang = locale.getLanguage();
+            return lang == null ? "" : lang.trim().toLowerCase(Locale.ROOT);
+        } catch (Exception ignore) {
+            String lang = Locale.getDefault().getLanguage();
+            return lang == null ? "" : lang.trim().toLowerCase(Locale.ROOT);
+        }
     }
 
     // Gestiona publicar ok en este bloque.

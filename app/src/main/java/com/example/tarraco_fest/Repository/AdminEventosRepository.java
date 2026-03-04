@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,6 +50,7 @@ public class AdminEventosRepository {
     private static final int MAX_IMAGE_BYTES_FOR_FIRESTORE = 340 * 1024;
     private static final ExecutorService UPLOAD_EXECUTOR = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final AutoTranslationRepository autoTranslationRepository = new AutoTranslationRepository();
 
     public interface ListCallback {
         void onOk(List<AdminEvento> eventos);
@@ -65,6 +67,10 @@ public class AdminEventosRepository {
         void onError(Exception e);
     }
 
+    public interface EventI18nCallback {
+        void onOk(Map<String, String> tituloI18n, Map<String, String> descripcionI18n);
+    }
+
     // Carga eventos desde la fuente correspondiente.
     public void cargarEventos(ListCallback cb) {
         FirebaseFirestore.getInstance()
@@ -78,6 +84,7 @@ public class AdminEventosRepository {
                         AdminEvento e = new AdminEvento();
                         e.id = doc.getId();
                         e.titulo = leer(doc.getString(FirestoreSchema.EventoFields.TITULO));
+                        e.descripcion = leer(doc.getString(FirestoreSchema.EventoFields.DESCRIPCION));
                         e.categoriaId = leer(doc.getString(FirestoreSchema.EventoFields.CATEGORIA_ID));
                         if (TextUtils.isEmpty(e.categoriaId)) {
                             e.categoriaId = "cultura";
@@ -85,6 +92,8 @@ public class AdminEventosRepository {
                         e.lugarNombre = leer(doc.getString(FirestoreSchema.EventoFields.LUGAR_NOMBRE));
                         e.imagenUrl = leer(doc.getString(FirestoreSchema.EventoFields.IMAGEN_URL));
                         e.imagenBase64 = leer(doc.getString(FirestoreSchema.EventoFields.IMAGEN_BASE64));
+                        e.tituloI18n = leerMapaString(doc.get(FirestoreSchema.EventoFields.TITULO_I18N));
+                        e.descripcionI18n = leerMapaString(doc.get(FirestoreSchema.EventoFields.DESCRIPCION_I18N));
                         e.inicio = doc.getTimestamp(FirestoreSchema.EventoFields.INICIO);
                         Boolean act = doc.getBoolean(FirestoreSchema.EventoFields.ACTIVO);
                         e.activo = act == null || act;
@@ -159,13 +168,27 @@ public class AdminEventosRepository {
     private Map<String, Object> toFirestore(AdminEvento e) {
         Map<String, Object> data = new HashMap<>();
         data.put(FirestoreSchema.EventoFields.TITULO, leer(e.titulo));
+        data.put(FirestoreSchema.EventoFields.DESCRIPCION, leer(e.descripcion));
         data.put(FirestoreSchema.EventoFields.CATEGORIA_ID, leer(e.categoriaId));
         data.put(FirestoreSchema.EventoFields.LUGAR_NOMBRE, leer(e.lugarNombre));
         data.put(FirestoreSchema.EventoFields.IMAGEN_URL, leer(e.imagenUrl));
         data.put(FirestoreSchema.EventoFields.IMAGEN_BASE64, leer(e.imagenBase64));
+        data.put(FirestoreSchema.EventoFields.TITULO_I18N, limpiarMapaI18n(e.tituloI18n, e.titulo));
+        data.put(FirestoreSchema.EventoFields.DESCRIPCION_I18N, limpiarMapaI18n(e.descripcionI18n, e.descripcion));
         data.put(FirestoreSchema.EventoFields.INICIO, e.inicio != null ? e.inicio : Timestamp.now());
         data.put(FirestoreSchema.EventoFields.ACTIVO, e.activo);
         return data;
+    }
+
+    // Genera traducciones automaticas de titulo y descripcion para es/ca/en/ja.
+    public void generarI18nEvento(String tituloBase, String descripcionBase, EventI18nCallback cb) {
+        if (cb == null) return;
+        autoTranslationRepository.translateToSupportedLocales(leer(tituloBase), tituloMap ->
+                autoTranslationRepository.translateToSupportedLocales(leer(descripcionBase), descMap ->
+                        cb.onOk(
+                                tituloMap == null ? Collections.emptyMap() : tituloMap,
+                                descMap == null ? Collections.emptyMap() : descMap
+                        )));
     }
 
     // Mantiene nombre por compatibilidad: ahora codifica imagen para guardarla en Firestore.
@@ -523,5 +546,44 @@ public class AdminEventosRepository {
     // Gestiona leer en este bloque.
     private String leer(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    // Lee mapas de Firestore y conserva solo pares String/String no vacios.
+    private Map<String, String> leerMapaString(Object raw) {
+        Map<String, String> out = new HashMap<>();
+        if (!(raw instanceof Map<?, ?>)) return out;
+
+        Map<?, ?> input = (Map<?, ?>) raw;
+        for (Map.Entry<?, ?> entry : input.entrySet()) {
+            if (!(entry.getKey() instanceof String) || !(entry.getValue() instanceof String)) continue;
+            String k = leer((String) entry.getKey());
+            String v = leer((String) entry.getValue());
+            if (k.isEmpty() || v.isEmpty()) continue;
+            out.put(k, v);
+        }
+        return out;
+    }
+
+    // Limpia mapa i18n y asegura fallback en es cuando falta.
+    private Map<String, String> limpiarMapaI18n(Map<String, String> input, String baseEs) {
+        Map<String, String> out = new HashMap<>();
+        if (input != null) {
+            for (Map.Entry<String, String> e : input.entrySet()) {
+                String k = leer(e.getKey());
+                String v = leer(e.getValue());
+                if (k.isEmpty() || v.isEmpty()) continue;
+                out.put(k, v);
+            }
+        }
+
+        String safeEs = leer(baseEs);
+        if (safeEs.isEmpty()) safeEs = out.get("es");
+        if (safeEs == null) safeEs = "";
+
+        if (!safeEs.isEmpty()) out.put("es", safeEs);
+        if (!out.containsKey("ca") || leer(out.get("ca")).isEmpty()) out.put("ca", safeEs);
+        if (!out.containsKey("en") || leer(out.get("en")).isEmpty()) out.put("en", safeEs);
+        if (!out.containsKey("ja") || leer(out.get("ja")).isEmpty()) out.put("ja", safeEs);
+        return out;
     }
 }
