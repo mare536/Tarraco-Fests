@@ -74,7 +74,7 @@
                         android:layout_marginEnd="12dp"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:text="@string/app_name"
+                        android:text="@string/home_header_title"
                         android:textColor="#FFFFFF"
                         android:textSize="28sp"
                         android:textStyle="bold"
@@ -160,7 +160,7 @@
                         android:backgroundTint="@color/home_chip_active_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Todos"
+                        android:text="@string/home_chip_all"
                         android:textColor="@color/home_chip_text_active" />
 
                     <TextView
@@ -171,7 +171,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Favoritos"
+                        android:text="@string/home_chip_favorites"
                         android:textColor="@color/home_chip_text_inactive" />
 
                     <TextView
@@ -182,7 +182,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Cultura"
+                        android:text="@string/home_chip_culture"
                         android:textColor="@color/home_chip_text_inactive" />
 
                     <TextView
@@ -193,7 +193,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Esport"
+                        android:text="@string/home_chip_sports"
                         android:textColor="@color/home_chip_text_inactive" />
 
                     <TextView
@@ -204,7 +204,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Musica"
+                        android:text="@string/home_chip_music"
                         android:textColor="@color/home_chip_text_inactive" />
 
                     <TextView
@@ -215,7 +215,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Familiar"
+                        android:text="@string/home_chip_family"
                         android:textColor="@color/home_chip_text_inactive" />
 
                     <TextView
@@ -225,7 +225,7 @@
                         android:background="@drawable/chip_bg"
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp"
-                        android:text="Gastronomia"
+                        android:text="@string/home_chip_food"
                         android:textColor="@color/home_chip_text_inactive" />
                 </LinearLayout>
             </HorizontalScrollView>

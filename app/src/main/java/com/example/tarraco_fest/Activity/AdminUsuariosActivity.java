@@ -19,21 +19,15 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tarraco_fest.Adapter.AdminUsersAdapter;
-import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.AdminUser;
 import com.example.tarraco_fest.R;
-import com.example.tarraco_fest.Repository.AdminAccessRepository;
-import com.example.tarraco_fest.Repository.AdminUsersRepository;
+import com.example.tarraco_fest.ViewModel.AdminUsuariosViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
-import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 
 /**
  * Pantalla para gestionar usuarios del sistema.
@@ -47,13 +41,9 @@ public class AdminUsuariosActivity extends AppCompatActivity {
     private static final String FILTRO_ACTIVOS = "activos";
     private static final String FILTRO_BLOQUEADOS = "bloqueados";
 
-    private final AdminAccessRepository accessRepository = new AdminAccessRepository();
-    private final AdminUsersRepository usersRepository = new AdminUsersRepository();
-    private final List<AdminUser> users = new ArrayList<>();
+    private AdminUsuariosViewModel viewModel;
     private AdminUsersAdapter adapter;
-    private String busquedaNormalizada = "";
-    private String filtroRolActual = FILTRO_TODOS;
-    private String filtroEstadoActual = FILTRO_TODOS;
+    private View btnRecargar;
 
     // Gestiona on create en este bloque.
     @Override
@@ -69,13 +59,13 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             // Gestiona on toggle bloqueo en este bloque.
             @Override
             public void onToggleBloqueo(AdminUser user) {
-                toggleBloqueo(user);
+                viewModel.toggleBloqueo(user);
             }
 
             // Gestiona on toggle rol en este bloque.
             @Override
             public void onToggleRol(AdminUser user) {
-                toggleRol(user);
+                viewModel.toggleRol(user);
             }
 
             // Gestiona on eliminar en este bloque.
@@ -86,11 +76,13 @@ public class AdminUsuariosActivity extends AppCompatActivity {
         });
         rv.setAdapter(adapter);
 
+        btnRecargar = findViewById(R.id.btnAdminUsuariosRecargar);
+        configurarViewModel();
         configurarBuscadorYFiltros();
-        findViewById(R.id.btnAdminUsuariosRecargar).setOnClickListener(v -> cargarUsuarios());
+        btnRecargar.setOnClickListener(v -> viewModel.cargarUsuarios());
         findViewById(R.id.btnAdminUsuariosVolver).setOnClickListener(v -> finish());
 
-        validarAccesoYCargar();
+        viewModel.verificarAccesoYCargar();
     }
 
     // Aplica edge-to-edge con insets para mantener diseño limpio en todos los moviles.
@@ -172,8 +164,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
             // Gestiona on text changed en este bloque.
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                busquedaNormalizada = normalizar(s == null ? "" : s.toString());
-                aplicarFiltrosLocales();
+                viewModel.actualizarBusqueda(s == null ? "" : s.toString());
             }
 
             @Override
@@ -182,106 +173,53 @@ public class AdminUsuariosActivity extends AppCompatActivity {
 
         rgRol.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbAdminUsersRolAdmin) {
-                filtroRolActual = FILTRO_ADMIN;
+                viewModel.actualizarFiltroRol(FILTRO_ADMIN);
             } else if (checkedId == R.id.rbAdminUsersRolUsuario) {
-                filtroRolActual = FILTRO_USUARIO;
+                viewModel.actualizarFiltroRol(FILTRO_USUARIO);
             } else {
-                filtroRolActual = FILTRO_TODOS;
+                viewModel.actualizarFiltroRol(FILTRO_TODOS);
             }
-            aplicarFiltrosLocales();
         });
 
         rgEstado.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbAdminUsersEstadoActivos) {
-                filtroEstadoActual = FILTRO_ACTIVOS;
+                viewModel.actualizarFiltroEstado(FILTRO_ACTIVOS);
             } else if (checkedId == R.id.rbAdminUsersEstadoBloqueados) {
-                filtroEstadoActual = FILTRO_BLOQUEADOS;
+                viewModel.actualizarFiltroEstado(FILTRO_BLOQUEADOS);
             } else {
-                filtroEstadoActual = FILTRO_TODOS;
-            }
-            aplicarFiltrosLocales();
-        });
-    }
-
-    // Valida acceso ycargar antes de continuar el flujo.
-    private void validarAccesoYCargar() {
-        accessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
-            // Gestiona on result en este bloque.
-            @Override
-            public void onResult(boolean isAdmin) {
-                if (!isAdmin) {
-                    Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_access_denied), Toast.LENGTH_LONG).show();
-                    finish();
-                    return;
-                }
-                cargarUsuarios();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_access_error), Toast.LENGTH_LONG).show();
-                finish();
+                viewModel.actualizarFiltroEstado(FILTRO_TODOS);
             }
         });
+
+        // Estado inicial de filtros para primer render.
+        viewModel.actualizarBusqueda("");
+        viewModel.actualizarFiltroRol(FILTRO_TODOS);
+        viewModel.actualizarFiltroEstado(FILTRO_TODOS);
     }
 
-    // Carga usuarios desde la fuente correspondiente.
-    private void cargarUsuarios() {
-        usersRepository.cargarUsuarios(new AdminUsersRepository.ListCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk(List<AdminUser> data) {
-                users.clear();
-                users.addAll(data);
-                aplicarFiltrosLocales();
-            }
+    // Conecta la Activity con su ViewModel y observa estado de lista/mensajes.
+    private void configurarViewModel() {
+        viewModel = new ViewModelProvider(this).get(AdminUsuariosViewModel.class);
 
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_users_load_error), Toast.LENGTH_LONG).show();
-            }
+        viewModel.getUsuarios().observe(this, data -> adapter.setData(data));
+
+        viewModel.getToastMessageRes().observe(this, messageRes -> {
+            if (messageRes == null) return;
+            Toast.makeText(this, getString(messageRes), Toast.LENGTH_LONG).show();
+            viewModel.consumirToastMessage();
         });
-    }
 
-    // Alterna el estado de bloqueo.
-    private void toggleBloqueo(AdminUser user) {
-        usersRepository.actualizarBloqueo(user.uid, !user.bloqueado, new AdminUsersRepository.ActionCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk() {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_updated_ok), Toast.LENGTH_SHORT).show();
-                cargarUsuarios();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_update_error), Toast.LENGTH_LONG).show();
-            }
+        viewModel.getShouldCloseScreen().observe(this, shouldClose -> {
+            if (shouldClose == null || !shouldClose) return;
+            viewModel.consumirCloseScreen();
+            finish();
         });
-    }
 
-    // Alterna el estado de rol.
-    private void toggleRol(AdminUser user) {
-        String nuevoRol = FirestoreSchema.UserRoles.ADMIN.equalsIgnoreCase(user.rol)
-                ? FirestoreSchema.UserRoles.USUARIO
-                : FirestoreSchema.UserRoles.ADMIN;
-
-        usersRepository.actualizarRol(user.uid, nuevoRol, new AdminUsersRepository.ActionCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk() {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_updated_ok), Toast.LENGTH_SHORT).show();
-                cargarUsuarios();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_update_error), Toast.LENGTH_LONG).show();
-            }
+        viewModel.getLoading().observe(this, isLoading -> {
+            if (btnRecargar == null) return;
+            boolean loading = isLoading != null && isLoading;
+            btnRecargar.setEnabled(!loading);
+            btnRecargar.setAlpha(loading ? 0.6f : 1f);
         });
     }
 
@@ -303,61 +241,7 @@ public class AdminUsuariosActivity extends AppCompatActivity {
                 .setTitle(getString(R.string.admin_user_delete_confirm_title))
                 .setMessage(getString(R.string.admin_user_delete_confirm_message, nombre))
                 .setNegativeButton(getString(R.string.admin_cancel), null)
-                .setPositiveButton(getString(R.string.admin_user_delete), (d, w) -> eliminarUsuario(user))
+                .setPositiveButton(getString(R.string.admin_user_delete), (d, w) -> viewModel.eliminarUsuarioBloqueado(user))
                 .show();
-    }
-
-    // Elimina logicamente el usuario bloqueado y recarga la lista.
-    private void eliminarUsuario(AdminUser user) {
-        usersRepository.eliminarUsuarioBloqueado(user.uid, new AdminUsersRepository.ActionCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk() {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_deleted_ok), Toast.LENGTH_SHORT).show();
-                cargarUsuarios();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminUsuariosActivity.this, getString(R.string.admin_user_delete_error), Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    // Aplica filtros locales respetando el estado actual.
-    private void aplicarFiltrosLocales() {
-        List<AdminUser> filtrados = new ArrayList<>();
-
-        for (AdminUser u : users) {
-            String nombre = normalizar(u.nombre);
-            String email = normalizar(u.email);
-            boolean coincideTexto = busquedaNormalizada.isEmpty()
-                    || nombre.contains(busquedaNormalizada)
-                    || email.contains(busquedaNormalizada);
-
-            boolean esAdmin = FirestoreSchema.UserRoles.ADMIN.equalsIgnoreCase(u.rol);
-            boolean coincideRol = FILTRO_TODOS.equals(filtroRolActual)
-                    || (FILTRO_ADMIN.equals(filtroRolActual) && esAdmin)
-                    || (FILTRO_USUARIO.equals(filtroRolActual) && !esAdmin);
-
-            boolean coincideEstado = FILTRO_TODOS.equals(filtroEstadoActual)
-                    || (FILTRO_ACTIVOS.equals(filtroEstadoActual) && !u.bloqueado)
-                    || (FILTRO_BLOQUEADOS.equals(filtroEstadoActual) && u.bloqueado);
-
-            if (coincideTexto && coincideRol && coincideEstado) {
-                filtrados.add(u);
-            }
-        }
-
-        adapter.setData(filtrados);
-    }
-
-    // Normaliza el flujo para evitar inconsistencias de comparacion.
-    private String normalizar(String value) {
-        if (value == null) return "";
-        String base = value.trim().toLowerCase(Locale.ROOT);
-        String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 }

@@ -18,9 +18,10 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.tarraco_fest.R;
-import com.example.tarraco_fest.Repository.AdminAccessRepository;
+import com.example.tarraco_fest.ViewModel.AdminPanelViewModel;
 
 /**
  * Entrada principal del modulo admin.
@@ -28,7 +29,7 @@ import com.example.tarraco_fest.Repository.AdminAccessRepository;
  */
 public class AdminPanelActivity extends AppCompatActivity {
 
-    private final AdminAccessRepository accessRepository = new AdminAccessRepository();
+    private AdminPanelViewModel viewModel;
 
     // Gestiona on create en este bloque.
     @Override
@@ -42,35 +43,41 @@ public class AdminPanelActivity extends AppCompatActivity {
         Button btnVolver = findViewById(R.id.btnAdminVolver);
         TextView tvEstado = findViewById(R.id.tvAdminEstado);
 
-        btnUsuarios.setEnabled(false);
-        btnEventos.setEnabled(false);
-        tvEstado.setText(getString(R.string.admin_checking_access));
-
-        accessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
-            // Gestiona on result en este bloque.
-            @Override
-            public void onResult(boolean isAdmin) {
-                if (!isAdmin) {
-                    Toast.makeText(AdminPanelActivity.this, getString(R.string.admin_access_denied), Toast.LENGTH_LONG).show();
-                    finish();
-                    return;
-                }
-                tvEstado.setText(getString(R.string.admin_access_granted));
-                btnUsuarios.setEnabled(true);
-                btnEventos.setEnabled(true);
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminPanelActivity.this, getString(R.string.admin_access_error), Toast.LENGTH_LONG).show();
-                finish();
-            }
-        });
+        configurarViewModel(btnUsuarios, btnEventos, tvEstado);
 
         btnUsuarios.setOnClickListener(v -> startActivity(new Intent(this, AdminUsuariosActivity.class)));
         btnEventos.setOnClickListener(v -> startActivity(new Intent(this, AdminEventosActivity.class)));
         btnVolver.setOnClickListener(v -> finish());
+    }
+
+    // Conecta Activity con ViewModel para desacoplar validacion de acceso.
+    private void configurarViewModel(Button btnUsuarios, Button btnEventos, TextView tvEstado) {
+        viewModel = new ViewModelProvider(this).get(AdminPanelViewModel.class);
+
+        viewModel.getAdminEnabled().observe(this, enabled -> {
+            boolean allow = enabled != null && enabled;
+            btnUsuarios.setEnabled(allow);
+            btnEventos.setEnabled(allow);
+        });
+
+        viewModel.getStatusMessageRes().observe(this, messageRes -> {
+            if (messageRes == null) return;
+            tvEstado.setText(getString(messageRes));
+        });
+
+        viewModel.getToastMessageRes().observe(this, messageRes -> {
+            if (messageRes == null) return;
+            Toast.makeText(this, getString(messageRes), Toast.LENGTH_LONG).show();
+            viewModel.consumirToastMessage();
+        });
+
+        viewModel.getShouldCloseScreen().observe(this, shouldClose -> {
+            if (shouldClose == null || !shouldClose) return;
+            viewModel.consumirCloseScreen();
+            finish();
+        });
+
+        viewModel.verificarAcceso();
     }
 
     // Aplica edge-to-edge para eliminar franjas blancas y separar la tarjeta de las barras del sistema.

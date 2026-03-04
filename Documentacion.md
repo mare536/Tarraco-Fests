@@ -313,3 +313,10 @@ Configuracion Android:
   - `descripcionI18n`
 - En lectura (Home/Detalle) se aplica fallback:
   - idioma actual de la app -> `es` -> campo base (`titulo`/`descripcion`)
+
+### Traduccion automatica de eventos API
+
+- Los eventos externos de la API de Tarragona se localizan al idioma activo de la app en tiempo de carga.
+- Se traduce automaticamente el titulo cuando el idioma activo es `en` o `ja`.
+- En `es` y `ca` se mantiene el texto original de la fuente para evitar latencia innecesaria.
+- La cache de API ahora se mantiene por idioma para no mezclar resultados entre locales.

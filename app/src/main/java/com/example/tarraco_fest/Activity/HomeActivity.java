@@ -39,6 +39,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -47,9 +48,8 @@ import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.Push.PushContract;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
-import com.example.tarraco_fest.Repository.EventosRepository;
-import com.example.tarraco_fest.Repository.FavoritosRepository;
 import com.example.tarraco_fest.Repository.PushTokenRepository;
+import com.example.tarraco_fest.ViewModel.HomeViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -105,8 +105,7 @@ public class HomeActivity extends AppCompatActivity {
     private static final long SYNC_HINT_HIDE_DELAY_MS = 1_500L;
 
     private EventosAdapter adapter;
-    private final EventosRepository repo = new EventosRepository();
-    private final FavoritosRepository favoritosRepository = new FavoritosRepository();
+    private HomeViewModel homeViewModel;
     private final AdminAccessRepository adminAccessRepository = new AdminAccessRepository();
     private final PushTokenRepository pushTokenRepository = new PushTokenRepository();
 
@@ -149,6 +148,11 @@ public class HomeActivity extends AppCompatActivity {
     private String lastDataSignature = "";
     private long lastSeenEventosUpdatedAt = 0L;
     private long lastSeenFavoritosUpdatedAt = 0L;
+    private boolean pendingSyncFeedback = false;
+    private boolean pendingSyncHadData = false;
+    private boolean pendingFavoritosErrorToast = false;
+    private boolean vmCargandoEventos = false;
+    private boolean vmTraduciendoEventos = false;
     private String pendingPushEventId = "";
     private boolean pendingPushRefreshRequested = false;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
@@ -193,6 +197,7 @@ public class HomeActivity extends AppCompatActivity {
         cargarFiltrosPersistidos();
         configurarRecyclerView();
         configurarBuscadorYFiltros();
+        configurarViewModel();
         pushTokenRepository.sincronizarTokenUsuarioActual();
         cargarFavoritosUsuario(false);
         cargarDatosDesdeFirebase(false);
@@ -684,56 +689,116 @@ public class HomeActivity extends AppCompatActivity {
         actualizarResumenFiltros();
     }
 
+    // Conecta Home con su ViewModel para aplicar patron MVVM.
+    private void configurarViewModel() {
+        homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+
+        homeViewModel.getEventos().observe(this, this::onEventosRecibidos);
+        homeViewModel.getEventosError().observe(this, this::onEventosError);
+        homeViewModel.getEventosLoading().observe(this, this::onEventosLoadingChanged);
+        homeViewModel.getEventosTranslating().observe(this, this::onEventosTranslatingChanged);
+        homeViewModel.getFavoritosIds().observe(this, this::onFavoritosRecibidos);
+        homeViewModel.getFavoritosError().observe(this, this::onFavoritosError);
+    }
+
+    // Procesa eventos emitidos por ViewModel y mantiene la logica visual existente.
+    private void onEventosRecibidos(List<Evento> eventos) {
+        loadedAtLeastOnce = true;
+        lastDataRefreshAt = System.currentTimeMillis();
+
+        List<Evento> safeEventos = eventos == null ? Collections.emptyList() : eventos;
+        String nuevaFirma = construirFirmaEventos(safeEventos);
+        boolean hayCambios = !Objects.equals(nuevaFirma, lastDataSignature);
+
+        if (hayCambios || listaCompleta.isEmpty()) {
+            listaCompleta = new ArrayList<>(safeEventos);
+            lastDataSignature = nuevaFirma;
+        }
+        sincronizarFavoritosEnLista();
+        aplicarFiltros();
+        abrirEventoDesdePushSiDisponible();
+
+        if (pendingSyncFeedback && pendingSyncHadData) {
+            mostrarEstadoSincronizacion(
+                    hayCambios ? R.string.home_sync_updated : R.string.home_sync_no_changes,
+                    true
+            );
+        }
+        marcarActualizacionEventosConsumida();
+    }
+
+    // Gestiona error de eventos emitido por ViewModel.
+    private void onEventosError(String ignored) {
+        loadedAtLeastOnce = true;
+        if (pendingSyncFeedback && pendingSyncHadData) {
+            mostrarEstadoSincronizacion(R.string.home_sync_error, true);
+        }
+        if (pendingPushRefreshRequested && pendingPushEventId != null && !pendingPushEventId.trim().isEmpty()) {
+            Toast.makeText(HomeActivity.this, getString(R.string.push_notif_event_not_found), Toast.LENGTH_SHORT).show();
+            limpiarPendientePush();
+        }
+        Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
+    }
+
+    // Sincroniza favoritos emitidos por ViewModel con lista local y filtros activos.
+    private void onFavoritosRecibidos(Set<String> favoritos) {
+        favoritosIds.clear();
+        if (favoritos != null) {
+            favoritosIds.addAll(favoritos);
+        }
+        sincronizarFavoritosEnLista();
+        aplicarFiltros();
+        marcarActualizacionFavoritosConsumida();
+    }
+
+    // Gestiona error de favoritos emitido por ViewModel.
+    private void onFavoritosError(String ignored) {
+        if (pendingFavoritosErrorToast) {
+            Toast.makeText(HomeActivity.this, getString(R.string.detail_favorite_error), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Refleja estado de carga inicial de eventos en el hint visual de Home.
+    private void onEventosLoadingChanged(Boolean isLoading) {
+        vmCargandoEventos = isLoading != null && isLoading;
+        actualizarHintCargaYTraduccion();
+    }
+
+    // Refleja estado de traduccion progresiva en el hint visual de Home.
+    private void onEventosTranslatingChanged(Boolean isTranslating) {
+        vmTraduciendoEventos = isTranslating != null && isTranslating;
+        actualizarHintCargaYTraduccion();
+    }
+
+    // Prioriza mensajes de carga/traduccion para dar feedback continuo al usuario.
+    private void actualizarHintCargaYTraduccion() {
+        if (vmCargandoEventos) {
+            mostrarEstadoSincronizacion(R.string.home_sync_loading_events, false);
+            return;
+        }
+        if (vmTraduciendoEventos) {
+            mostrarEstadoSincronizacion(R.string.home_sync_translating_events, false);
+            return;
+        }
+
+        if (tvDataSyncHint != null) {
+            uiHandler.removeCallbacks(hideSyncHintRunnable);
+            uiHandler.postDelayed(hideSyncHintRunnable, 200L);
+        }
+    }
+
     // Carga datos desde firebase desde la fuente correspondiente.
     private void cargarDatosDesdeFirebase(boolean showSyncFeedback) {
-        final boolean hadDataBeforeRequest = loadedAtLeastOnce;
+        pendingSyncFeedback = showSyncFeedback;
+        pendingSyncHadData = loadedAtLeastOnce;
 
-        if (showSyncFeedback && hadDataBeforeRequest) {
+        if (showSyncFeedback && pendingSyncHadData) {
             mostrarEstadoSincronizacion(R.string.home_sync_updating, false);
         }
 
-        repo.cargarEventos(new EventosRepository.Callback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk(List<Evento> eventos) {
-                loadedAtLeastOnce = true;
-                lastDataRefreshAt = System.currentTimeMillis();
-
-                List<Evento> safeEventos = eventos == null ? Collections.emptyList() : eventos;
-                String nuevaFirma = construirFirmaEventos(safeEventos);
-                boolean hayCambios = !Objects.equals(nuevaFirma, lastDataSignature);
-
-                if (hayCambios || listaCompleta.isEmpty()) {
-                    listaCompleta = new ArrayList<>(safeEventos);
-                    lastDataSignature = nuevaFirma;
-                }
-                sincronizarFavoritosEnLista();
-                aplicarFiltros();
-                abrirEventoDesdePushSiDisponible();
-
-                if (showSyncFeedback && hadDataBeforeRequest) {
-                    mostrarEstadoSincronizacion(
-                            hayCambios ? R.string.home_sync_updated : R.string.home_sync_no_changes,
-                            true
-                    );
-                }
-                marcarActualizacionEventosConsumida();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                loadedAtLeastOnce = true;
-                if (showSyncFeedback && hadDataBeforeRequest) {
-                    mostrarEstadoSincronizacion(R.string.home_sync_error, true);
-                }
-                if (pendingPushRefreshRequested && pendingPushEventId != null && !pendingPushEventId.trim().isEmpty()) {
-                    Toast.makeText(HomeActivity.this, getString(R.string.push_notif_event_not_found), Toast.LENGTH_SHORT).show();
-                    limpiarPendientePush();
-                }
-                Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
-            }
-        });
+        if (homeViewModel != null) {
+            homeViewModel.cargarEventos();
+        }
     }
 
     // Indica si corresponde refrescar datos al volver a Home.
@@ -757,25 +822,10 @@ public class HomeActivity extends AppCompatActivity {
 
     // Carga favoritos del usuario y sincroniza el estado en la lista actual.
     private void cargarFavoritosUsuario(boolean showErrorToast) {
-        favoritosRepository.cargarFavoritosIds(new FavoritosRepository.FavoritosIdsCallback() {
-            @Override
-            public void onOk(Set<String> favoritos) {
-                favoritosIds.clear();
-                if (favoritos != null) {
-                    favoritosIds.addAll(favoritos);
-                }
-                sincronizarFavoritosEnLista();
-                aplicarFiltros();
-                marcarActualizacionFavoritosConsumida();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                if (showErrorToast) {
-                    Toast.makeText(HomeActivity.this, getString(R.string.detail_favorite_error), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        pendingFavoritosErrorToast = showErrorToast;
+        if (homeViewModel != null) {
+            homeViewModel.cargarFavoritos();
+        }
     }
 
     // Propaga el estado favorito a cada evento para permitir filtros y detalle coherentes.

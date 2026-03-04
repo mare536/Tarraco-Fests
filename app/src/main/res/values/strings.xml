@@ -8,8 +8,16 @@
     <string name="home_language_option_ca">Catal&#224;</string>
     <string name="home_language_option_en">English</string>
     <string name="home_language_option_ja">Japones</string>
+    <string name="home_header_title">Tarraco Fests</string>
     <string name="home_header_subtitle">Descubre la magia de Tarragona</string>
     <string name="home_search_hint">Buscar festivales...</string>
+    <string name="home_chip_all">Todos</string>
+    <string name="home_chip_favorites">Favoritos</string>
+    <string name="home_chip_culture">Cultura</string>
+    <string name="home_chip_sports">Esport</string>
+    <string name="home_chip_music">Musica</string>
+    <string name="home_chip_family">Familiar</string>
+    <string name="home_chip_food">Gastronomia</string>
     <string name="home_nav_header_subtitle">Accesos rapidos</string>
     <string name="home_menu_events">Eventos</string>
     <string name="home_menu_profile">Perfil</string>
@@ -68,6 +76,8 @@
     <string name="home_filter_summary_default">Filtros</string>
     <string name="home_filter_zone_prefix">Zona: %1$s</string>
     <string name="home_sync_updating">Actualizando agenda...</string>
+    <string name="home_sync_loading_events">Cargando eventos...</string>
+    <string name="home_sync_translating_events">Traduciendo eventos...</string>
     <string name="home_sync_updated">Agenda actualizada</string>
     <string name="home_sync_no_changes">Sin cambios nuevos</string>
     <string name="home_sync_error">No se pudo actualizar ahora</string>

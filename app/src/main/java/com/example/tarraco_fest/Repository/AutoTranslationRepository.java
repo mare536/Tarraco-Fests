@@ -26,9 +26,11 @@ public class AutoTranslationRepository {
 
     private static final String[] TARGET_LANGS = new String[]{"es", "ca", "en", "ja"};
     private static final String ENDPOINT = "https://translate.googleapis.com/translate_a/single";
-    private static final int CONNECT_TIMEOUT_MS = 10_000;
-    private static final int READ_TIMEOUT_MS = 15_000;
-    private static final int MAX_CACHE_ENTRIES = 256;
+    private static final int CONNECT_TIMEOUT_MS = 4_000;
+    private static final int READ_TIMEOUT_MS = 6_000;
+    private static final int FAST_CONNECT_TIMEOUT_MS = 1_200;
+    private static final int FAST_READ_TIMEOUT_MS = 1_800;
+    private static final int MAX_CACHE_ENTRIES = 1024;
 
     private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -58,14 +60,32 @@ public class AutoTranslationRepository {
                     out.put(lang, safeBase);
                     continue;
                 }
-                out.put(lang, traducirConFallback(safeBase, lang));
+                out.put(lang, traducirConFallback(safeBase, lang, false));
             }
             mainHandler.post(() -> cb.onOk(out));
         });
     }
 
+    // Traduce de forma bloqueante al idioma destino usando cache interna.
+    // Debe llamarse fuera del hilo principal.
+    public String translateBlocking(String sourceText, String targetLang) {
+        String safeSource = limpiar(sourceText);
+        String safeTarget = limpiar(targetLang).toLowerCase();
+        if (TextUtils.isEmpty(safeSource) || TextUtils.isEmpty(safeTarget)) return safeSource;
+        return traducirConFallback(safeSource, safeTarget, false);
+    }
+
+    // Traduce con timeouts agresivos para flujos sensibles a latencia (Home/API).
+    // Debe llamarse fuera del hilo principal.
+    public String translateBlockingFast(String sourceText, String targetLang) {
+        String safeSource = limpiar(sourceText);
+        String safeTarget = limpiar(targetLang).toLowerCase();
+        if (TextUtils.isEmpty(safeSource) || TextUtils.isEmpty(safeTarget)) return safeSource;
+        return traducirConFallback(safeSource, safeTarget, true);
+    }
+
     // Traduce con fallback al original si hay cualquier error de red o parseo.
-    private String traducirConFallback(String sourceText, String targetLang) {
+    private String traducirConFallback(String sourceText, String targetLang, boolean fastMode) {
         if (TextUtils.isEmpty(sourceText)) return "";
         if (TextUtils.isEmpty(targetLang)) return sourceText;
 
@@ -76,7 +96,7 @@ public class AutoTranslationRepository {
         }
 
         try {
-            String translated = requestGoogleTranslate(sourceText, targetLang);
+            String translated = requestGoogleTranslate(sourceText, targetLang, fastMode);
             String safe = TextUtils.isEmpty(translated) ? sourceText : translated.trim();
             memoryCache.put(cacheKey, safe);
             return safe;
@@ -86,7 +106,7 @@ public class AutoTranslationRepository {
     }
 
     // Consulta endpoint publico de Google Translate sin API key.
-    private String requestGoogleTranslate(String sourceText, String targetLang) throws Exception {
+    private String requestGoogleTranslate(String sourceText, String targetLang, boolean fastMode) throws Exception {
         String query = URLEncoder.encode(sourceText, StandardCharsets.UTF_8.name());
         String fullUrl = ENDPOINT
                 + "?client=gtx"
@@ -100,8 +120,8 @@ public class AutoTranslationRepository {
         try {
             conn = (HttpURLConnection) new URL(fullUrl).openConnection();
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-            conn.setReadTimeout(READ_TIMEOUT_MS);
+            conn.setConnectTimeout(fastMode ? FAST_CONNECT_TIMEOUT_MS : CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(fastMode ? FAST_READ_TIMEOUT_MS : READ_TIMEOUT_MS);
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("User-Agent", "TarracoFest/1.0");
 
