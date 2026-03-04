@@ -14,7 +14,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Unete a Tarraco Fests"
+            android:text="@string/dialog_register_title"
             android:textColor="@color/dialog_on_surface"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Crea tu cuenta para guardar favoritos y recibir avisos."
+            android:text="@string/dialog_register_subtitle"
             android:textColor="@color/dialog_on_surface_2"
             android:textSize="13sp" />
 
@@ -37,7 +37,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Correo"
+            android:hint="@string/auth_reset_email_hint"
             app:boxBackgroundColor="@color/dialog_input_bg"
             app:boxBackgroundMode="filled"
             app:boxCornerRadiusBottomEnd="14dp"
@@ -63,7 +63,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Contrasena (min. 6)"
+            android:hint="@string/dialog_register_password_hint"
             app:boxBackgroundColor="@color/dialog_input_bg"
             app:boxBackgroundMode="filled"
             app:boxCornerRadiusBottomEnd="14dp"
@@ -91,7 +91,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Repite la contrasena"
+            android:hint="@string/dialog_register_repeat_hint"
             app:boxBackgroundColor="@color/dialog_input_bg"
             app:boxBackgroundMode="filled"
             app:boxCornerRadiusBottomEnd="14dp"
@@ -120,7 +120,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:text="Acepto los terminos y condiciones"
+            android:text="@string/dialog_register_terms"
             android:textColor="@color/dialog_on_surface" />
 
         <TextView

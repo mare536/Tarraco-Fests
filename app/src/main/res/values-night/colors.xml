@@ -106,6 +106,9 @@
     <color name="home_filter_radio_unchecked">#A8C6CDD8</color>
     <color name="home_filter_input_bg">#CC222933</color>
     <color name="home_filter_input_stroke">#66FFFFFF</color>
+    <color name="home_sync_hint_bg">#CC3B2A18</color>
+    <color name="home_sync_hint_stroke">#FFA06A36</color>
+    <color name="home_sync_hint_text">#FFFFD7B0</color>
     <color name="home_status_bar_fill">#FF5F43</color>
 
     <!-- Detail -->

@@ -3,6 +3,36 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
 }
 
+val verifyNoMojibake by tasks.registering {
+    group = "verification"
+    description = "Fails build if suspicious mojibake text is found in XML resources."
+
+    doLast {
+        val suspiciousPattern = Regex("(Ã.|Â.|â€|ã.|ç®|Ã£|Ã§|�|[\\u0080-\\u009F])")
+        val offenders = mutableListOf<String>()
+
+        fileTree("src/main/res") {
+            include("**/*.xml")
+        }.files
+            .sortedBy { it.path }
+            .forEach { file ->
+                file.readLines(Charsets.UTF_8).forEachIndexed { index, line ->
+                    if (suspiciousPattern.containsMatchIn(line)) {
+                        offenders.add("${file.path.replace('\\', '/')}:${index + 1}")
+                    }
+                }
+            }
+
+        if (offenders.isNotEmpty()) {
+            val preview = offenders.take(20).joinToString("\n - ", prefix = " - ")
+            val extra = if (offenders.size > 20) "\n... and ${offenders.size - 20} more." else ""
+            throw GradleException(
+                "Detected suspicious mojibake in resources:\n$preview$extra"
+            )
+        }
+    }
+}
+
 android {
     namespace = "com.example.tarraco_fest"
     compileSdk = 36
@@ -34,6 +64,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+tasks.named("preBuild") {
+    dependsOn(verifyNoMojibake)
 }
 
 dependencies {

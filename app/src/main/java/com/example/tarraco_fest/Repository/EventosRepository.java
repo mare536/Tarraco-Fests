@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Repositorio principal de eventos para Home y listados.
@@ -51,6 +53,7 @@ public class EventosRepository {
     private static final long RUNTIME_TRANSLATION_BUDGET_MS = 0L;
     private static final int PROGRESSIVE_TRANSLATION_MAX_EVENTS = 120;
     private static final int PROGRESSIVE_TRANSLATION_PUBLISH_EVERY = 6;
+    private static final Pattern INLINE_URL_PATTERN = Pattern.compile("(?i)(https?://\\S+|www\\.\\S+)");
 
     private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final ExecutorService TRANSLATION_EXECUTOR = Executors.newSingleThreadExecutor();
@@ -365,8 +368,9 @@ public class EventosRepository {
                 .replace("]", "")
                 .replace("\"", "")
                 .trim();
+        String categoriasDescripcion = categoriasParaDescripcion(categoriesClean, e.getCategoriaId(), uiLang);
         String urlNormalizada = normalizarUrlPublica(url);
-        String descripcion = construirDescripcionApi(tituloLocalizado, adreca, categoriesClean, inicioMillis, uiLang);
+        String descripcion = construirDescripcionApi(tituloLocalizado, adreca, categoriasDescripcion, inicioMillis, uiLang);
         if (!urlNormalizada.isEmpty()) {
             descripcion = descripcion + "\n" + urlNormalizada;
         }
@@ -397,11 +401,11 @@ public class EventosRepository {
                 fraseWeb = "Check the official website for more details.";
                 break;
             case "ja":
-                fraseBase = "Event from Tarragona cultural agenda.";
-                labelFecha = "Date";
-                labelLugar = "Place";
-                labelCategoria = "Category";
-                fraseWeb = "Check the official website for more details.";
+                fraseBase = "タラゴナ文化アジェンダのイベントです。";
+                labelFecha = "日付";
+                labelLugar = "場所";
+                labelCategoria = "カテゴリ";
+                fraseWeb = "詳細は公式サイトをご確認ください。";
                 break;
             case "ca":
                 fraseBase = "Esdeveniment de l agenda cultural de Tarragona.";
@@ -420,7 +424,8 @@ public class EventosRepository {
         }
 
         StringBuilder sb = new StringBuilder();
-        if (!t.isEmpty()) {
+        // Evitamos mezclar idiomas en descripcion para idiomas no-espanol cuando el titulo original viene sin traducir.
+        if ("es".equals(lang) && !t.isEmpty()) {
             sb.append(t).append(".");
         } else {
             sb.append(fraseBase);
@@ -437,6 +442,43 @@ public class EventosRepository {
         }
         sb.append(" ").append(fraseWeb);
         return sb.toString();
+    }
+
+    // Devuelve texto de categoria para descripcion segun idioma objetivo.
+    private String categoriasParaDescripcion(String categoriasRaw, String categoriaId, String langRaw) {
+        String lang = normalizarIdioma(langRaw);
+        String catId = normalizar(categoriaId);
+        if (catId.isEmpty()) catId = "cultura";
+
+        if ("ja".equals(lang)) {
+            if (catId.contains("music") || catId.contains("musica")) return "音楽";
+            if (catId.contains("gastronom")) return "美食";
+            if (catId.contains("sport") || catId.contains("esport") || catId.contains("deport")) return "スポーツ";
+            if (catId.contains("famil")) return "ファミリー";
+            return "文化";
+        }
+        if ("en".equals(lang)) {
+            if (catId.contains("music") || catId.contains("musica")) return "Music";
+            if (catId.contains("gastronom")) return "Gastronomy";
+            if (catId.contains("sport") || catId.contains("esport") || catId.contains("deport")) return "Sports";
+            if (catId.contains("famil")) return "Family";
+            return "Culture";
+        }
+        if ("ca".equals(lang)) {
+            if (catId.contains("music") || catId.contains("musica")) return "Música";
+            if (catId.contains("gastronom")) return "Gastronomia";
+            if (catId.contains("sport") || catId.contains("esport") || catId.contains("deport")) return "Esport";
+            if (catId.contains("famil")) return "Familiar";
+            return "Cultura";
+        }
+
+        String fallback = categoriasRaw == null ? "" : categoriasRaw.trim();
+        if (!fallback.isEmpty()) return fallback;
+        if (catId.contains("music") || catId.contains("musica")) return "Musica";
+        if (catId.contains("gastronom")) return "Gastronomia";
+        if (catId.contains("sport") || catId.contains("esport") || catId.contains("deport")) return "Esport";
+        if (catId.contains("famil")) return "Familiar";
+        return "Cultura";
     }
 
     // Traduce una parte acotada de eventos API para no bloquear la carga principal.
@@ -560,7 +602,7 @@ public class EventosRepository {
 
         String descripcion = evento.getDescripcion();
         if (debeTraducirDescripcion(descripcion)) {
-            String descTraducida = traducirTextoSeguro(descripcion, idiomaDestino);
+            String descTraducida = traducirDescripcionManteniendoEnlaces(descripcion, idiomaDestino);
             if (!safeLower(descTraducida).equals(safeLower(descripcion))) {
                 evento.setDescripcion(descTraducida);
                 changed = true;
@@ -570,13 +612,57 @@ public class EventosRepository {
         return changed;
     }
 
-    // Evita traducciones que suelen romper enlaces o texto tecnico.
+    // Permite traducir descripcion cuando exista contenido textual.
     private boolean debeTraducirDescripcion(String text) {
         if (text == null) return false;
         String v = text.trim();
-        if (v.isEmpty()) return false;
-        String lower = v.toLowerCase(Locale.ROOT);
-        return !lower.contains("http://") && !lower.contains("https://") && !lower.contains("www.");
+        return !v.isEmpty();
+    }
+
+    // Traduce descripcion preservando enlaces para no romper URLs publicas.
+    private String traducirDescripcionManteniendoEnlaces(String descripcion, String idiomaDestino) {
+        String source = descripcion == null ? "" : descripcion;
+        if (source.trim().isEmpty()) return source;
+
+        Matcher matcher = INLINE_URL_PATTERN.matcher(source);
+        int cursor = 0;
+        boolean foundUrl = false;
+        StringBuilder sb = new StringBuilder();
+
+        while (matcher.find()) {
+            foundUrl = true;
+            String textoAntes = source.substring(cursor, matcher.start());
+            sb.append(traducirSegmentoPreservandoEspacios(textoAntes, idiomaDestino));
+            sb.append(matcher.group());
+            cursor = matcher.end();
+        }
+
+        if (!foundUrl) {
+            return traducirTextoSeguro(source, idiomaDestino);
+        }
+
+        String textoFinal = source.substring(cursor);
+        sb.append(traducirSegmentoPreservandoEspacios(textoFinal, idiomaDestino));
+        String out = sb.toString();
+        return out.trim().isEmpty() ? source : out;
+    }
+
+    // Traduce un segmento sin perder los espacios/saltos alrededor del texto.
+    private String traducirSegmentoPreservandoEspacios(String segmento, String idiomaDestino) {
+        if (segmento == null || segmento.isEmpty()) return segmento == null ? "" : segmento;
+
+        int start = 0;
+        int end = segmento.length();
+        while (start < end && Character.isWhitespace(segmento.charAt(start))) start++;
+        while (end > start && Character.isWhitespace(segmento.charAt(end - 1))) end--;
+
+        if (start >= end) return segmento;
+
+        String leading = segmento.substring(0, start);
+        String core = segmento.substring(start, end);
+        String trailing = segmento.substring(end);
+        String translatedCore = traducirTextoSeguro(core, idiomaDestino);
+        return leading + translatedCore + trailing;
     }
 
     // Traduce un texto y descarta respuestas potencialmente corruptas (mojibake).

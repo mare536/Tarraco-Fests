@@ -2,6 +2,7 @@ package com.example.tarraco_fest.Repository;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.Modelo.UsuarioPerfil;
+import com.example.tarraco_fest.Util.PasswordPolicy;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -117,6 +118,10 @@ public class UsuarioRepository {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
             cb.onError(new IllegalStateException("No hay sesion"));
+            return;
+        }
+        if (PasswordPolicy.validate(password) != PasswordPolicy.Result.OK) {
+            cb.onError(new IllegalArgumentException("Password no cumple politica de seguridad"));
             return;
         }
         if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {

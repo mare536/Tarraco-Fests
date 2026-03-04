@@ -4,5 +4,7 @@
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="android:windowSplashScreenBackground">@color/background_light</item>
+        <item name="android:windowBackground">@color/background_light</item>
     </style>
 </resources>

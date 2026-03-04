@@ -33,6 +33,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,9 +41,8 @@ import com.bumptech.glide.Glide;
 import com.example.tarraco_fest.Adapter.AdminEventosAdapter;
 import com.example.tarraco_fest.Modelo.AdminEvento;
 import com.example.tarraco_fest.R;
-import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.AdminEventosRepository;
-import com.example.tarraco_fest.Repository.EventosRepository;
+import com.example.tarraco_fest.ViewModel.AdminEventosViewModel;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
@@ -55,9 +55,7 @@ import com.google.firebase.storage.StorageException;
 import java.io.FileNotFoundException;
 import java.text.SimpleDateFormat;
 import java.text.Normalizer;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -80,15 +78,12 @@ public class AdminEventosActivity extends AppCompatActivity {
     private static final String CATEGORIA_FAMILIAR = "familiar";
     private static final String CATEGORIA_GASTRONOMIA = "gastronomia";
 
-    private final AdminAccessRepository accessRepository = new AdminAccessRepository();
-    private final AdminEventosRepository eventosRepository = new AdminEventosRepository();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
+    private AdminEventosViewModel viewModel;
     private AdminEventosAdapter adapter;
-    private final List<AdminEvento> eventos = new ArrayList<>();
-    private String busquedaNormalizada = "";
-    private String filtroEstadoActual = FILTRO_TODOS;
+    private View btnRecargar;
     private Uri imagenSeleccionadaUri;
     private ImageView ivImagenDialog;
     private TextView tvImagenEstadoDialog;
@@ -132,7 +127,17 @@ public class AdminEventosActivity extends AppCompatActivity {
             // Gestiona on toggle activo en este bloque.
             @Override
             public void onToggleActivo(AdminEvento evento) {
-                toggleActivo(evento);
+                viewModel.toggleActivo(evento, new AdminEventosViewModel.ActionResult() {
+                    @Override
+                    public void onOk() {
+                        marcarEventosActualizados();
+                    }
+
+                    @Override
+                    public void onError() {
+                        // Sin accion adicional: el ViewModel ya publica feedback.
+                    }
+                });
             }
 
             // Gestiona on eliminar en este bloque.
@@ -143,12 +148,14 @@ public class AdminEventosActivity extends AppCompatActivity {
         });
         rv.setAdapter(adapter);
 
+        btnRecargar = findViewById(R.id.btnAdminEventosRecargar);
+        configurarViewModel();
         configurarBuscadorYFiltros();
         findViewById(R.id.btnAdminEventosCrear).setOnClickListener(v -> mostrarDialogEvento(null));
-        findViewById(R.id.btnAdminEventosRecargar).setOnClickListener(v -> cargarEventos());
+        btnRecargar.setOnClickListener(v -> viewModel.cargarEventos());
         findViewById(R.id.btnAdminEventosVolver).setOnClickListener(v -> finish());
 
-        validarAccesoYCargar();
+        viewModel.verificarAccesoYCargar();
     }
 
     // Aplica edge-to-edge y ajusta insets para evitar franjas blancas y solapes con barras del sistema.
@@ -228,8 +235,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             // Gestiona on text changed en este bloque.
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                busquedaNormalizada = normalizar(s == null ? "" : s.toString());
-                aplicarFiltrosLocales();
+                viewModel.actualizarBusqueda(s == null ? "" : s.toString());
             }
 
             @Override
@@ -238,79 +244,42 @@ public class AdminEventosActivity extends AppCompatActivity {
 
         rgEstado.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbAdminEventosEstadoActivos) {
-                filtroEstadoActual = FILTRO_ACTIVOS;
+                viewModel.actualizarFiltroEstado(FILTRO_ACTIVOS);
             } else if (checkedId == R.id.rbAdminEventosEstadoInactivos) {
-                filtroEstadoActual = FILTRO_INACTIVOS;
+                viewModel.actualizarFiltroEstado(FILTRO_INACTIVOS);
             } else {
-                filtroEstadoActual = FILTRO_TODOS;
-            }
-            aplicarFiltrosLocales();
-        });
-    }
-
-    // Valida acceso ycargar antes de continuar el flujo.
-    private void validarAccesoYCargar() {
-        accessRepository.verificarAccesoAdmin(new AdminAccessRepository.Callback() {
-            // Gestiona on result en este bloque.
-            @Override
-            public void onResult(boolean isAdmin) {
-                if (!isAdmin) {
-                    Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_access_denied), Toast.LENGTH_LONG).show();
-                    finish();
-                    return;
-                }
-                cargarEventos();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_access_error), Toast.LENGTH_LONG).show();
-                finish();
+                viewModel.actualizarFiltroEstado(FILTRO_TODOS);
             }
         });
+
+        viewModel.actualizarBusqueda("");
+        viewModel.actualizarFiltroEstado(FILTRO_TODOS);
     }
 
-    // Carga eventos desde la fuente correspondiente.
-    private void cargarEventos() {
-        eventosRepository.cargarEventos(new AdminEventosRepository.ListCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk(List<AdminEvento> eventos) {
-                AdminEventosActivity.this.eventos.clear();
-                AdminEventosActivity.this.eventos.addAll(eventos);
-                aplicarFiltrosLocales();
-            }
+    // Conecta la Activity con su ViewModel para desacoplar acceso a datos.
+    private void configurarViewModel() {
+        viewModel = new ViewModelProvider(this).get(AdminEventosViewModel.class);
 
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_events_load_error), Toast.LENGTH_LONG).show();
-            }
+        viewModel.getEventos().observe(this, data -> adapter.setData(data));
+
+        viewModel.getToastMessageRes().observe(this, messageRes -> {
+            if (messageRes == null) return;
+            Toast.makeText(this, getString(messageRes), Toast.LENGTH_LONG).show();
+            viewModel.consumirToastMessage();
         });
-    }
 
-    // Aplica filtros locales respetando el estado actual.
-    private void aplicarFiltrosLocales() {
-        List<AdminEvento> filtrados = new ArrayList<>();
+        viewModel.getShouldCloseScreen().observe(this, shouldClose -> {
+            if (shouldClose == null || !shouldClose) return;
+            viewModel.consumirCloseScreen();
+            finish();
+        });
 
-        for (AdminEvento e : eventos) {
-            String titulo = normalizar(e.titulo);
-            String lugar = normalizar(e.lugarNombre);
-            boolean coincideTexto = busquedaNormalizada.isEmpty()
-                    || titulo.contains(busquedaNormalizada)
-                    || lugar.contains(busquedaNormalizada);
-
-            boolean coincideEstado = FILTRO_TODOS.equals(filtroEstadoActual)
-                    || (FILTRO_ACTIVOS.equals(filtroEstadoActual) && e.activo)
-                    || (FILTRO_INACTIVOS.equals(filtroEstadoActual) && !e.activo);
-
-            if (coincideTexto && coincideEstado) {
-                filtrados.add(e);
-            }
-        }
-
-        adapter.setData(filtrados);
+        viewModel.getLoading().observe(this, isLoading -> {
+            if (btnRecargar == null) return;
+            boolean loading = isLoading != null && isLoading;
+            btnRecargar.setEnabled(!loading);
+            btnRecargar.setAlpha(loading ? 0.6f : 1f);
+        });
     }
 
     // Muestra dialog evento en la interfaz.
@@ -479,7 +448,7 @@ public class AdminEventosActivity extends AppCompatActivity {
             }
 
             btnGuardar.setEnabled(false);
-            eventosRepository.generarI18nEvento(evento.titulo, evento.descripcion, new AdminEventosRepository.EventI18nCallback() {
+            viewModel.generarI18nEvento(evento.titulo, evento.descripcion, new AdminEventosRepository.EventI18nCallback() {
                 @Override
                 public void onOk(Map<String, String> tituloI18n, Map<String, String> descripcionI18n) {
                     evento.tituloI18n = tituloI18n;
@@ -557,7 +526,7 @@ public class AdminEventosActivity extends AppCompatActivity {
                 tvImagenEstadoDialog.setText(getString(R.string.admin_event_image_uploading));
             }
             Log.d(TAG, "Intentando subir imagen URI: " + imagenSeleccionadaUri);
-            eventosRepository.subirImagenEvento(AdminEventosActivity.this, imagenSeleccionadaUri, new AdminEventosRepository.ImageUploadCallback() {
+            viewModel.subirImagenEvento(AdminEventosActivity.this, imagenSeleccionadaUri, new AdminEventosRepository.ImageUploadCallback() {
                 // Gestiona on ok en este bloque.
                 @Override
                 public void onOk(String imageBase64) {
@@ -701,48 +670,18 @@ public class AdminEventosActivity extends AppCompatActivity {
 
     // Guarda evento en firestore y sincroniza cambios.
     private void guardarEventoEnFirestore(AdminEvento evento, boolean crear, AlertDialog dialog, Button btnGuardar) {
-        AdminEventosRepository.ActionCallback callback = new AdminEventosRepository.ActionCallback() {
+        viewModel.guardarEvento(evento, crear, new AdminEventosViewModel.ActionResult() {
             // Gestiona on ok en este bloque.
             @Override
             public void onOk() {
-                EventosRepository.invalidarCacheApi();
                 marcarEventosActualizados();
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
-                cargarEventos();
             }
 
             // Gestiona on error en este bloque.
             @Override
-            public void onError(Exception e) {
+            public void onError() {
                 if (btnGuardar != null) btnGuardar.setEnabled(true);
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_save_error), Toast.LENGTH_LONG).show();
-            }
-        };
-
-        if (crear) {
-            eventosRepository.crearEvento(evento, callback);
-        } else {
-            eventosRepository.actualizarEvento(evento, callback);
-        }
-    }
-
-    // Alterna el estado de activo.
-    private void toggleActivo(AdminEvento evento) {
-        eventosRepository.actualizarActivo(evento.id, !evento.activo, new AdminEventosRepository.ActionCallback() {
-            // Gestiona on ok en este bloque.
-            @Override
-            public void onOk() {
-                EventosRepository.invalidarCacheApi();
-                marcarEventosActualizados();
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_saved_ok), Toast.LENGTH_SHORT).show();
-                cargarEventos();
-            }
-
-            // Gestiona on error en este bloque.
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_save_error), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -760,26 +699,19 @@ public class AdminEventosActivity extends AppCompatActivity {
                 .setTitle(getString(R.string.admin_event_delete_confirm_title))
                 .setMessage(getString(R.string.admin_event_delete_confirm_message, titulo))
                 .setNegativeButton(getString(R.string.admin_cancel), null)
-                .setPositiveButton(getString(R.string.admin_event_delete), (d, w) -> eliminarEvento(evento))
+                .setPositiveButton(getString(R.string.admin_event_delete), (d, w) ->
+                        viewModel.eliminarEvento(evento, new AdminEventosViewModel.ActionResult() {
+                            @Override
+                            public void onOk() {
+                                marcarEventosActualizados();
+                            }
+
+                            @Override
+                            public void onError() {
+                                // Sin accion adicional: el ViewModel ya publica feedback.
+                            }
+                        }))
                 .show();
-    }
-
-    // Elimina el evento y refresca la lista local.
-    private void eliminarEvento(AdminEvento evento) {
-        eventosRepository.eliminarEvento(evento.id, new AdminEventosRepository.ActionCallback() {
-            @Override
-            public void onOk() {
-                EventosRepository.invalidarCacheApi();
-                marcarEventosActualizados();
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_deleted_ok), Toast.LENGTH_SHORT).show();
-                cargarEventos();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(AdminEventosActivity.this, getString(R.string.admin_event_delete_error), Toast.LENGTH_LONG).show();
-            }
-        });
     }
 
     // Marca en almacenamiento local que hubo cambios de eventos para forzar refresco en Home.

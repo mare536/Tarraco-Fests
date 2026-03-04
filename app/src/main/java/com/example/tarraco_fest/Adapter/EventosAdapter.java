@@ -33,10 +33,12 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
 
     private List<Evento> listaEventos;
     private final Context context;
+    private final Context appContext;
 
     public EventosAdapter(List<Evento> listaEventos, Context context) {
         this.listaEventos = listaEventos == null ? Collections.emptyList() : new ArrayList<>(listaEventos);
         this.context = context;
+        this.appContext = context.getApplicationContext();
         setHasStableIds(true);
     }
 
@@ -101,11 +103,11 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         }
 
         // Evita artefactos por reciclado: cancela cualquier carga pendiente previa.
-        Glide.with(context).clear(holder.imgEvento);
+        Glide.with(appContext).clear(holder.imgEvento);
         holder.imgEvento.setImageResource(fallbackImage);
 
         if (evento.getImagenUrl() != null && !evento.getImagenUrl().isEmpty()) {
-            Glide.with(context)
+            Glide.with(appContext)
                     .load(evento.getImagenUrl())
                     .placeholder(fallbackImage)
                     .error(fallbackImage)
@@ -150,7 +152,7 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
     @Override
     public void onViewRecycled(@NonNull EventoViewHolder holder) {
         super.onViewRecycled(holder);
-        Glide.with(context).clear(holder.imgEvento);
+        Glide.with(appContext).clear(holder.imgEvento);
         holder.imgEvento.setImageDrawable(null);
     }
 

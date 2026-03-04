@@ -308,16 +308,49 @@
                     android:textStyle="bold"
                     android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/tvDataSyncHint"
-                    android:layout_width="wrap_content"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardDataSyncHint"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="10dp"
                     android:alpha="0"
-                    android:text="@string/home_sync_updating"
-                    android:textColor="@color/home_filter_summary_text"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/home_sync_hint_bg"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/home_sync_hint_stroke"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingTop="9dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="9dp">
+
+                        <ProgressBar
+                            android:id="@+id/progressDataSyncHint"
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:indeterminate="true"
+                            android:indeterminateTint="@color/home_sync_hint_text" />
+
+                        <TextView
+                            android:id="@+id/tvDataSyncHint"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="@string/home_sync_updating"
+                            android:textColor="@color/home_sync_hint_text"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.appbar.AppBarLayout>
 

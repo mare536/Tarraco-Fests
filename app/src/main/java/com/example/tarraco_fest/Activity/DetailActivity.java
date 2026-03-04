@@ -29,9 +29,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -40,6 +42,7 @@ import androidx.core.widget.NestedScrollView;
 
 import com.example.tarraco_fest.Modelo.Evento;
 import com.example.tarraco_fest.R;
+import com.example.tarraco_fest.Repository.AutoTranslationRepository;
 import com.example.tarraco_fest.Repository.FavoritosRepository;
 import com.example.tarraco_fest.Repository.ReminderRepository;
 import com.google.android.material.button.MaterialButton;
@@ -53,6 +56,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 
 /**
@@ -64,9 +69,11 @@ public class DetailActivity extends AppCompatActivity {
     private static final long REMINDER_MIN_LEAD_MS = 60L * 1000L;
     private static final String PREF_SYNC_FLAGS = "sync_flags";
     private static final String KEY_FAVORITOS_UPDATED_AT = "favoritos_updated_at";
+    private static final ExecutorService DETAIL_TRANSLATION_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private ReminderRepository reminderRepository;
     private FavoritosRepository favoritosRepository;
+    private final AutoTranslationRepository autoTranslationRepository = new AutoTranslationRepository();
     private Evento eventoActual;
     private MaterialButton btnReminder;
     private MaterialButton btnFavorite;
@@ -204,7 +211,7 @@ public class DetailActivity extends AppCompatActivity {
             imgView.setImageResource(fallbackImage);
         }
 
-        String categoria = safeText(evento.getCategoriaUI(), "General");
+        String categoria = obtenerCategoriaLocalizada(evento);
         chipCategoria.setText(categoria.toUpperCase(Locale.ROOT));
         txtTitulo.setText(evento.getTitulo());
         txtFecha.setText(evento.getFecha());
@@ -220,6 +227,7 @@ public class DetailActivity extends AppCompatActivity {
         if (descripcionLimpia.isEmpty()) {
             descripcionLimpia = getString(R.string.detail_description_fallback);
         }
+        descripcionLimpia = repararDescripcionMixtaEnDetalle(evento, descripcionLimpia);
         txtDescripcion.setText(construirResumenEvento(evento, categoria));
 
         String precioFinal = evento.getPrecio() == 0.0
@@ -228,6 +236,7 @@ public class DetailActivity extends AppCompatActivity {
         txtPrecio.setText(precioFinal);
 
         txtInfoAddress.setText(formatearDescripcionParaVista(descripcionLimpia));
+        traducirDescripcionEnDetalleSiHaceFalta(descripcionLimpia, txtInfoAddress);
         txtInfoCategory.setText(obtenerEstadoEvento(evento));
 
         if (!sourceUrl.isEmpty()) {
@@ -668,18 +677,18 @@ public class DetailActivity extends AppCompatActivity {
     // Genera descripcion para calendario reutilizando contenido del evento y su fuente.
     private String construirDescripcionCalendario(Evento evento) {
         String descripcion = safeText(evento.getDescripcion(), "");
-        String categoria = safeText(evento.getCategoriaUI(), "");
+        String categoria = obtenerCategoriaLocalizada(evento);
         String fuente = safeText(normalizarUrl(sourceUrl), "");
 
         StringBuilder sb = new StringBuilder();
         if (!descripcion.isEmpty()) sb.append(descripcion);
         if (!categoria.isEmpty()) {
             if (sb.length() > 0) sb.append("\n\n");
-            sb.append("Categoria: ").append(categoria);
+            sb.append(getString(R.string.detail_info_category)).append(": ").append(categoria);
         }
         if (!fuente.isEmpty()) {
             if (sb.length() > 0) sb.append("\n\n");
-            sb.append("Fuente: ").append(fuente);
+            sb.append(getString(R.string.detail_info_source)).append(": ").append(fuente);
         }
         return sb.length() == 0 ? getString(R.string.detail_description_fallback) : sb.toString();
     }
@@ -949,6 +958,25 @@ public class DetailActivity extends AppCompatActivity {
         return getString(R.string.detail_status_upcoming);
     }
 
+    // Traduce categoria interna al texto localizado para la pantalla de detalle.
+    private String obtenerCategoriaLocalizada(Evento evento) {
+        if (evento == null) return getString(R.string.admin_event_category_cultura);
+        String categoriaId = safeText(evento.getCategoriaId(), "").toLowerCase(Locale.ROOT);
+        if (categoriaId.contains("music") || categoriaId.contains("musica") || categoriaId.contains("música")) {
+            return getString(R.string.admin_event_category_musica);
+        }
+        if (categoriaId.contains("sport") || categoriaId.contains("esport") || categoriaId.contains("deport")) {
+            return getString(R.string.admin_event_category_esport);
+        }
+        if (categoriaId.contains("famil")) {
+            return getString(R.string.admin_event_category_familiar);
+        }
+        if (categoriaId.contains("gastronom")) {
+            return getString(R.string.admin_event_category_gastronomia);
+        }
+        return getString(R.string.admin_event_category_cultura);
+    }
+
     // Aplica negrita etiqueta respetando el estado actual.
     private void aplicarNegritaEtiqueta(SpannableStringBuilder sb, String etiqueta) {
         String texto = sb.toString();
@@ -966,6 +994,86 @@ public class DetailActivity extends AppCompatActivity {
     private String safeText(String value, String fallback) {
         if (value == null || value.trim().isEmpty()) return fallback;
         return value.trim();
+    }
+
+    // Repara descripcion cuando llega mixta (texto latino + etiquetas japonesas) para no confundir al usuario.
+    private String repararDescripcionMixtaEnDetalle(Evento evento, String descripcion) {
+        String lang = idiomaAppActual();
+        if (!"ja".equals(lang)) return descripcion;
+
+        String source = safeText(descripcion, "");
+        if (source.isEmpty()) return descripcion;
+
+        boolean tieneEtiquetaJa = source.contains("日付:") || source.contains("場所:") || source.contains("カテゴリ:");
+        boolean tieneLetrasLatinas = source.matches(".*[A-Za-zÀ-ÿ].*");
+        if (!(tieneEtiquetaJa && tieneLetrasLatinas)) return descripcion;
+
+        String categoria = obtenerCategoriaLocalizada(evento);
+        String lugar = safeText(evento.getDireccion(), safeText(evento.getUbicacion(), ""));
+        String fecha = safeText(evento.getFecha(), "");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("タラゴナ文化アジェンダのイベントです。");
+        if (!fecha.isEmpty()) sb.append(" 日付: ").append(fecha).append(".");
+        if (!lugar.isEmpty()) sb.append(" 場所: ").append(lugar).append(".");
+        if (!categoria.isEmpty()) sb.append(" カテゴリ: ").append(categoria).append(".");
+        sb.append(" 詳細は公式サイトをご確認ください。");
+        return sb.toString();
+    }
+
+    // Traduce en detalle para evitar texto mixto si la traduccion progresiva aun no termino.
+    private void traducirDescripcionEnDetalleSiHaceFalta(String descripcionBase, TextView destino) {
+        if (destino == null) return;
+        String lang = idiomaAppActual();
+        if ("es".equals(lang)) return;
+
+        String source = safeText(descripcionBase, "");
+        if (source.isEmpty()) return;
+
+        // Caso reportado principal: mezcla en japones. Forzamos traduccion puntual aqui.
+        if (!"ja".equals(lang)) return;
+
+        DETAIL_TRANSLATION_EXECUTOR.execute(() -> {
+            String translated = autoTranslationRepository.translateBlocking(source, lang);
+            String safe = translated == null ? "" : translated.trim();
+            if (safe.isEmpty()) return;
+            if (pareceTextoCorrupto(safe)) return;
+            if (safe.equalsIgnoreCase(source)) return;
+
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                destino.setText(formatearDescripcionParaVista(safe));
+            });
+        });
+    }
+
+    // Detecta mojibake comun para no reemplazar texto correcto por traduccion corrupta.
+    private boolean pareceTextoCorrupto(String text) {
+        if (text == null || text.isEmpty()) return false;
+        if (text.indexOf('\uFFFD') >= 0) return true;
+        if (text.contains("Ãƒ") || text.contains("Ã‚")) return true;
+        if (text.contains("Ã¢â‚¬") || text.contains("Ã¢â‚¬â„¢") || text.contains("Ã¢â‚¬Å“")) return true;
+        return false;
+    }
+
+    // Devuelve idioma activo de app con fallback seguro al locale del sistema.
+    private String idiomaAppActual() {
+        LocaleListCompat appLocales = AppCompatDelegate.getApplicationLocales();
+        String raw = "";
+        if (appLocales != null && !appLocales.isEmpty()) {
+            Locale locale = appLocales.get(0);
+            if (locale != null) raw = locale.toLanguageTag();
+        }
+        if (raw == null || raw.trim().isEmpty()) {
+            raw = Locale.getDefault().toLanguageTag();
+        }
+        String lang = raw == null ? "es" : raw.trim().toLowerCase(Locale.ROOT);
+        if (lang.isEmpty()) return "es";
+        int dash = lang.indexOf('-');
+        if (dash > 0) lang = lang.substring(0, dash);
+        int underscore = lang.indexOf('_');
+        if (underscore > 0) lang = lang.substring(0, underscore);
+        return lang;
     }
 }
 

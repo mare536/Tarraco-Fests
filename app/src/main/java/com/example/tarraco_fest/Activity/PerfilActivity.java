@@ -27,6 +27,7 @@ import com.example.tarraco_fest.Modelo.UsuarioPerfil;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.example.tarraco_fest.Repository.UsuarioRepository;
+import com.example.tarraco_fest.Util.PasswordPolicy;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -452,8 +453,9 @@ public class PerfilActivity extends AppCompatActivity {
             etPass1.requestFocus();
             return;
         }
-        if (pass1.length() < 6) {
-            etPass1.setError(getString(R.string.profile_password_min));
+        PasswordPolicy.Result passwordResult = PasswordPolicy.validate(pass1);
+        if (passwordResult != PasswordPolicy.Result.OK) {
+            etPass1.setError(getString(PasswordPolicy.errorRes(passwordResult)));
             etPass1.requestFocus();
             return;
         }

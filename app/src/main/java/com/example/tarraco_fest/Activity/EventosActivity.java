@@ -120,7 +120,11 @@ public class EventosActivity extends AppCompatActivity {
             // Gestiona on error en este bloque.
             @Override
             public void onError(Exception e) {
-                Toast.makeText(EventosActivity.this, "Error cargando eventos: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(
+                        EventosActivity.this,
+                        getString(R.string.eventos_events_load_error_fmt, e.getMessage()),
+                        Toast.LENGTH_LONG
+                ).show();
             }
         });
     }

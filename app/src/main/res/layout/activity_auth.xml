@@ -65,7 +65,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="vertical">
 
@@ -74,7 +74,7 @@
                 android:layout_width="@dimen/auth_logo_size"
                 android:layout_height="@dimen/auth_logo_size"
                 android:layout_gravity="center_horizontal"
-                android:contentDescription="Logo"
+                android:contentDescription="@string/common_logo_content_description"
                 android:src="@drawable/logo" />
 
             <com.google.android.material.card.MaterialCardView
@@ -96,7 +96,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Inicia sesion"
+                    android:text="@string/auth_login_title"
                     android:textColor="@color/dialog_text"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -105,7 +105,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
-                    android:text="Accede con Google o correo y contrase&#241;a."
+                    android:text="@string/auth_login_subtitle"
                     android:textColor="@color/dialog_hint"
                     android:textSize="13sp" />
 
@@ -118,7 +118,7 @@
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:text="Continuar con Google"
+                    android:text="@string/auth_continue_google"
                     android:textAllCaps="false"
                     android:textColor="#3C4043"
                     android:textStyle="bold"
@@ -148,7 +148,7 @@
                         android:layout_height="wrap_content"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
-                        android:text="o con correo"
+                        android:text="@string/auth_or_email"
                         android:textColor="@color/dialog_hint"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -165,7 +165,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="Correo"
+                    android:hint="@string/auth_reset_email_hint"
                     app:boxBackgroundColor="@color/login_input_bg"
                     app:boxBackgroundMode="filled"
                     app:boxCornerRadiusBottomEnd="14dp"
@@ -190,7 +190,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:hint="Contrase&#241;a"
+                    android:hint="@string/auth_password_hint"
                     app:boxBackgroundColor="@color/login_input_bg"
                     app:boxBackgroundMode="filled"
                     app:boxCornerRadiusBottomEnd="14dp"
@@ -237,7 +237,7 @@
                     android:layout_height="52dp"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/btn_login_primary"
-                    android:text="Continuar con email"
+                    android:text="@string/auth_continue_email"
                     android:textAllCaps="false"
                     android:textColor="@color/login_btn_primary_text"
                     android:textStyle="bold"
@@ -249,7 +249,7 @@
                     android:layout_height="52dp"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/btn_login_secondary"
-                    android:text="Crear cuenta"
+                    android:text="@string/auth_create_account"
                     android:textAllCaps="false"
                     android:textColor="@color/login_btn_secondary_text"
                     android:textStyle="bold"

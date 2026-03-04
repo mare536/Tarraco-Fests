@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -102,7 +103,8 @@ public class HomeActivity extends AppCompatActivity {
     private static final String FILTRO_FAVORITOS_SOLO = "favoritos_solo";
     private static final double DISTANCIA_CERCA_KM = 5.0d;
     private static final long AUTO_REFRESH_MIN_INTERVAL_MS = 180_000L;
-    private static final long SYNC_HINT_HIDE_DELAY_MS = 1_500L;
+    private static final long SYNC_HINT_HIDE_DELAY_MS = 2_200L;
+    private static final long SYNC_HINT_MIN_VISIBLE_MS = 1_200L;
 
     private EventosAdapter adapter;
     private HomeViewModel homeViewModel;
@@ -135,7 +137,9 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvFilterSummary;
     private TextView tvOpenFilters;
     private TextView tvClearFilters;
+    private View cardDataSyncHint;
     private TextView tvDataSyncHint;
+    private ProgressBar progressDataSyncHint;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private androidx.appcompat.widget.AppCompatImageButton btnHomeMenu;
@@ -153,17 +157,18 @@ public class HomeActivity extends AppCompatActivity {
     private boolean pendingFavoritosErrorToast = false;
     private boolean vmCargandoEventos = false;
     private boolean vmTraduciendoEventos = false;
+    private long syncHintShownAt = 0L;
     private String pendingPushEventId = "";
     private boolean pendingPushRefreshRequested = false;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideSyncHintRunnable = () -> {
-        if (tvDataSyncHint == null) return;
-        tvDataSyncHint.animate()
+        if (cardDataSyncHint == null) return;
+        cardDataSyncHint.animate()
                 .alpha(0f)
                 .setDuration(180L)
                 .withEndAction(() -> {
-                    if (tvDataSyncHint != null) {
-                        tvDataSyncHint.setVisibility(View.GONE);
+                    if (cardDataSyncHint != null) {
+                        cardDataSyncHint.setVisibility(View.GONE);
                     }
                 })
                 .start();
@@ -646,7 +651,9 @@ public class HomeActivity extends AppCompatActivity {
         tvFilterSummary = findViewById(R.id.tvFilterSummary);
         tvOpenFilters = findViewById(R.id.tvOpenFilters);
         tvClearFilters = findViewById(R.id.tvClearFilters);
+        cardDataSyncHint = findViewById(R.id.cardDataSyncHint);
         tvDataSyncHint = findViewById(R.id.tvDataSyncHint);
+        progressDataSyncHint = findViewById(R.id.progressDataSyncHint);
 
         etBuscador.addTextChangedListener(new TextWatcher() {
             // Gestiona before text changed en este bloque.
@@ -737,7 +744,7 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(HomeActivity.this, getString(R.string.push_notif_event_not_found), Toast.LENGTH_SHORT).show();
             limpiarPendientePush();
         }
-        Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
+        Toast.makeText(HomeActivity.this, getString(R.string.home_events_load_error), Toast.LENGTH_LONG).show();
     }
 
     // Sincroniza favoritos emitidos por ViewModel con lista local y filtros activos.
@@ -781,9 +788,11 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        if (tvDataSyncHint != null) {
+        if (cardDataSyncHint != null && cardDataSyncHint.getVisibility() == View.VISIBLE) {
             uiHandler.removeCallbacks(hideSyncHintRunnable);
-            uiHandler.postDelayed(hideSyncHintRunnable, 200L);
+            long elapsed = System.currentTimeMillis() - syncHintShownAt;
+            long delay = Math.max(0L, SYNC_HINT_MIN_VISIBLE_MS - elapsed);
+            uiHandler.postDelayed(hideSyncHintRunnable, delay);
         }
     }
 
@@ -852,13 +861,17 @@ public class HomeActivity extends AppCompatActivity {
 
     // Muestra un hint temporal para hacer explicita la sincronizacion de datos.
     private void mostrarEstadoSincronizacion(@StringRes int textRes, boolean autoHide) {
-        if (tvDataSyncHint == null) return;
+        if (tvDataSyncHint == null || cardDataSyncHint == null) return;
 
         uiHandler.removeCallbacks(hideSyncHintRunnable);
         tvDataSyncHint.setText(textRes);
-        tvDataSyncHint.setVisibility(View.VISIBLE);
-        tvDataSyncHint.animate().cancel();
-        tvDataSyncHint.setAlpha(1f);
+        if (progressDataSyncHint != null) {
+            progressDataSyncHint.setVisibility(autoHide ? View.GONE : View.VISIBLE);
+        }
+        cardDataSyncHint.setVisibility(View.VISIBLE);
+        cardDataSyncHint.animate().cancel();
+        cardDataSyncHint.setAlpha(1f);
+        syncHintShownAt = System.currentTimeMillis();
 
         if (autoHide) {
             uiHandler.postDelayed(hideSyncHintRunnable, SYNC_HINT_HIDE_DELAY_MS);
