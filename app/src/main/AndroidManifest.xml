@@ -48,6 +48,23 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".Activity.AjustesActivity" android:exported="false" />
+
+        <service
+            android:name=".Push.TarracoMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/push_notif_default_channel_id" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_drawer_info" />
+
         <receiver
             android:name=".Reminder.ReminderReceiver"
             android:enabled="true"

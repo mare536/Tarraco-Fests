@@ -53,6 +53,9 @@ public final class FirestoreSchema {
         public static final String ACEPTA_TERMINOS_EN = "aceptaTerminosEn";
         public static final String TIENE_PASSWORD = "tienePassword";
         public static final String PASSWORD_VINCULADA_EN = "passwordVinculadaEn";
+        public static final String FCM_TOKEN = "fcmToken";
+        public static final String FCM_TOKEN_UPDATED_AT = "fcmTokenUpdatedAt";
+        public static final String FCM_TOKENS = "fcmTokens";
 
         private UsuarioFields() {}
     }

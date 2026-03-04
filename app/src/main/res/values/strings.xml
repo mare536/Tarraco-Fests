@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tarraco_Fest</string>
+    <string name="app_name">Tarraco Fests</string>
     <string name="eventos">Eventos</string>
     <string name="home_menu_open">Abrir menu</string>
     <string name="home_nav_header_subtitle">Accesos rapidos</string>
@@ -281,6 +281,13 @@
     <string name="detail_reminder_status_none">Aun no tienes recordatorio activo</string>
     <string name="detail_reminder_status_active">Recordatorio activo para %1$s</string>
     <string name="detail_reminder_edit_button">Editar recordatorio</string>
+    <string name="detail_calendar_sync_prompt_title">Anadir a Google Calendar</string>
+    <string name="detail_calendar_sync_prompt_message">Tu recordatorio en Tarraco Fests ya esta guardado. Quieres anadir tambien este evento a Google Calendar con el mismo aviso?</string>
+    <string name="detail_calendar_sync_confirm">Anadir</string>
+    <string name="detail_calendar_sync_later">Ahora no</string>
+    <string name="detail_calendar_opened">Se abrio Google Calendar para guardar el evento</string>
+    <string name="detail_calendar_open_error">No se pudo abrir Google Calendar</string>
+    <string name="detail_feedback_action_ok">Entendido</string>
     <string name="detail_favorite_add">Guardar en favoritos</string>
     <string name="detail_favorite_remove">Quitar de favoritos</string>
     <string name="detail_favorite_added">Evento guardado en favoritos</string>
@@ -289,4 +296,12 @@
     <string name="detail_favorite_login_required">Inicia sesion para usar favoritos</string>
     <string name="detail_share_text">Evento: %1$s\nFecha: %2$s\nLugar: %3$s</string>
     <string name="detail_map_error">No hay app de mapas disponible</string>
+
+    <!-- Push / Firebase Messaging -->
+    <string name="push_notif_default_channel_id">tarraco_push_general</string>
+    <string name="push_notif_channel_name">Avisos de Tarraco Fests</string>
+    <string name="push_notif_channel_desc">Notificaciones de eventos, cambios y novedades.</string>
+    <string name="push_notif_default_title">Tarraco Fests</string>
+    <string name="push_notif_default_body">Tienes una nueva notificacion.</string>
+    <string name="push_notif_event_not_found">El evento de la notificacion no esta disponible.</string>
 </resources>

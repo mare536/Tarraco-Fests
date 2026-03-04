@@ -42,10 +42,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tarraco_fest.Adapter.EventosAdapter;
 import com.example.tarraco_fest.Modelo.Evento;
+import com.example.tarraco_fest.Push.PushContract;
 import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.EventosRepository;
 import com.example.tarraco_fest.Repository.FavoritosRepository;
+import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -104,6 +106,7 @@ public class HomeActivity extends AppCompatActivity {
     private final EventosRepository repo = new EventosRepository();
     private final FavoritosRepository favoritosRepository = new FavoritosRepository();
     private final AdminAccessRepository adminAccessRepository = new AdminAccessRepository();
+    private final PushTokenRepository pushTokenRepository = new PushTokenRepository();
 
     private List<Evento> listaCompleta = new ArrayList<>();
     private String categoriaActual = "Todos";
@@ -143,6 +146,8 @@ public class HomeActivity extends AppCompatActivity {
     private String lastDataSignature = "";
     private long lastSeenEventosUpdatedAt = 0L;
     private long lastSeenFavoritosUpdatedAt = 0L;
+    private String pendingPushEventId = "";
+    private boolean pendingPushRefreshRequested = false;
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private final Runnable hideSyncHintRunnable = () -> {
         if (tvDataSyncHint == null) return;
@@ -178,16 +183,27 @@ public class HomeActivity extends AppCompatActivity {
         syncPrefs = getSharedPreferences(PREF_SYNC_FLAGS, MODE_PRIVATE);
         lastSeenEventosUpdatedAt = syncPrefs.getLong(KEY_EVENTOS_UPDATED_AT, 0L);
         lastSeenFavoritosUpdatedAt = syncPrefs.getLong(KEY_FAVORITOS_UPDATED_AT, 0L);
+        procesarIntentPush(getIntent());
 
         configurarStatusBar();
         configurarDrawer();
         cargarFiltrosPersistidos();
         configurarRecyclerView();
         configurarBuscadorYFiltros();
+        pushTokenRepository.sincronizarTokenUsuarioActual();
         cargarFavoritosUsuario(false);
         cargarDatosDesdeFirebase(false);
         solicitarPermisosIniciales();
         refrescarUbicacionUsuario();
+    }
+
+    // Gestiona on new intent en este bloque.
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        procesarIntentPush(intent);
+        abrirEventoDesdePushSiDisponible();
     }
 
     // Gestiona on resume en este bloque.
@@ -211,6 +227,59 @@ public class HomeActivity extends AppCompatActivity {
     protected void onDestroy() {
         uiHandler.removeCallbacks(hideSyncHintRunnable);
         super.onDestroy();
+    }
+
+    // Lee extras push del intent y deja pendiente la apertura de detalle si aplica.
+    private void procesarIntentPush(Intent intent) {
+        if (intent == null) return;
+
+        String pushEventId = intent.getStringExtra(PushContract.EXTRA_PUSH_EVENT_ID);
+        if (pushEventId == null || pushEventId.trim().isEmpty()) return;
+
+        pendingPushEventId = pushEventId.trim();
+        pendingPushRefreshRequested = false;
+        intent.removeExtra(PushContract.EXTRA_PUSH_EVENT_ID);
+    }
+
+    // Abre detalle del evento indicado en push cuando ya esta cargada la lista local.
+    private void abrirEventoDesdePushSiDisponible() {
+        if (pendingPushEventId == null || pendingPushEventId.trim().isEmpty()) return;
+
+        Evento encontrado = null;
+        for (Evento evento : listaCompleta) {
+            if (evento == null) continue;
+            if (pendingPushEventId.equalsIgnoreCase(evento.getId())) {
+                encontrado = evento;
+                break;
+            }
+        }
+
+        if (encontrado == null) {
+            // Si aun no tenemos datos, esperamos a la primera carga.
+            if (!loadedAtLeastOnce) return;
+
+            // Fuerza una recarga una sola vez para evitar falsos "no encontrado".
+            if (!pendingPushRefreshRequested) {
+                pendingPushRefreshRequested = true;
+                cargarDatosDesdeFirebase(false);
+                return;
+            }
+
+            Toast.makeText(this, getString(R.string.push_notif_event_not_found), Toast.LENGTH_SHORT).show();
+            limpiarPendientePush();
+            return;
+        }
+
+        limpiarPendientePush();
+        Intent detailIntent = new Intent(this, DetailActivity.class);
+        detailIntent.putExtra("extra_evento", encontrado);
+        startActivity(detailIntent);
+    }
+
+    // Limpia estado temporal de apertura por push para evitar reintentos innecesarios.
+    private void limpiarPendientePush() {
+        pendingPushEventId = "";
+        pendingPushRefreshRequested = false;
     }
 
     // Configura status bar segun el contexto actual.
@@ -458,6 +527,7 @@ public class HomeActivity extends AppCompatActivity {
 
     // Gestiona cerrar sesion en este bloque.
     private void cerrarSesion() {
+        pushTokenRepository.desvincularTokenUsuarioActual();
         FirebaseAuth.getInstance().signOut();
 
         Intent intent = new Intent(this, LandingActivity.class);
@@ -578,6 +648,7 @@ public class HomeActivity extends AppCompatActivity {
                 }
                 sincronizarFavoritosEnLista();
                 aplicarFiltros();
+                abrirEventoDesdePushSiDisponible();
 
                 if (showSyncFeedback && hadDataBeforeRequest) {
                     mostrarEstadoSincronizacion(
@@ -594,6 +665,10 @@ public class HomeActivity extends AppCompatActivity {
                 loadedAtLeastOnce = true;
                 if (showSyncFeedback && hadDataBeforeRequest) {
                     mostrarEstadoSincronizacion(R.string.home_sync_error, true);
+                }
+                if (pendingPushRefreshRequested && pendingPushEventId != null && !pendingPushEventId.trim().isEmpty()) {
+                    Toast.makeText(HomeActivity.this, getString(R.string.push_notif_event_not_found), Toast.LENGTH_SHORT).show();
+                    limpiarPendientePush();
                 }
                 Toast.makeText(HomeActivity.this, "Error cargando eventos", Toast.LENGTH_LONG).show();
             }

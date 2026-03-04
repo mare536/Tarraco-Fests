@@ -11,6 +11,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.text.TextUtils;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -42,6 +43,8 @@ import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.FavoritosRepository;
 import com.example.tarraco_fest.Repository.ReminderRepository;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 
@@ -49,6 +52,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 
 /**
@@ -398,7 +402,7 @@ public class DetailActivity extends AppCompatActivity {
     // Gestiona seleccionar fecha yhora recordatorio en este bloque.
     private void seleccionarFechaYHoraRecordatorio(Evento evento) {
         if (evento.getInicioMillis() <= 0L) {
-            Toast.makeText(this, getString(R.string.detail_reminder_invalid_event_date), Toast.LENGTH_LONG).show();
+            mostrarErrorRecordatorio(getString(R.string.detail_reminder_invalid_event_date));
             return;
         }
 
@@ -408,7 +412,8 @@ public class DetailActivity extends AppCompatActivity {
             btnReminder.setAlpha(0.7f);
             btnReminder.setText(getString(R.string.detail_reminder_event_finished_button));
             tvReminderStatus.setText(getString(R.string.detail_reminder_event_finished_status));
-            Toast.makeText(this, getString(R.string.detail_reminder_event_finished_status), Toast.LENGTH_LONG).show();
+            tvReminderStatus.setTextColor(ContextCompat.getColor(this, R.color.detail_icon_tint));
+            mostrarErrorRecordatorio(getString(R.string.detail_reminder_event_finished_status));
             return;
         }
 
@@ -420,7 +425,8 @@ public class DetailActivity extends AppCompatActivity {
             btnReminder.setAlpha(0.7f);
             btnReminder.setText(getString(R.string.detail_reminder_unavailable_button));
             tvReminderStatus.setText(getString(R.string.detail_reminder_event_soon));
-            Toast.makeText(this, getString(R.string.detail_reminder_no_available_slot), Toast.LENGTH_LONG).show();
+            tvReminderStatus.setTextColor(ContextCompat.getColor(this, R.color.detail_icon_tint));
+            mostrarErrorRecordatorio(getString(R.string.detail_reminder_no_available_slot));
             return;
         }
 
@@ -471,21 +477,17 @@ public class DetailActivity extends AppCompatActivity {
             long maxFinal = Math.min(maxPermitido, evento.getInicioMillis() - REMINDER_MIN_LEAD_MS);
 
             if (remindAt < minFinal) {
-                Toast.makeText(
-                        this,
+                mostrarErrorRecordatorio(
                         getString(R.string.detail_reminder_after_now_required) + ". "
-                                + getString(R.string.detail_reminder_range_hint),
-                        Toast.LENGTH_LONG
-                ).show();
+                                + getString(R.string.detail_reminder_range_hint)
+                );
                 return;
             }
             if (remindAt > maxFinal) {
-                Toast.makeText(
-                        this,
+                mostrarErrorRecordatorio(
                         getString(R.string.detail_reminder_before_event_required) + ". "
-                                + getString(R.string.detail_reminder_range_hint),
-                        Toast.LENGTH_LONG
-                ).show();
+                                + getString(R.string.detail_reminder_range_hint)
+                );
                 return;
             }
 
@@ -511,6 +513,7 @@ public class DetailActivity extends AppCompatActivity {
                         String ok = getString(R.string.detail_reminder_saved_at, fecha);
                         Toast.makeText(DetailActivity.this, ok, Toast.LENGTH_LONG).show();
                         mostrarEstadoRecordatorio(remindAtMillis);
+                        sugerirGoogleCalendar(evento, remindAtMillis);
                     }
 
                     // Gestiona on error en este bloque.
@@ -519,7 +522,7 @@ public class DetailActivity extends AppCompatActivity {
                         String msg = (e != null && e.getMessage() != null && !e.getMessage().trim().isEmpty())
                                 ? e.getMessage()
                                 : getString(R.string.detail_reminder_error);
-                        Toast.makeText(DetailActivity.this, msg, Toast.LENGTH_LONG).show();
+                        mostrarErrorRecordatorio(msg);
                     }
                 }
         );
@@ -560,6 +563,7 @@ public class DetailActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
         String fecha = sdf.format(new Date(remindAtMillis));
         tvReminderStatus.setText(getString(R.string.detail_reminder_status_active, fecha));
+        tvReminderStatus.setTextColor(ContextCompat.getColor(this, R.color.detail_meta_text));
         btnReminder.setText(getString(R.string.detail_reminder_edit_button));
     }
 
@@ -567,7 +571,145 @@ public class DetailActivity extends AppCompatActivity {
     private void mostrarEstadoSinRecordatorio() {
         if (tvReminderStatus == null || btnReminder == null) return;
         tvReminderStatus.setText(getString(R.string.detail_reminder_status_none));
+        tvReminderStatus.setTextColor(ContextCompat.getColor(this, R.color.detail_meta_text));
         btnReminder.setText(getString(R.string.detail_reminder_button));
+    }
+
+    // Muestra un error persistente para que el usuario tenga tiempo de leerlo y entender la restriccion.
+    private void mostrarErrorRecordatorio(String mensaje) {
+        if (mensaje == null || mensaje.trim().isEmpty()) return;
+
+        if (tvReminderStatus != null) {
+            tvReminderStatus.setText(mensaje);
+            tvReminderStatus.setTextColor(ContextCompat.getColor(this, R.color.detail_icon_tint));
+        }
+
+        View anchor = findViewById(R.id.detailScroll);
+        if (anchor == null) {
+            Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        Snackbar snack = Snackbar.make(anchor, mensaje, Snackbar.LENGTH_INDEFINITE);
+        snack.setAction(R.string.detail_feedback_action_ok, v -> snack.dismiss());
+        snack.setActionTextColor(ContextCompat.getColor(this, R.color.festival_orange));
+        snack.show();
+    }
+
+    // Ofrece sincronizar el evento en Google Calendar tras guardar el recordatorio local.
+    private void sugerirGoogleCalendar(Evento evento, long remindAtMillis) {
+        if (evento == null || evento.getInicioMillis() <= 0L) return;
+
+        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setTitle(R.string.detail_calendar_sync_prompt_title)
+                .setMessage(R.string.detail_calendar_sync_prompt_message)
+                .setNegativeButton(R.string.detail_calendar_sync_later, null)
+                .setPositiveButton(
+                        R.string.detail_calendar_sync_confirm,
+                        (dialog, which) -> abrirInsercionGoogleCalendar(evento, remindAtMillis)
+                )
+                .show();
+    }
+
+    // Abre la pantalla de insercion de calendario con titulo, lugar y aviso preconfigurados.
+    private void abrirInsercionGoogleCalendar(Evento evento, long remindAtMillis) {
+        Intent googleIntent = construirIntentCalendario(evento, remindAtMillis);
+        googleIntent.setPackage("com.google.android.calendar");
+
+        try {
+            startActivity(googleIntent);
+            Toast.makeText(this, getString(R.string.detail_calendar_opened), Toast.LENGTH_SHORT).show();
+            return;
+        } catch (ActivityNotFoundException ignored) {
+            // Sigue con fallback.
+        }
+
+        Intent fallbackIntent = construirIntentCalendario(evento, remindAtMillis);
+        try {
+            startActivity(fallbackIntent);
+            Toast.makeText(this, getString(R.string.detail_calendar_opened), Toast.LENGTH_SHORT).show();
+            return;
+        } catch (ActivityNotFoundException ignored) {
+            // Sigue con fallback web.
+        }
+
+        Intent webIntent = construirIntentGoogleCalendarWeb(evento);
+        try {
+            startActivity(webIntent);
+            Toast.makeText(this, getString(R.string.detail_calendar_opened), Toast.LENGTH_SHORT).show();
+        } catch (ActivityNotFoundException ignored) {
+            Toast.makeText(this, getString(R.string.detail_calendar_open_error), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // Construye Intent de calendario con el mismo margen de recordatorio elegido por el usuario.
+    private Intent construirIntentCalendario(Evento evento, long remindAtMillis) {
+        long eventStartAt = Math.max(1L, evento.getInicioMillis());
+        long eventEndAt = eventStartAt + (60L * 60L * 1000L);
+        long diffMinutes = Math.max(1L, (eventStartAt - remindAtMillis) / (60L * 1000L));
+        int reminderMinutes = (int) Math.min(Integer.MAX_VALUE, diffMinutes);
+
+        String titulo = safeText(evento.getTitulo(), getString(R.string.push_notif_default_title));
+        String ubicacion = safeText(evento.getDireccion(), safeText(evento.getUbicacion(), "Tarragona"));
+        String descripcion = construirDescripcionCalendario(evento);
+
+        Intent intent = new Intent(Intent.ACTION_INSERT);
+        intent.setData(CalendarContract.Events.CONTENT_URI);
+        intent.putExtra(CalendarContract.Events.TITLE, titulo);
+        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, ubicacion);
+        intent.putExtra(CalendarContract.Events.DESCRIPTION, descripcion);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, eventStartAt);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, eventEndAt);
+        intent.putExtra(CalendarContract.Events.HAS_ALARM, 1);
+        intent.putExtra(CalendarContract.Reminders.MINUTES, reminderMinutes);
+        return intent;
+    }
+
+    // Genera descripcion para calendario reutilizando contenido del evento y su fuente.
+    private String construirDescripcionCalendario(Evento evento) {
+        String descripcion = safeText(evento.getDescripcion(), "");
+        String categoria = safeText(evento.getCategoriaUI(), "");
+        String fuente = safeText(normalizarUrl(sourceUrl), "");
+
+        StringBuilder sb = new StringBuilder();
+        if (!descripcion.isEmpty()) sb.append(descripcion);
+        if (!categoria.isEmpty()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("Categoria: ").append(categoria);
+        }
+        if (!fuente.isEmpty()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("Fuente: ").append(fuente);
+        }
+        return sb.length() == 0 ? getString(R.string.detail_description_fallback) : sb.toString();
+    }
+
+    // Construye enlace web de Google Calendar como ultimo fallback.
+    private Intent construirIntentGoogleCalendarWeb(Evento evento) {
+        String titulo = safeText(evento.getTitulo(), getString(R.string.push_notif_default_title));
+        String ubicacion = safeText(evento.getDireccion(), safeText(evento.getUbicacion(), "Tarragona"));
+        String descripcion = construirDescripcionCalendario(evento);
+
+        long startAt = Math.max(1L, evento.getInicioMillis());
+        long endAt = startAt + (60L * 60L * 1000L);
+
+        String dates = formatoUtcGoogle(startAt) + "/" + formatoUtcGoogle(endAt);
+        Uri uri = Uri.parse("https://calendar.google.com/calendar/render")
+                .buildUpon()
+                .appendQueryParameter("action", "TEMPLATE")
+                .appendQueryParameter("text", titulo)
+                .appendQueryParameter("dates", dates)
+                .appendQueryParameter("details", descripcion)
+                .appendQueryParameter("location", ubicacion)
+                .build();
+        return new Intent(Intent.ACTION_VIEW, uri);
+    }
+
+    // Formatea milisegundos epoch al formato UTC esperado por Google Calendar web.
+    private String formatoUtcGoogle(long millis) {
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.US);
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return fmt.format(new Date(millis));
     }
 
     // Gestiona abrir mapa en este bloque.

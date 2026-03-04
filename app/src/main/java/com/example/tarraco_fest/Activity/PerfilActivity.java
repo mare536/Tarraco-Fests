@@ -25,6 +25,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.tarraco_fest.Modelo.UsuarioPerfil;
 import com.example.tarraco_fest.R;
+import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.example.tarraco_fest.Repository.UsuarioRepository;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -53,6 +54,7 @@ public class PerfilActivity extends AppCompatActivity {
     private static final int SEC_EDITAR = 2;
 
     private final UsuarioRepository usuarioRepository = new UsuarioRepository();
+    private final PushTokenRepository pushTokenRepository = new PushTokenRepository();
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -526,6 +528,7 @@ public class PerfilActivity extends AppCompatActivity {
 
     // Gestiona cerrar sesion en este bloque.
     private void cerrarSesion() {
+        pushTokenRepository.desvincularTokenUsuarioActual();
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(this, LandingActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

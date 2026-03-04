@@ -33,6 +33,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.tarraco_fest.Data.FirestoreSchema;
 import com.example.tarraco_fest.R;
+import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -74,6 +75,7 @@ public class AuthActivity extends AppCompatActivity {
     private TextView tvEstado;
 
     private GoogleSignInClient googleClient;
+    private final PushTokenRepository pushTokenRepository = new PushTokenRepository();
 
     private static final int ESTADO_INFO = 0;
     private static final int ESTADO_OK = 1;
@@ -865,6 +867,7 @@ public class AuthActivity extends AppCompatActivity {
                     db.collection(FirestoreSchema.Collections.USUARIOS).document(uid)
                             .set(data, SetOptions.merge())
                             .addOnSuccessListener(v -> {
+                                pushTokenRepository.sincronizarTokenUsuarioActual();
                                 if (irHome) {
                                     setEstado("Acceso correcto", ESTADO_OK, false);
                                     goHome();
@@ -982,12 +985,14 @@ public class AuthActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int safeBottom = Math.max(bars.bottom, ime.bottom);
             int extraTop = dpToPx(8);
             v.setPadding(
                     v.getPaddingLeft(),
                     baseTop + bars.top + extraTop,
                     v.getPaddingRight(),
-                    baseBottom + bars.bottom
+                    baseBottom + safeBottom
             );
             return insets;
         });
