@@ -5,10 +5,15 @@
   <string name="home_menu_open">メニューを開く</string>
   <string name="home_language_selector_open">言語を選択</string>
   <string name="home_language_dialog_title">アプリの言語</string>
+  <string name="home_language_dialog_subtitle">Tarraco Fests の表示言語を選択してください。</string>
   <string name="home_language_option_es">スペイン語</string>
   <string name="home_language_option_ca">カタルーニャ語</string>
   <string name="home_language_option_en">英語</string>
   <string name="home_language_option_ja">日本語</string>
+  <string name="home_language_native_es">Español</string>
+  <string name="home_language_native_ca">Català</string>
+  <string name="home_language_native_en">English</string>
+  <string name="home_language_native_ja">日本語</string>
   <string name="home_header_title">タラコ フェスツ</string>
   <string name="home_header_subtitle">タラゴナの魅力を見つけよう</string>
   <string name="home_search_hint">フェスティバルを検索...</string>

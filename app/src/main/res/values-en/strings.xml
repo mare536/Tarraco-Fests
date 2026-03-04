@@ -5,10 +5,15 @@
   <string name="home_menu_open">Open menu</string>
   <string name="home_language_selector_open">Choose language</string>
   <string name="home_language_dialog_title">App language</string>
+  <string name="home_language_dialog_subtitle">Choose how you want to see Tarraco Fests.</string>
   <string name="home_language_option_es">Spanish</string>
   <string name="home_language_option_ca">Catalan</string>
   <string name="home_language_option_en">English</string>
   <string name="home_language_option_ja">Japanese</string>
+  <string name="home_language_native_es">Espa&#241;ol</string>
+  <string name="home_language_native_ca">Catal&#224;</string>
+  <string name="home_language_native_en">English</string>
+  <string name="home_language_native_ja">&#26085;&#26412;&#35486;</string>
   <string name="home_header_title">Tarraco Fests</string>
   <string name="home_header_subtitle">Discover the magic of Tarragona</string>
   <string name="home_search_hint">Search festivals...</string>

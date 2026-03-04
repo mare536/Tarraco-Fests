@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -51,6 +52,7 @@ import com.example.tarraco_fest.R;
 import com.example.tarraco_fest.Repository.AdminAccessRepository;
 import com.example.tarraco_fest.Repository.PushTokenRepository;
 import com.example.tarraco_fest.ViewModel.HomeViewModel;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -441,22 +443,63 @@ public class HomeActivity extends AppCompatActivity {
     // Muestra selector de idioma y aplica locale de la app al instante.
     private void mostrarSelectorIdioma() {
         final String[] tags = new String[]{"es", "ca", "en", "ja"};
-        final String[] labels = new String[]{
-                getString(R.string.home_language_option_es),
-                getString(R.string.home_language_option_ca),
-                getString(R.string.home_language_option_en),
-                getString(R.string.home_language_option_ja)
+        final int actual = indiceIdiomaActual(tags);
+
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_language_selector, null, false);
+        MaterialCardView[] cards = new MaterialCardView[]{
+                view.findViewById(R.id.cardLangEs),
+                view.findViewById(R.id.cardLangCa),
+                view.findViewById(R.id.cardLangEn),
+                view.findViewById(R.id.cardLangJa)
+        };
+        TextView[] codes = new TextView[]{
+                view.findViewById(R.id.tvLangEsCode),
+                view.findViewById(R.id.tvLangCaCode),
+                view.findViewById(R.id.tvLangEnCode),
+                view.findViewById(R.id.tvLangJaCode)
         };
 
-        int actual = indiceIdiomaActual(tags);
-        new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
-                .setTitle(R.string.home_language_dialog_title)
-                .setSingleChoiceItems(labels, actual, (dialog, which) -> {
-                    aplicarIdioma(tags[which]);
-                    dialog.dismiss();
-                })
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_TarracoFests_RegisterDialog)
+                .setView(view)
                 .setNegativeButton(R.string.detail_cancel, null)
-                .show();
+                .create();
+
+        for (int i = 0; i < cards.length; i++) {
+            final int idx = i;
+            cards[i].setOnClickListener(v -> {
+                actualizarOpcionesIdioma(idx, cards, codes);
+                dialog.dismiss();
+                aplicarIdioma(tags[idx]);
+            });
+        }
+
+        dialog.setOnShowListener(d -> actualizarOpcionesIdioma(actual, cards, codes));
+        dialog.show();
+    }
+
+    // Aplica estilo visual premium a cada opcion de idioma segun seleccion actual.
+    private void actualizarOpcionesIdioma(int selectedIndex, MaterialCardView[] cards, TextView[] codes) {
+        int bgDefault = ContextCompat.getColor(this, R.color.home_filter_option_bg);
+        int bgSelected = ContextCompat.getColor(this, R.color.home_filter_option_checked_bg);
+        int strokeDefault = ContextCompat.getColor(this, R.color.home_filter_option_stroke);
+        int strokeSelected = ContextCompat.getColor(this, R.color.home_filter_option_checked_stroke);
+        int textDefault = ContextCompat.getColor(this, R.color.home_filter_option_text_default);
+        int textSelected = ContextCompat.getColor(this, R.color.home_filter_option_text_checked);
+
+        for (int i = 0; i < cards.length; i++) {
+            boolean selected = i == selectedIndex;
+            MaterialCardView card = cards[i];
+            TextView code = codes[i];
+
+            card.setCardBackgroundColor(selected ? bgSelected : bgDefault);
+            card.setStrokeColor(selected ? strokeSelected : strokeDefault);
+            card.setStrokeWidth(selected ? dpToPx(2) : dpToPx(1));
+
+            code.setBackgroundResource(selected
+                    ? R.drawable.bg_language_code_selected
+                    : R.drawable.bg_language_code);
+            code.setTextColor(selected ? textSelected : textDefault);
+        }
     }
 
     // Resuelve indice del idioma activo para preseleccionarlo en el dialogo.
