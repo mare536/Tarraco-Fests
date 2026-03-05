@@ -2,6 +2,7 @@ package com.example.tarraco_fest.Repository;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.os.LocaleListCompat;
@@ -14,6 +15,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.Source;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,7 +50,17 @@ import java.util.regex.Pattern;
  */
 public class EventosRepository {
 
-    private static final String TARRAGONA_API_CSV_URL = "https://opendatafiles.tarragona.cat/00302.csv";
+    private static final String TAG = "EventosRepository";
+    private static final String[] TARRAGONA_API_CSV_URLS = new String[]{
+            "https://opendatafiles.tarragona.cat/00302.csv",
+            "https://dadesobertes.seu-e.cat/csv/tarragona/00302.csv"
+    };
+    private static final String AGENDA_EVENTS_HTML_URL = "https://agenda.tarragona.cat/@@portada-events";
+    private static final String AGENDA_BASE_URL = "https://agenda.tarragona.cat";
+    private static final String[] AGENDA_EVENT_TYPES = new String[]{"curt", "curs", "llarg", "expo"};
+    private static final Pattern AGENDA_DATE_PATTERN =
+            Pattern.compile("(\\d{2}/\\d{2}/\\d{4})(?:\\s*,\\s*(\\d{2}:\\d{2}))?");
+    private static final Pattern UID_URL_PATTERN = Pattern.compile("(?i)[?&]UID=([^&]+)");
     private static final int FIRESTORE_LIMIT = 80;
     private static final int API_LIMIT = 400;
     private static final long API_CACHE_MS = Math.max(60_000L, BuildConfig.EVENTS_API_CACHE_MS);
@@ -111,7 +126,6 @@ public class EventosRepository {
             List<Evento> firestoreEventos = mapearEventosFirestore(docs);
             if (cargaId != cargaSecuencia.get()) return;
             publicarOk(cb, firestoreEventos);
-            publicarLoading(cb, false);
             cargarEventosApiAsincrono(firestoreEventos, cb, fallbackError, cargaId);
         });
     }
@@ -211,6 +225,7 @@ public class EventosRepository {
                 if (base.isEmpty() || merged.size() != base.size()) {
                     publicarOk(cb, merged);
                 }
+                publicarLoading(cb, false);
 
                 List<Evento> referenciaUi = (base.isEmpty() || merged.size() != base.size()) ? merged : base;
                 iniciarTraduccionProgresiva(referenciaUi, cb, cargaId);
@@ -219,6 +234,7 @@ public class EventosRepository {
                     publicarLoading(cb, false);
                     publicarError(cb, fallbackError != null ? fallbackError : apiError);
                 } else {
+                    publicarLoading(cb, false);
                     iniciarTraduccionProgresiva(base, cb, cargaId);
                 }
             }
@@ -264,11 +280,44 @@ public class EventosRepository {
 
     // Gestiona descargar eventos desde csv en este bloque.
     private List<Evento> descargarEventosDesdeCsv(String uiLang) throws IOException {
+        IOException lastError = null;
+        for (String csvUrl : TARRAGONA_API_CSV_URLS) {
+            try {
+                List<Evento> out = descargarEventosDesdeCsv(csvUrl, uiLang);
+                if (!out.isEmpty()) {
+                    return out;
+                }
+                lastError = new IOException("API Tarragona sin eventos vigentes en " + csvUrl);
+                Log.w(TAG, "Fuente API sin eventos vigentes: " + csvUrl);
+            } catch (IOException e) {
+                lastError = e;
+                Log.w(TAG, "Fallo al leer fuente API: " + csvUrl + " -> " + e.getMessage());
+            }
+        }
+
+        try {
+            List<Evento> agendaOut = descargarEventosDesdeAgendaHtml(uiLang);
+            if (!agendaOut.isEmpty()) {
+                Log.i(TAG, "Fallback agenda web activo. eventos=" + agendaOut.size());
+                return agendaOut;
+            }
+            lastError = new IOException("Agenda web sin eventos vigentes");
+        } catch (IOException e) {
+            lastError = e;
+            Log.w(TAG, "Fallo fallback agenda web -> " + e.getMessage());
+        }
+
+        if (lastError != null) throw lastError;
+        throw new IOException("No hay fuentes API configuradas");
+    }
+
+    // Descarga y parsea una URL CSV concreta.
+    private List<Evento> descargarEventosDesdeCsv(String csvUrl, String uiLang) throws IOException {
         HttpURLConnection conn = null;
         BufferedReader reader = null;
 
         try {
-            URL url = new URL(TARRAGONA_API_CSV_URL);
+            URL url = new URL(csvUrl);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(15000);
@@ -285,16 +334,21 @@ public class EventosRepository {
 
             String headerLine = reader.readLine();
             if (headerLine == null || headerLine.trim().isEmpty()) {
-                return new ArrayList<>();
+                throw new IOException("CSV vacio: " + csvUrl);
             }
 
             List<String> headers = parseCsvLine(headerLine);
             Map<String, Integer> indices = construirIndiceCabeceras(headers);
+            if (indices.isEmpty()) {
+                throw new IOException("CSV sin cabeceras validas: " + csvUrl);
+            }
 
             List<Evento> out = new ArrayList<>();
+            int rawRows = 0;
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
+                rawRows++;
 
                 List<String> row = parseCsvLine(line);
                 Evento e = mapearFilaApi(row, indices, uiLang);
@@ -304,8 +358,13 @@ public class EventosRepository {
                 if (out.size() >= API_LIMIT) break;
             }
 
+            if (rawRows == 0) {
+                throw new IOException("CSV sin filas: " + csvUrl);
+            }
+
             aplicarTraduccionRuntimeApi(out, uiLang);
             out.sort(Comparator.comparingLong(this::ordenarMillis));
+            Log.i(TAG, "Fuente API " + csvUrl + " -> filas=" + rawRows + ", vigentes=" + out.size());
             return out;
 
         } finally {
@@ -319,6 +378,192 @@ public class EventosRepository {
                 conn.disconnect();
             }
         }
+    }
+
+    // Descarga eventos vigentes desde la agenda web publica cuando el CSV oficial falla.
+    private List<Evento> descargarEventosDesdeAgendaHtml(String uiLang) throws IOException {
+        List<Evento> acumulados = new ArrayList<>();
+
+        for (String eventType : AGENDA_EVENT_TYPES) {
+            String requestUrl = AGENDA_EVENTS_HTML_URL
+                    + "?template=portada_view.pt"
+                    + "&event_type=" + eventType
+                    + "&b_start=0"
+                    + "&b_size=36"
+                    + "&b_limit=120";
+
+            String html = descargarTextoHttp(requestUrl, "text/html");
+            List<Evento> parsed = parsearEventosAgendaHtml(html, uiLang);
+            Log.i(TAG, "Agenda web type=" + eventType + " -> eventos=" + parsed.size());
+            acumulados.addAll(parsed);
+        }
+
+        LinkedHashMap<String, Evento> deduplicados = new LinkedHashMap<>();
+        for (Evento e : acumulados) {
+            deduplicados.putIfAbsent(claveEvento(e), e);
+        }
+
+        List<Evento> out = new ArrayList<>(deduplicados.values());
+        if (out.isEmpty()) {
+            throw new IOException("Agenda web sin contenido util");
+        }
+
+        out.sort(Comparator.comparingLong(this::ordenarMillis));
+        return out;
+    }
+
+    // Ejecuta GET simple y devuelve cuerpo como texto UTF-8.
+    private String descargarTextoHttp(String requestUrl, String accept) throws IOException {
+        HttpURLConnection conn = null;
+        BufferedReader reader = null;
+        StringBuilder sb = new StringBuilder(16_384);
+
+        try {
+            URL url = new URL(requestUrl);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(20000);
+            conn.setRequestProperty("Accept", accept);
+            conn.setRequestProperty("User-Agent", "TarracoFest/1.0");
+
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new IOException("HTTP " + code + " en " + requestUrl);
+            }
+
+            reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+
+            String out = sb.toString();
+            if (out.trim().isEmpty()) {
+                throw new IOException("Respuesta vacia en " + requestUrl);
+            }
+            return out;
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException ignored) {
+                }
+            }
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    // Parsea cards HTML de agenda.tarragona.cat y las transforma al modelo Evento.
+    private List<Evento> parsearEventosAgendaHtml(String html, String uiLang) {
+        List<Evento> out = new ArrayList<>();
+        if (html == null || html.trim().isEmpty()) return out;
+
+        Document doc = Jsoup.parse(html, AGENDA_BASE_URL);
+        Elements articles = doc.select("article");
+        if (articles == null || articles.isEmpty()) return out;
+
+        long now = System.currentTimeMillis();
+
+        for (Element article : articles) {
+            if (article == null) continue;
+
+            Element titleLink = article.selectFirst("h4.event-title a");
+            if (titleLink == null) continue;
+
+            String titulo = titleLink.text() == null ? "" : titleLink.text().trim();
+            if (titulo.isEmpty()) continue;
+
+            String href = titleLink.absUrl("href");
+            if (href == null || href.trim().isEmpty()) href = titleLink.attr("href");
+            String eventoUrl = normalizarUrlPublica(href);
+
+            Element dateElement = article.selectFirst("p.event-date");
+            String dateText = dateElement == null ? "" : dateElement.text();
+            long inicioMillis = parsearFechaAgendaHtmlMillis(dateText);
+            if (inicioMillis <= 0L) continue;
+            if (inicioMillis < now) continue;
+
+            Element categoryElement = article.selectFirst("span.eventItem__cat");
+            String categoriaTexto = categoryElement == null ? "" : categoryElement.text().trim();
+            String categoriaId = inferirCategoriaId(categoriaTexto);
+
+            Element locationElement = article.selectFirst("p.event-location");
+            String lugar = locationElement == null ? "" : limpiarPrefijoCampo(locationElement.text());
+
+            Element imageElement = article.selectFirst("img.eventItem__image");
+            String imageUrl = "";
+            if (imageElement != null) {
+                imageUrl = imageElement.absUrl("src");
+                if (imageUrl == null || imageUrl.trim().isEmpty()) imageUrl = imageElement.attr("src");
+            }
+
+            String categoriaDescripcion = categoriasParaDescripcion(categoriaTexto, categoriaId, uiLang);
+            String descripcion = construirDescripcionApi(titulo, lugar, categoriaDescripcion, inicioMillis, uiLang);
+            if (!eventoUrl.isEmpty()) {
+                descripcion = descripcion + "\n" + eventoUrl;
+            }
+
+            Evento e = new Evento();
+            String uid = extraerUidDesdeUrl(eventoUrl);
+            String fallbackId = "agenda_" + Math.abs((titulo + "|" + inicioMillis + "|" + eventoUrl).hashCode());
+            e.setId(uid.isEmpty() ? fallbackId : "agenda_" + uid);
+            e.setActivo(true);
+            e.setTitulo(titulo);
+            e.setDescripcion(descripcion);
+            e.setCategoriaId(categoriaId);
+            e.setLugarNombre(lugar);
+            e.setDireccion(lugar);
+            e.setCiudad("Tarragona");
+            e.setInicioMillis(inicioMillis);
+            e.setFecha(formatearFecha(inicioMillis));
+            e.setPrecio(0.0);
+            e.setImagenResId(obtenerImagenPredefinida(categoriaId));
+            e.setImagenUrl(imageUrl == null ? "" : imageUrl.trim());
+            out.add(e);
+        }
+
+        return out;
+    }
+
+    // Extrae fecha/hora de texto libre de agenda (ej: "Quan: 05/03/2026, 09:00").
+    private long parsearFechaAgendaHtmlMillis(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return 0L;
+        Matcher matcher = AGENDA_DATE_PATTERN.matcher(raw);
+        if (!matcher.find()) return 0L;
+
+        String datePart = matcher.group(1);
+        String timePart = matcher.group(2);
+        String combined = datePart + " " + (timePart == null ? "00:00" : timePart);
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US);
+            sdf.setLenient(false);
+            Date d = sdf.parse(combined);
+            return d == null ? 0L : d.getTime();
+        } catch (Exception ignore) {
+            return 0L;
+        }
+    }
+
+    // Limpia etiquetas tipo "On:", "Lugar:", "Lloc:" del texto de ubicacion.
+    private String limpiarPrefijoCampo(String raw) {
+        if (raw == null) return "";
+        String text = raw.trim();
+        if (text.isEmpty()) return "";
+        text = text.replaceFirst("^(?i)(on|lloc|lugar|place)\\s*:\\s*", "");
+        return text.trim();
+    }
+
+    // Obtiene UID desde URL de agenda para construir IDs estables.
+    private String extraerUidDesdeUrl(String url) {
+        if (url == null || url.trim().isEmpty()) return "";
+        Matcher matcher = UID_URL_PATTERN.matcher(url);
+        if (!matcher.find()) return "";
+        String uid = matcher.group(1);
+        return uid == null ? "" : uid.trim();
     }
 
     // Mapea fila api al modelo usado por la app.
